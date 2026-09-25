@@ -1,30 +1,23 @@
 <script lang="ts">
-	import { languages, type Language } from '$lib/data/site';
+import { type Language, languages } from '$lib/data/site';
 
-	type Props = {
-		/** Stretch the control to the container width (used in the mobile drawer). */
-		full?: boolean;
-	};
+let open = $state(false);
+let current = $state<Language>(languages[0]);
 
-	let { full = false }: Props = $props();
+function select(language: Language) {
+	current = language;
+	open = false;
+}
 
-	let open = $state(false);
-	let current = $state<Language>(languages[0]);
+function handleWindowClick(event: MouseEvent) {
+	if (!open) return;
+	const target = event.target as HTMLElement | null;
+	if (!target?.closest('[data-language-switcher]')) open = false;
+}
 
-	function select(language: Language) {
-		current = language;
-		open = false;
-	}
-
-	function handleWindowClick(event: MouseEvent) {
-		if (!open) return;
-		const target = event.target as HTMLElement | null;
-		if (!target?.closest('[data-language-switcher]')) open = false;
-	}
-
-	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape') open = false;
-	}
+function handleKeydown(event: KeyboardEvent) {
+	if (event.key === 'Escape') open = false;
+}
 </script>
 
 <svelte:window onclick={handleWindowClick} onkeydown={handleKeydown} />
@@ -32,9 +25,7 @@
 <div class="relative" data-language-switcher>
 	<button
 		type="button"
-		class="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-stone-100 transition hover:bg-white/10 {full
-			? 'w-full justify-between'
-			: ''}"
+		class="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-stone-100 transition hover:bg-white/10"
 		aria-haspopup="listbox"
 		aria-expanded={open}
 		aria-label="Change language"
@@ -59,9 +50,7 @@
 
 	{#if open}
 		<ul
-			class="absolute z-50 w-48 overflow-hidden rounded-xl border border-white/10 bg-forest-deep p-1.5 shadow-2xl {full
-				? 'inset-x-0 bottom-full mb-2'
-				: 'right-0 mt-2'}"
+			class="absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-xl border border-white/10 bg-forest-deep p-1.5 shadow-2xl"
 			role="listbox"
 		>
 			{#each languages as language (language.code)}
@@ -85,7 +74,6 @@
 						/>
 						<span class="flex flex-col">
 							<span>{language.label}</span>
-							<span class="text-[10px] font-medium text-stone-400">{language.code}</span>
 						</span>
 						{#if language.code === current.code}
 							<i class="fa-solid fa-check ml-auto text-[10px] text-gold"></i>

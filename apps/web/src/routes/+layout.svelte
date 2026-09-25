@@ -1,9 +1,9 @@
 <script lang="ts">
-	import './layout.css';
-	import Footer from '$lib/components/Footer.svelte';
-	import Header from '$lib/components/Header.svelte';
+import './layout.css';
+import Footer from '$lib/components/Footer.svelte';
+import Header from '$lib/components/Header.svelte';
 
-	let { children } = $props();
+let { children } = $props();
 </script>
 
 <svelte:head>

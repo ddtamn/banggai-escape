@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { footerDestinations, nav, site, socials } from '$lib/data/site';
+import { footerDestinations, nav, site, socials } from '$lib/data/site';
 
-	const year = 2026;
+const year = 2026;
 </script>
 
 <footer class="border-t border-forest-line/40 bg-forest-deep pt-16 pb-8 text-white">

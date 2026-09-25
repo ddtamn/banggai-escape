@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { postImage, type Post } from '$lib/data/posts';
+import { type Post, postImage } from '$lib/data/posts';
 
-	type Props = { post: Post };
+type Props = { post: Post };
 
-	let { post }: Props = $props();
+let { post }: Props = $props();
 
-	const image = $derived(postImage(post));
+const image = $derived(postImage(post));
 </script>
 
 <article

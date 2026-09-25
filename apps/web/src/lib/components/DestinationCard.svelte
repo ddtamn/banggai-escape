@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { destinationImage, type Destination } from '$lib/data/destinations';
+import { type Destination, destinationImage } from '$lib/data/destinations';
 
-	type Props = { destination: Destination; href?: string };
+type Props = { destination: Destination; href?: string };
 
-	let { destination, href = `/destinations/${destination.slug}` }: Props = $props();
+let { destination, href = `/destinations/${destination.slug}` }: Props = $props();
 
-	const image = $derived(destinationImage(destination, 1200));
+const image = $derived(destinationImage(destination, 1200));
 </script>
 
 <a

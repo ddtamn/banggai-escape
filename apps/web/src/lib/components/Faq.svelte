@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { FaqItem } from '$lib/data/content';
+import type { FaqItem } from '$lib/data/content';
 
-	type Props = {
-		items: FaqItem[];
-		/** Index of the item expanded by default. */
-		openIndex?: number;
-	};
+type Props = {
+	items: FaqItem[];
+	/** Index of the item expanded by default. */
+	openIndex?: number;
+};
 
-	let { items, openIndex = 0 }: Props = $props();
+let { items, openIndex = 0 }: Props = $props();
 </script>
 
 <div class="divide-y divide-stone-200">

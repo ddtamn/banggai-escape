@@ -1,14 +1,14 @@
 <script lang="ts">
-	type Props = {
-		title: string;
-		subtitle?: string;
-		action?: { label: string; href: string };
-		dark?: boolean;
-	};
+type Props = {
+	title: string;
+	subtitle?: string;
+	action?: { label: string; href: string };
+	dark?: boolean;
+};
 
-	let { title, subtitle, action, dark = false }: Props = $props();
+let { title, subtitle, action, dark = false }: Props = $props();
 
-	const split = $derived(title.split('\n'));
+const split = $derived(title.split('\n'));
 </script>
 
 <div class="mb-8 flex flex-col justify-between gap-4 pb-2 sm:mb-10 sm:flex-row sm:items-end">

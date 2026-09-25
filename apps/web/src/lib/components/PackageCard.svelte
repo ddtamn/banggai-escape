@@ -1,11 +1,17 @@
 <script lang="ts">
-	import { badgeDays, durationLabel, formatPrice, packageImage, type Package } from '$lib/data/packages';
+import {
+	badgeDays,
+	durationLabel,
+	formatPrice,
+	type Package,
+	packageImage,
+} from '$lib/data/packages';
 
-	type Props = { pkg: Package };
+type Props = { pkg: Package };
 
-	let { pkg }: Props = $props();
+let { pkg }: Props = $props();
 
-	const image = $derived(packageImage(pkg));
+const image = $derived(packageImage(pkg));
 </script>
 
 <article class="card card-interactive">

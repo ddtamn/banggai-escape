@@ -3,31 +3,23 @@
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
+	"packageManager": "pnpm@12.3.4",
+	"engines": {
+		"node": ">=20"
+	},
 	"scripts": {
-		"dev": "vite dev",
-		"build": "wrangler types --check && vite build",
-		"preview": "wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "wrangler types --check && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"gen": "wrangler types"
+		"dev": "pnpm --filter @banggai/web dev",
+		"build": "pnpm --filter @banggai/web build",
+		"preview": "pnpm --filter @banggai/web preview",
+		"check": "pnpm --filter @banggai/web check",
+		"gen": "pnpm --filter @banggai/web gen",
+		"lint": "biome lint",
+		"format": "biome format --write",
+		"format:check": "biome format",
+		"check:code": "biome check",
+		"fix": "biome check --write"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-cloudflare": "next",
-		"@sveltejs/kit": "next",
-		"@sveltejs/vite-plugin-svelte": "^7.1.2",
-		"@tailwindcss/forms": "^0.5.11",
-		"@tailwindcss/typography": "^0.5.19",
-		"@tailwindcss/vite": "^4.3.0",
-		"svelte": "^5.56.1",
-		"svelte-check": "^4.6.0",
-		"tailwindcss": "^4.3.0",
-		"typescript": "^6.0.3",
-		"vite": "^8.0.16",
-		"wrangler": "^4.97.0"
-	},
-	"imports": {
-		"#lib": "./src/lib/index.js",
-		"#lib/*": "./src/lib/*"
+		"@biomejs/biome": "^2.5.14"
 	}
 }

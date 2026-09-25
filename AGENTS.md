@@ -50,16 +50,24 @@ pnpm check:code   # Biome lint + format across the workspace (the CI gate)
 pnpm fix          # apply every safe Biome fix
 ```
 
-The admin app is **not** wired into root scripts, and its package is named `admin`
-(not `@banggai/admin`):
+The root `dev`, `build`, `check` and `preview` stay pointed at `@banggai/web` — that is
+what CI and the deploy gate on. The admin is its own package, `@banggai/admin`, with root
+shortcuts for the four common scripts:
 
 ```sh
-pnpm --filter admin dev
-pnpm --filter admin check      # svelte-check; needs the committed generated types
-pnpm --filter admin test       # Vitest (browser + server projects)
-pnpm --filter admin gen        # regenerate worker-configuration.d.ts (see rule 4)
-pnpm --filter admin auth:schema
-pnpm --filter admin provision  # create/reset the administrator: -- <email> <password>
+pnpm admin:dev
+pnpm admin:check    # svelte-check; needs the committed generated types
+pnpm admin:test     # Vitest (the server project; the client one has no files yet)
+pnpm admin:build
+
+# Browser checks. Not part of `pnpm admin:test`: they need a dev server, a database, and an
+# administrator, so signed-in specs skip without these rather than fail.
+# ADMIN_EMAIL=… ADMIN_PASSWORD=… pnpm --filter @banggai/admin test:e2e
+# Add E2E_WRITE=1 for the one check that saves (it restores what it touched).
+
+pnpm --filter @banggai/admin gen        # regenerate worker-configuration.d.ts (see rule 4)
+pnpm --filter @banggai/admin auth:schema
+pnpm --filter @banggai/admin provision  # create/reset the administrator: -- <email> <password>
 
 # shared contracts
 pnpm --filter content-model check   # tsc --noEmit
@@ -76,11 +84,11 @@ Migration and database scripts (one-shot tools, deleted after the public site re
 from Neon — see [docs/14](./docs/14-admin-app.md#migrating-the-static-content)):
 
 ```sh
-pnpm --filter admin db:generate    # write a reviewable migration — read the SQL first
-pnpm --filter admin db:migrate
-pnpm --filter admin db:roles       # converge banggai_admin / banggai_web and verify them
+pnpm --filter @banggai/admin db:generate    # write a reviewable migration — read the SQL first
+pnpm --filter @banggai/admin db:migrate
+pnpm --filter @banggai/admin db:roles       # converge banggai_admin / banggai_web and verify them
 pnpm --filter web migrate:export   # static modules -> .migration/ (git-ignored)
-pnpm --filter admin migrate:import # validate + seed; `-- --replace` re-seeds
+pnpm --filter @banggai/admin migrate:import # validate + seed; `-- --replace` re-seeds
 ```
 
 ## Definition of done
@@ -129,9 +137,9 @@ These are non-negotiable; they exist because each one has already caused a real 
    - `apps/web/worker-configuration.d.ts` — regenerate with `pnpm gen`
    - `apps/web/src/lib/data/media.ts` — regenerate with `.stitch/gen-media.mjs`
   - `apps/admin/src/lib/server/db/auth.schema.ts` — regenerate with
-    `pnpm --filter admin auth:schema`
+    `pnpm --filter @banggai/admin auth:schema`
   - `apps/admin/drizzle/*.sql` and `apps/admin/drizzle/meta/**` — regenerate with
-    `pnpm --filter admin db:generate`, then review the SQL before applying it
+    `pnpm --filter @banggai/admin db:generate`, then review the SQL before applying it
 6. **Biome owns formatting.** Tabs, single quotes, 100-column lines, sorted imports.
    Run `pnpm fix`, never hand-format, and never add a second formatter config.
 7. **No cross-app imports.** `apps/web` must never import from `apps/admin` or vice
@@ -180,7 +188,7 @@ These are non-negotiable; they exist because each one has already caused a real 
   session into `event.locals`.
 - **Access is a row, not a variable.** `isAdministrator()` in `src/lib/server/authz.ts`
   checks the `administrators` table and fails closed. Granting is
-  `pnpm --filter admin provision`; revoking is deleting that row.
+  `pnpm --filter @banggai/admin provision`; revoking is deleting that row.
 - **Validate before every content write.** `assertValidPayload()` /
   `assertValidSiteSetting()` in `src/lib/server/content/validate.ts` wrap the shared
   contracts. The columns are JSONB, so nothing else stops a malformed payload.
@@ -188,7 +196,7 @@ These are non-negotiable; they exist because each one has already caused a real 
   driver, and a bare `begin`/`rollback` pair is not a transaction either — each `sql`
   template tag is its own HTTP request.
 - Schema changes go in `src/lib/server/db/schema.ts`, then
-  `pnpm --filter admin db:generate` (a reviewable migration) — not just `db:push`.
+  `pnpm --filter @banggai/admin db:generate` (a reviewable migration) — not just `db:push`.
 
 ## Documentation map
 

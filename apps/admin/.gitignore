@@ -31,3 +31,9 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Playwright: failure traces, screenshots, and the HTML report
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache

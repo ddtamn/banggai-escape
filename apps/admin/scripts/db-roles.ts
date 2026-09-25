@@ -1,7 +1,7 @@
 /**
  * Create — or converge — the two database roles, and prove the grants actually hold.
  *
- *   ADMIN_DB_PASSWORD=... WEB_DB_PASSWORD=... pnpm --filter admin db:roles
+ *   ADMIN_DB_PASSWORD=... WEB_DB_PASSWORD=... pnpm --filter @banggai/admin db:roles
  *
  * Today the app connects as `neondb_owner`, which can do anything to anything, including
  * read every session token and password hash. Two roles replace that:

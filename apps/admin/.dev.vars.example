@@ -12,7 +12,7 @@
 MEDIA_PUBLIC_URL=""
 
 # The app's runtime variables. **These are required to run the built Worker** —
-# `pnpm --filter admin preview` serves `.svelte-kit/cloudflare/_worker.js` under
+# `pnpm --filter @banggai/admin preview` serves `.svelte-kit/cloudflare/_worker.js` under
 # `wrangler dev`, and that Worker's `env` comes from this file alone. A checkout whose
 # values only live in `.env` answers `500 · DATABASE_URL is not set` on every route.
 #

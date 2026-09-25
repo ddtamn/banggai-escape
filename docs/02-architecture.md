@@ -128,11 +128,9 @@ allowBuilds:
   (Wrangler's runtime, used by `wrangler dev`) and `esbuild`. pnpm 10+ blocks
   dependency build scripts by default; this is the allowlist that unblocks them.
 
-Note the package names are **not** symmetric: `@banggai/web` follows the
-scope convention, while the admin app is still named `admin` (the generator's
-default). A root-filtered command for the admin app must therefore use
-`pnpm --filter admin …` today. See
-[14-admin-app](./14-admin-app.md#scripts) for the rename note.
+The packages are `@banggai/web`, `@banggai/admin`, and `@banggai/content-model`. The admin
+started as the scaffold's default `admin` and was renamed to the scope convention, so both
+apps filter the same way (`pnpm --filter @banggai/admin …`).
 
 ### Why a monorepo with two apps
 

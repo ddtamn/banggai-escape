@@ -96,21 +96,23 @@ Root scripts delegate to `apps/web`, so the everyday commands are unchanged:
 
 Anything app-specific can be run directly with a filter, for example `pnpm --filter @banggai/web check:watch`.
 
-The admin app is **not** wired into the root scripts (and its package is named
-`admin`, not `@banggai/admin`), so run it with its own filter — for example
-`pnpm --filter admin dev`, `pnpm --filter admin test`, `pnpm --filter admin db:studio`.
+The root scripts still target `@banggai/web` only, because that is the app CI and the
+deploy pipeline gate on. The admin is `@banggai/admin` and has its own scripts, plus a
+root shortcut for the common ones (`pnpm admin:dev`, `pnpm admin:check`, `pnpm admin:test`,
+`pnpm admin:build`) — for anything else use a filter, for example
+`pnpm --filter @banggai/admin db:studio`.
 
 The database and migration scripts are one-shot tools; they are deleted once the public
 site reads from Neon instead of from `apps/web/src/lib/data`:
 
 | Command                          | What it does                                                    |
 | -------------------------------- | --------------------------------------------------------------- |
-| `pnpm --filter admin db:generate` | Write a reviewable SQL migration — read it before applying it   |
-| `pnpm --filter admin db:migrate`  | Apply pending migrations                                        |
-| `pnpm --filter admin db:roles`    | Create/converge `banggai_admin` and `banggai_web`, then verify them |
-| `pnpm --filter admin provision`   | Create or reset an administrator and grant them membership       |
+| `pnpm --filter @banggai/admin db:generate` | Write a reviewable SQL migration — read it before applying it   |
+| `pnpm --filter @banggai/admin db:migrate`  | Apply pending migrations                                        |
+| `pnpm --filter @banggai/admin db:roles`    | Create/converge `banggai_admin` and `banggai_web`, then verify them |
+| `pnpm --filter @banggai/admin provision`   | Create or reset an administrator and grant them membership       |
 | `pnpm --filter web migrate:export`| Snapshot the static content modules to `.migration/`             |
-| `pnpm --filter admin migrate:import` | Validate the snapshot, seed Neon, print the reconciliation   |
+| `pnpm --filter @banggai/admin migrate:import` | Validate the snapshot, seed Neon, print the reconciliation   |
 
 ## Code quality
 
@@ -187,8 +189,8 @@ The admin app deploys to its own Worker (`admin`) separately, and needs
 `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `ORIGIN` set as secrets first:
 
 ```sh
-pnpm --filter admin build
-pnpm --filter admin exec wrangler deploy
+pnpm --filter @banggai/admin build
+pnpm --filter @banggai/admin exec wrangler deploy
 ```
 
 ## Troubleshooting

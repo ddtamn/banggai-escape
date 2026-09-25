@@ -30,13 +30,15 @@ Anything app-specific runs through a filter, using the package name:
 pnpm --filter @banggai/web check:watch
 pnpm --filter @banggai/web exec wrangler deploy
 
-pnpm --filter admin dev            # note: the admin package is named "admin",
-pnpm --filter admin test           # not "@banggai/admin" (yet)
+pnpm --filter @banggai/admin dev
+pnpm --filter @banggai/admin test
 ```
 
 The two workspace packages are `apps/web` → **`@banggai/web`** and `apps/admin` →
-**`admin`**. The asymmetry is a scaffold leftover; see
-[14-admin-app](./14-admin-app.md#scripts) for the rename.
+**`@banggai/admin`**, and the root has shortcuts for the admin's common scripts
+(`pnpm admin:dev`, `admin:check`, `admin:test`, `admin:build`). The root `dev`, `build`,
+`check` and `preview` stay pointed at the web app — that is what CI and the deploy pipeline
+gate on; see [14-admin-app](./14-admin-app.md#scripts).
 
 ---
 
@@ -170,8 +172,8 @@ Because `svelte-check` reports accessibility warnings, "0 warnings" is the stand
 to hold (see [09-seo-and-metadata](./09-seo-and-metadata.md#accessibility)).
 
 > **`apps/admin` needs its generated types.** `worker-configuration.d.ts` is listed in
-> its `tsconfig.json` `types`, so `pnpm --filter admin check` fails while the file is
-> absent; generate it with `pnpm --filter admin gen`, clearing `.svelte-kit/cloudflare`
+> its `tsconfig.json` `types`, so `pnpm --filter @banggai/admin check` fails while the file is
+> absent; generate it with `pnpm --filter @banggai/admin gen`, clearing `.svelte-kit/cloudflare`
 > first ([wrangler trap](./12-troubleshooting.md#the-wrangler-types--svelte-check-trap)).
 > Both that file and `auth.schema.ts` are committed. See
 > [14-admin-app](./14-admin-app.md).
@@ -204,10 +206,10 @@ Biome, like any other workspace source.
 
 | Tool | Driven by | Purpose |
 | --- | --- | --- |
-| **Vitest** | `pnpm --filter admin test` | Two projects: browser (Playwright Chromium) and Node. The only test runner in the repo |
+| **Vitest** | `pnpm --filter @banggai/admin test` | Two projects: browser (Playwright Chromium) and Node. The only test runner in the repo |
 | **Playwright** | `@vitest/browser-playwright` | Browser provider for component tests. Chromium must be installed separately |
-| **drizzle-kit** | `pnpm --filter admin db:*` | Schema push/generate/migrate and Studio |
-| **better-auth CLI** | `pnpm --filter admin auth:schema` | Generates the auth tables into `src/lib/server/db/auth.schema.ts` |
+| **drizzle-kit** | `pnpm --filter @banggai/admin db:*` | Schema push/generate/migrate and Studio |
+| **better-auth CLI** | `pnpm --filter @banggai/admin auth:schema` | Generates the auth tables into `src/lib/server/db/auth.schema.ts` |
 | **shadcn-svelte CLI** | `pnpm dlx shadcn-svelte@latest add <name>` | Adds UI components into `$lib/components/ui` per `components.json` |
 
 These are covered in [14-admin-app](./14-admin-app.md#testing).
@@ -309,7 +311,7 @@ on the design system; you do not need them to build or run the site.
 - **No pre-commit type gate** — which is why `pnpm check` is in the contributing
   checklist.
 - **No root scripts for the admin app.** The root `package.json` delegates only to
-  `@banggai/web`; admin commands are run with `pnpm --filter admin …`.
+  `@banggai/web`; admin commands are run with `pnpm --filter @banggai/admin …`.
 
 ## Related
 

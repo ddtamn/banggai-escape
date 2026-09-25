@@ -41,9 +41,9 @@ For an admin change, also run the admin app's own gates (it is a separate app wi
 its own scripts and its own database):
 
 ```sh
-pnpm --filter admin check        # types (needs generated worker types + auth schema)
-pnpm --filter admin test         # Vitest — browser + server projects
-pnpm --filter admin build
+pnpm --filter @banggai/admin check        # types (needs generated worker types + auth schema)
+pnpm --filter @banggai/admin test         # Vitest — browser + server projects
+pnpm --filter @banggai/admin build
 npx biome check apps/admin       # the pre-existing scaffold offences remain; see below
 ```
 
@@ -205,14 +205,14 @@ Full config reference: [10-tooling](./10-tooling.md#biome--lint--format).
 ### Working on the admin app
 
 - [ ] Generated artifacts are present: `worker-configuration.d.ts`
-      (`pnpm --filter admin gen`) and the auth schema
-      (`pnpm --filter admin auth:schema`).
-- [ ] Schema changes go through `pnpm --filter admin db:generate` (a migration file)
+      (`pnpm --filter @banggai/admin gen`) and the auth schema
+      (`pnpm --filter @banggai/admin auth:schema`).
+- [ ] Schema changes go through `pnpm --filter @banggai/admin db:generate` (a migration file)
       rather than only `db:push`, so they are reviewable and reproducible.
 - [ ] Secrets stay out of the repo — use `.env` locally and `wrangler secret put`
       for deployments. Never commit `.env`.
 - [ ] Tests added or updated for new server logic, and they run
-      (`pnpm --filter admin test`).
+      (`pnpm --filter @banggai/admin test`).
 - [ ] The brand-theming decision is respected — do not mix shadcn neutral tokens
       with `DESIGN.md` colours without recording the choice.
 - [ ] You are not reintroducing demo scaffolding — `src/routes/demo/**` and

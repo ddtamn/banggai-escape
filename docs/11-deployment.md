@@ -5,7 +5,7 @@ There are **two Workers**, deployed independently:
 | App | Worker name | Wrangler config | Root scripts? |
 | --- | --- | --- | --- |
 | `apps/web` | `banggai-escape` | [`apps/web/wrangler.jsonc`](../apps/web/wrangler.jsonc) | Yes — `pnpm build`, `pnpm preview` |
-| `apps/admin` | `admin` | [`apps/admin/wrangler.jsonc`](../apps/admin/wrangler.jsonc) | No — use `pnpm --filter admin …` |
+| `apps/admin` | `admin` | [`apps/admin/wrangler.jsonc`](../apps/admin/wrangler.jsonc) | No — use `pnpm --filter @banggai/admin …` |
 
 Everything below describes `apps/web`; the admin Worker's differences are collected
 in [The admin Worker](#the-admin-worker).
@@ -173,12 +173,12 @@ bogus slug shows the branded error page with the header and footer intact.
 
 ## The admin Worker
 
-`apps/admin` deploys separately, to a Worker named `admin`, with the same adapter
-and asset layout:
+`apps/admin` deploys separately, to a Worker named `admin` (`wrangler.jsonc`'s `name`, not
+the package name), with the same adapter and asset layout:
 
 ```sh
-pnpm --filter admin build
-pnpm --filter admin exec wrangler deploy
+pnpm admin:build
+pnpm --filter @banggai/admin exec wrangler deploy
 ```
 
 Differences to account for:
@@ -194,7 +194,7 @@ Differences to account for:
   on types, regenerate them with no build output present (see the
   [wrangler trap](./12-troubleshooting.md#the-wrangler-types--svelte-check-trap)).
 - **Database migrations** are not part of the deploy. Apply schema changes
-explicitly with `pnpm --filter admin db:migrate` (or `db:push` for a throwaway
+explicitly with `pnpm --filter @banggai/admin db:migrate` (or `db:push` for a throwaway
   environment) against the target database.
 - **It has a bucket binding.** `R2_MEDIA` → `banggaiescape-media` is declared in
   `apps/admin/wrangler.jsonc`. The bucket has to exist in the account before the deploy,

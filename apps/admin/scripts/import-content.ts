@@ -2,8 +2,8 @@
  * Import the exported static content into Neon, and print the reconciliation report.
  *
  *   pnpm --filter web migrate:export     # writes .migration/ at the repo root
- *   pnpm --filter admin migrate:import   # reads it, validates, seeds
- *   pnpm --filter admin migrate:import -- --replace   # re-seed entries that already exist
+ *   pnpm --filter @banggai/admin migrate:import   # reads it, validates, seeds
+ *   pnpm --filter @banggai/admin migrate:import -- --replace   # re-seed entries that already exist
  *
  * One-shot migration tool, deleted after the public site reads from Neon. The snapshot
  * is an untrusted file: every record is re-validated against `@banggai/content-model`
@@ -120,7 +120,7 @@ const author = await resolveAuthor();
 
 if (!author) {
 	problems.push(
-		'no revision author: provision an administrator (pnpm --filter admin provision), ' +
+		'no revision author: provision an administrator (pnpm --filter @banggai/admin provision), ' +
 			'or pass --author=<email>',
 	);
 }

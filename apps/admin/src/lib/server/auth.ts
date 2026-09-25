@@ -12,7 +12,7 @@ export const auth = betterAuth({
 	emailAndPassword: {
 		enabled: true,
 		// The single administrator is provisioned out of band:
-		//   pnpm --filter admin provision -- <email> <password>
+		//   pnpm --filter @banggai/admin provision -- <email> <password>
 		// There is no route, form, or endpoint that can create an account.
 		disableSignUp: true,
 	},

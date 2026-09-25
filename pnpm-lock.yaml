@@ -118,15 +118,6 @@ importers:
       '@banggai/content-model':
         specifier: workspace:*
         version: link:../../packages/content-model
-      '@dnd-kit-svelte/svelte':
-        specifier: ^0.1.6
-        version: 0.1.6(svelte@5.57.1)
-      '@dnd-kit/abstract':
-        specifier: ^0.1.21
-        version: 0.1.21
-      '@dnd-kit/helpers':
-        specifier: ^0.1.21
-        version: 0.1.21
       '@fontsource-variable/geist':
         specifier: ^5.3.0
         version: 5.3.0
@@ -136,6 +127,9 @@ importers:
       '@neondatabase/serverless':
         specifier: ^1.1.0
         version: 1.1.0
+      '@playwright/test':
+        specifier: ^1.60.0
+        version: 1.63.0
       '@sveltejs/adapter-cloudflare':
         specifier: ^7.2.8
         version: 7.2.9(@sveltejs/kit@2.70.3(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.1)(vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)))(svelte@5.57.1)(typescript@6.0.3)(vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)))(wrangler@4.136.3(@cloudflare/workers-types@5.20260923.1)(@types/node@24.13.6))
@@ -145,9 +139,6 @@ importers:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^7.1.2
         version: 7.3.0(svelte@5.57.1)(vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15))
-      '@tabler/icons-svelte':
-        specifier: ^3.48.0
-        version: 3.48.0(svelte@5.57.1)
       '@tailwindcss/forms':
         specifier: ^0.5.11
         version: 0.5.11(tailwindcss@4.3.3)
@@ -157,9 +148,6 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.3.0
         version: 4.3.3(vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15))
-      '@tanstack/svelte-table':
-        specifier: ^9.2.4
-        version: 9.2.4(svelte@5.57.1)
       '@types/node':
         specifier: ^24
         version: 24.13.6
@@ -666,38 +654,6 @@ packages:
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
     engines: {node: '>=12'}
-
-  '@dnd-kit-svelte/svelte@0.1.6':
-    resolution: {integrity: sha512-kpmNWeQoPFrJ4SNB0thRkdWtN3kiYMQI/SvEj6MTKTQ8W5VyHBrbXDRm+mdiTj9tzmG8jgCPg+Fgp3aYIU+Hug==}
-    peerDependencies:
-      svelte: ^5.0.0
-
-  '@dnd-kit/abstract@0.1.21':
-    resolution: {integrity: sha512-6sJut6/D21xPIK8EFMu+JJeF+fBCOmQKN1BRpeUYFi5m9P1CJpTYbBwfI107h7PHObI6a5bsckiKkRpF2orHpw==}
-
-  '@dnd-kit/abstract@0.2.4':
-    resolution: {integrity: sha512-1F3JQaD8upvTNpfDrhvec57cldTEaUggmVrVJZIpRTIdZR7trKqS7vBYZR1mW3qNjWsxC91eEQAXYWv0vxXXuw==}
-
-  '@dnd-kit/collision@0.2.4':
-    resolution: {integrity: sha512-w8Vzq8MKu8MYvrwtasqQhw2l27v9eRMzL+jOdj8Qp0jnPQ1FICGgUwjAStZ87wO1Pc2WIt0rQWDDPIEyRd6S8A==}
-
-  '@dnd-kit/dom@0.2.4':
-    resolution: {integrity: sha512-ZYIJgx/uyZvmGOHPBDbIeJfqa2xlEUHnkHEHcKlR/VMQz9NoSkPGcjPdcAjpwB+T4dleRQ4tZ8h9X5I3UdTQPw==}
-
-  '@dnd-kit/geometry@0.1.21':
-    resolution: {integrity: sha512-Tir97wNJbopN2HgkD7AjAcoB3vvrVuUHvwdPALmNDUH0fWR637c4MKQ66YjjZAbUEAR8KL6mlDiHH4MzTLd7CQ==}
-
-  '@dnd-kit/geometry@0.2.4':
-    resolution: {integrity: sha512-S8wVj4rQIErimDQoRT0n1+lgxPvlO/gvzT9/1vzyyw1U4bB/S8avtrI+REVw/jH84c/dii+GwrrzVkDDoIluNw==}
-
-  '@dnd-kit/helpers@0.1.21':
-    resolution: {integrity: sha512-yAFOcGaef8OqGJW/sHWnJn77b1Qe00f9ByPm19gNSEDH3/sgDszug7OwvqjoFAEnsDiKwdTgGYsPoyLSnrlprA==}
-
-  '@dnd-kit/state@0.1.21':
-    resolution: {integrity: sha512-pdhntEPvn/QttcF295bOJpWiLsRqA/Iczh1ODOJUxGiR+E4GkYVz9VapNNm9gDq6ST0tr/e1Q2xBztUHlJqQgA==}
-
-  '@dnd-kit/state@0.2.4':
-    resolution: {integrity: sha512-mPtQfmqBZBcVKa+Fi8AV2ocQWa+phvZa9Muq3PxFM3WIyjrFiEosGGPiPcx5hC3K+i2gkmr6Msc7iPrrpYkB5g==}
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
@@ -1381,6 +1337,11 @@ packages:
   '@oxc-project/types@0.150.0':
     resolution: {integrity: sha512-rDS5/31E9HfPl/CIzGrn0DOlvBbXFseQ5URJ9sYMfstbKLD/c6Gm9vmRzRGDdAXyOIL4zmO37lc9RIwYqVruZw==}
 
+  '@playwright/test@1.63.0':
+    resolution: {integrity: sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ==}
+    engines: {node: '>=20'}
+    hasBin: true
+
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
 
@@ -1392,9 +1353,6 @@ packages:
 
   '@poppinss/exception@1.2.3':
     resolution: {integrity: sha512-dCED+QRChTVatE9ibtoaxc+WkdzOSjYTKi/+uacHWIsfodVfpsueo3+DKpgU5Px8qXjgmXkSvhXvSCz3fnP9lw==}
-
-  '@preact/signals-core@1.14.4':
-    resolution: {integrity: sha512-HNB6HYeYKhQbJ1aKl+YRjrS4+QWHLKX6qKoUsfS/m0vqzsVaEBiZiaKbG/e+NKk2ch5ALQr/ihWaMHxiCuuWHA==}
 
   '@rolldown/binding-android-arm-eabi@1.2.9':
     resolution: {integrity: sha512-tNISae1QEf/vkb3xkRcjV5SEdzPE97We5IVaa2Z8jSszQPZ8U60B/YCYpw4QI7VidYsBtKavczXf+DyDs9WGxw==}
@@ -1546,14 +1504,6 @@ packages:
   '@swc/helpers@0.5.23':
     resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
 
-  '@tabler/icons-svelte@3.48.0':
-    resolution: {integrity: sha512-LsucFDMtGbBqcnkiMpMRWvwDcvjuMEYc3S8Agr1RwJT4Rqq8HaY13/sZrgdpfP9v0irLLPhehfQeH4ObmSGLOQ==}
-    peerDependencies:
-      svelte: '>=3 <6 || >=5.0.0-next.0'
-
-  '@tabler/icons@3.48.0':
-    resolution: {integrity: sha512-lQk06gVHNVBnJp0UOgtth54mcZBJM7rdYKsAxKOProj1bbSAx+/xiuOWfHlyvgdL3M+Y+I0HINrjHa3ygp8eXQ==}
-
   '@tailwindcss/forms@0.5.11':
     resolution: {integrity: sha512-h9wegbZDPurxG22xZSoWtdzc41/OlNEUQERNqI/0fOwa2aVlWGu7C35E/x6LDyD3lgtztFSSjKZyuVM0hxhbgA==}
     peerDependencies:
@@ -1657,24 +1607,6 @@ packages:
     resolution: {integrity: sha512-yYU8cogLeSh/ms2jh8Fj7jaba/EWa7Ja6GoUqYZaraEuCI5YS6ms6ObZgjjedm+jm6XZjdNRWBpPP6Z86oOxcw==}
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
-
-  '@tanstack/store@0.11.1':
-    resolution: {integrity: sha512-mzTOBhypOuDJAy/D8n2MfUZ1HFkXnmSETviRyhqEC8LUE7/IZQExOTxMANj3KjTofYTkFNpBY67qaVrT41YccA==}
-
-  '@tanstack/svelte-store@0.12.1':
-    resolution: {integrity: sha512-ZFj8gyIWHZRYLv8RHp5jhnMhvw15g86KinotrUp9RfY7ygjkU3CcaMUytIdMJ4Xzq/9GqVlAphV9gFIGKRXWSw==}
-    peerDependencies:
-      svelte: ^5.0.0
-
-  '@tanstack/svelte-table@9.2.4':
-    resolution: {integrity: sha512-s1A82cJhp3e2Lx3mhVJnhswnGJihBaFNs+gf3/jsDdmKa/zjUDY43Z7kWLZ8408yuNwFG0dR4WGdJ0g8dnuMkQ==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      svelte: ^5.0.0
-
-  '@tanstack/table-core@9.2.4':
-    resolution: {integrity: sha512-GwdDyGGr6UXAtubF14yAwcXvdaogqfsQgIk89Suebjxob/Rjq2xvfmXsjDF1rQmKmhHsJm9TOY7myxv3i6geJw==}
-    engines: {node: '>=20'}
 
   '@testing-library/svelte-core@1.1.3':
     resolution: {integrity: sha512-KkMAvXeWorxN2Yn0kdC1lfoAItxpoj4uOWzxK5leDrNxonLvS5nwBFvztrroyTszQ0Wf/EU6iLT8JhY5qcn22g==}
@@ -3260,66 +3192,6 @@ snapshots:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
-  '@dnd-kit-svelte/svelte@0.1.6(svelte@5.57.1)':
-    dependencies:
-      '@dnd-kit/abstract': 0.2.4
-      '@dnd-kit/collision': 0.2.4
-      '@dnd-kit/dom': 0.2.4
-      '@dnd-kit/geometry': 0.1.21
-      '@dnd-kit/state': 0.2.4
-      svelte: 5.57.1
-
-  '@dnd-kit/abstract@0.1.21':
-    dependencies:
-      '@dnd-kit/geometry': 0.1.21
-      '@dnd-kit/state': 0.1.21
-      tslib: 2.8.1
-
-  '@dnd-kit/abstract@0.2.4':
-    dependencies:
-      '@dnd-kit/geometry': 0.2.4
-      '@dnd-kit/state': 0.2.4
-      tslib: 2.8.1
-
-  '@dnd-kit/collision@0.2.4':
-    dependencies:
-      '@dnd-kit/abstract': 0.2.4
-      '@dnd-kit/geometry': 0.2.4
-      tslib: 2.8.1
-
-  '@dnd-kit/dom@0.2.4':
-    dependencies:
-      '@dnd-kit/abstract': 0.2.4
-      '@dnd-kit/collision': 0.2.4
-      '@dnd-kit/geometry': 0.2.4
-      '@dnd-kit/state': 0.2.4
-      tslib: 2.8.1
-
-  '@dnd-kit/geometry@0.1.21':
-    dependencies:
-      '@dnd-kit/state': 0.1.21
-      tslib: 2.8.1
-
-  '@dnd-kit/geometry@0.2.4':
-    dependencies:
-      '@dnd-kit/state': 0.2.4
-      tslib: 2.8.1
-
-  '@dnd-kit/helpers@0.1.21':
-    dependencies:
-      '@dnd-kit/abstract': 0.1.21
-      tslib: 2.8.1
-
-  '@dnd-kit/state@0.1.21':
-    dependencies:
-      '@preact/signals-core': 1.14.4
-      tslib: 2.8.1
-
-  '@dnd-kit/state@0.2.4':
-    dependencies:
-      '@preact/signals-core': 1.14.4
-      tslib: 2.8.1
-
   '@drizzle-team/brocli@0.10.2': {}
 
   '@emnapi/runtime@1.11.3':
@@ -3725,6 +3597,10 @@ snapshots:
 
   '@oxc-project/types@0.150.0': {}
 
+  '@playwright/test@1.63.0':
+    dependencies:
+      playwright: 1.63.0
+
   '@polka/url@1.0.0-next.29': {}
 
   '@poppinss/colors@4.1.6':
@@ -3738,8 +3614,6 @@ snapshots:
       supports-color: 10.2.2
 
   '@poppinss/exception@1.2.3': {}
-
-  '@preact/signals-core@1.14.4': {}
 
   '@rolldown/binding-android-arm-eabi@1.2.9':
     optional: true
@@ -3840,13 +3714,6 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@tabler/icons-svelte@3.48.0(svelte@5.57.1)':
-    dependencies:
-      '@tabler/icons': 3.48.0
-      svelte: 5.57.1
-
-  '@tabler/icons@3.48.0': {}
-
   '@tailwindcss/forms@0.5.11(tailwindcss@4.3.3)':
     dependencies:
       mini-svg-data-uri: 1.4.4
@@ -3924,23 +3791,6 @@ snapshots:
       '@tailwindcss/oxide': 4.3.3
       tailwindcss: 4.3.3
       vite: 8.3.0(@types/node@24.13.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.15)
-
-  '@tanstack/store@0.11.1': {}
-
-  '@tanstack/svelte-store@0.12.1(svelte@5.57.1)':
-    dependencies:
-      '@tanstack/store': 0.11.1
-      svelte: 5.57.1
-
-  '@tanstack/svelte-table@9.2.4(svelte@5.57.1)':
-    dependencies:
-      '@tanstack/svelte-store': 0.12.1(svelte@5.57.1)
-      '@tanstack/table-core': 9.2.4
-      svelte: 5.57.1
-
-  '@tanstack/table-core@9.2.4':
-    dependencies:
-      '@tanstack/store': 0.11.1
 
   '@testing-library/svelte-core@1.1.3(svelte@5.57.1)':
     dependencies:

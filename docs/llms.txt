@@ -49,7 +49,7 @@ illustrative — when a snippet and the source disagree, the source wins.
 - `apps/web` **`bg-white` is Warm Sand `#F7F3ED`**, and `text-white` is Warm Sand too.
 - Content lives in `apps/web/src/lib/data/`; pages are presentational.
 - Biome owns formatting (tabs, single quotes, 100 columns); run `pnpm fix`.
-- The admin package is named `admin`, so its filter is `pnpm --filter admin …`.
+- The admin package is named `admin`, so its filter is `pnpm --filter @banggai/admin …`.
 - `pnpm check:code` currently fails on the unformatted admin scaffold; gate the site
   with `npx biome check apps/web` until that is cleaned up.
 

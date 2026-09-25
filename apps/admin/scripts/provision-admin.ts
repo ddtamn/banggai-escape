@@ -12,7 +12,7 @@
  * request context. This writes the same rows sign-up would write, hashed with
  * better-auth's own password hasher, in a single `db.batch()` transaction.
  *
- *   pnpm --filter admin provision -- <email> <password> ['Display Name']
+ *   pnpm --filter @banggai/admin provision -- <email> <password> ['Display Name']
  *
  * The password is never echoed back.
  */
@@ -32,7 +32,7 @@ const [email, password, name] = process.argv
 	.filter((arg, index) => !(index === 0 && arg === '--'));
 
 if (!email || !password) {
-	console.error("usage: pnpm --filter admin provision -- <email> <password> ['Display Name']");
+	console.error("usage: pnpm --filter @banggai/admin provision -- <email> <password> ['Display Name']");
 	process.exit(1);
 }
 

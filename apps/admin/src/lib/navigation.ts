@@ -15,6 +15,7 @@ import ImageIcon from '@lucide/svelte/icons/image';
 import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 import MapPinIcon from '@lucide/svelte/icons/map-pin';
 import PackageIcon from '@lucide/svelte/icons/package';
+import SettingsIcon from '@lucide/svelte/icons/settings';
 import type { Component } from 'svelte';
 import { resolve } from '$app/paths';
 
@@ -38,6 +39,7 @@ export const sections: readonly Section[] = [
 		icon: FileTextIcon,
 	},
 	{ title: 'Media', url: resolve('/media'), icon: ImageIcon },
+	{ title: 'Settings', url: resolve('/settings'), icon: SettingsIcon },
 ];
 
 /**

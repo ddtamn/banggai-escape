@@ -189,7 +189,7 @@ const blockSpec = $derived(
 				Remove last
 			</button>
 			<span class="text-xs text-muted-foreground">
-				{count} item{count === 1 ? '' : 's'} · at least one is required
+				{count} item{count === 1 ? '' : 's'}{#if spec.atLeastOne} · at least one is required{/if}
 			</span>
 		</div>
 	</div>
@@ -214,7 +214,7 @@ const blockSpec = $derived(
 			</fieldset>
 		{/each}
 
-		<div class="flex gap-2">
+		<div class="flex flex-wrap items-center gap-2">
 			<button
 				type="button"
 				onclick={() => (counts[path] = count + 1)}
@@ -229,6 +229,9 @@ const blockSpec = $derived(
 			>
 				Remove last
 			</button>
+			<span class="text-xs text-muted-foreground">
+				{count} item{count === 1 ? '' : 's'}{#if spec.atLeastOne} · at least one is required{/if}
+			</span>
 		</div>
 	</div>
 {:else}

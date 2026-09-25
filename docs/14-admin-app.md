@@ -88,28 +88,48 @@ apps/admin/
 │  ├─ hooks.server.ts               # better-auth handle → populates event.locals
 │  ├─ lib/
 │  │  ├─ index.ts                   # `$lib` placeholder
-│  │  ├─ utils.ts                   # cn() re-export + shadcn type helpers
-│  │  ├─ assets/favicon.svg
+│  │  ├─ utils.ts                   # cn() re-export + shadcn type helpers│  │  ├─ assets/favicon.svg
+│  │  ├─ components/                # the shell (adapted from dashboard-01 / login-01)
+│  │  │  ├─ app-sidebar.svelte      # side nav, from `$lib/navigation`
+│  │  │  ├─ site-header.svelte      # section title + ModeToggle
+│  │  │  ├─ mode-toggle.svelte      # light ↔ dark, via mode-watcher
+│  │  │  ├─ nav-main.svelte         # active item = longest matching prefix
+│  │  │  ├─ nav-user.svelte         # identity + POST to /logout
+│  │  │  ├─ login-form.svelte       # the sign-in card
+│  │  │  └─ content/
+│  │  │     ├─ EntryForm.svelte     # a content payload's fields
+│  │  │     ├─ FieldControl.svelte  # one field, including the repeatable ones
+│  │  │     └─ status-badge.svelte  # draft / published / changed / archived
+│  │  ├─ content/forms.ts           # the field-spec model for content *and* settings
+│  │  ├─ content/forms.spec.ts      # unit tests (server project)
+│  │  ├─ navigation.ts              # the one list of sections, for the sidebar and header
 │  │  ├─ server/
 │  │  │  ├─ auth.ts                 # betterAuth() instance
 │  │  │  ├─ authz.ts                # administrators-table check + redirect sanitising
 │  │  │  ├─ authz.spec.ts           # unit tests for the above (server project)
 │  │  │  ├─ content/
+│  │  │  │  ├─ service.ts           # entry/revision/redirect reads and writes
 │  │  │  │  ├─ validate.ts          # assertValidPayload / assertValidSiteSetting
 │  │  │  │  └─ validate.spec.ts     # contract tests (server project)
+│  │  │  ├─ media/                  # upload, keys, references, picker options
+│  │  │  ├─ settings/service.ts     # listSettings / getSetting / saveSetting
 │  │  │  └─ db/
 │  │  │     ├─ index.ts             # LAZY neon() + drizzle() client
 │  │  │     ├─ schema.ts            # domain tables + `export * from './auth.schema'`
 │  │  │     └─ auth.schema.ts       # GENERATED — run `pnpm auth:schema`
 │  ├─ routes/
-│  │  ├─ +layout.svelte             # imports layout.css, favicon, renders children
+│  │  ├─ +layout.svelte             # imports layout.css, favicon, ModeWatcher
 │  │  ├─ +page.server.ts            # `/` → redirect to /dashboard
 │  │  ├─ layout.css                 # Tailwind + shadcn-svelte tokens (neutral, Geist)
 │  │  ├─ (auth)/login/              # public sign-in form + action
+│  │  ├─ media/[key]/+server.ts     # serves an upload from R2
 │  │  └─ (dashboard)/               # private group
 │  │     ├─ +layout.server.ts       # session, then administrators-table guard
-│  │     ├─ +layout.svelte          # shell: header, identity, sign out
+│  │     ├─ +layout.svelte          # sidebar shell: AppSidebar + SiteHeader
 │  │     ├─ dashboard/+page.svelte  # overview placeholder
+│  │     ├─ content/[kind]/         # list, new/, [slug]/ (edit, publish), [slug]/preview/
+│  │     ├─ media/                  # the media library
+│  │     ├─ settings/               # the index, and [key]/ to edit one
 │  │     └─ logout/+server.ts       # POST-only sign-out
 │  ├─ static/robots.txt
 │  └─ .vscode/ .env.example .env.types .gitignore .npmrc
@@ -697,11 +717,48 @@ pnpm --filter admin migrate:import        # validates, seeds, reconciles
   media breakdown, and any rows in the database that are *not* in the snapshot — which is
   how a renamed slug shows up instead of hiding.
 
+## Site settings
+
+The thirteen shared values — brand block, navigation, footer links, features, testimonials,
+stats, vision/mission, contact cards, FAQs, blog categories, and the CTA banner image — are
+edited at `src/routes/(dashboard)/settings/` and written to `site_settings`.
+
+| Piece | Where |
+| --- | --- |
+| The index (grouped, one card per key) | `src/routes/(dashboard)/settings/+page.svelte` |
+| One setting's form and save action | `src/routes/(dashboard)/settings/[key]/+page.server.ts` |
+| Reads and the validating write | `src/lib/server/settings/service.ts` |
+| The specs for all thirteen keys | `src/lib/content/forms.ts` (`settingSpecs`) |
+
+**Saving is the gate, unlike content.** `site_settings` has one row per key, the public site
+reads it directly, and there is no draft or revision to publish — so `saveSetting` validates
+against the contract *before* it writes and refuses with the offending paths named
+(`site_settings.site → name: …`). There is deliberately no "save anyway": that check is the
+only thing between a malformed JSONB value and the marketing site. It is also not a general
+key/value editor, so an unknown key cannot reach the table.
+
+**One root field per key.** A setting's stored value *is* the value of a single root field
+named after its key, which is what lets the same renderer, parser and path helpers serve both
+a content payload and a setting — `readField` on the root spec is the whole parser. The read
+side wraps (`settingFormValues`) and the write side unwraps (`parseSettingForm`), and the two
+live next to each other because a mismatch is invisible until a form opens blank. `settingSpecs`
+is typed by `SiteSettingKey`, so adding a key to `@banggai/content-model` fails `svelte-check`
+until a spec exists; `forms.spec.ts` covers the keys that no type can: the index groups and the
+per-key notes.
+
+**A failed save keeps the submission.** A refusal re-renders what was typed rather than the
+stored value. Content can afford to reload the draft, but a setting is one long-lived value,
+so silently discarding a refused edit is the worst outcome this screen has.
+
+**Media references are guarded.** `testimonials[].avatar` and `ctaBackground` are the two keys
+holding an image id, and the media library's delete guard walks settings as well as content.
+Only those two keys load the 300-option picker.
+
 ## Media (R2 and the media library)
 
-The media library is the one thing in the admin that is **finished end to end**: upload,
-metadata, alt text, browsing, and reference-aware deletion, all behind the dashboard
-guard.
+The media library is **finished end to end**: upload, metadata, alt text, browsing, and
+reference-aware deletion, all behind the dashboard guard. So are the content editors and the
+settings screen above.
 
 | Piece | Where |
 | --- | --- |
@@ -868,6 +925,12 @@ Run them with a filter — the package name is currently **`admin`**, not
   referenced" and letting a delete through.
 - `src/lib/server/media/keys.spec.ts` covers key generation (including that an extension
   reaching a URL cannot carry path separators) and the URL resolution rules above.
+- `src/lib/content/forms.spec.ts` covers the form model's invariants: that the three
+  settings structures (specs, index groups, notes) all cover the contract's keys exactly
+  once, that a `rows`/`list` submission parses back into a value its contract accepts, that
+  a blank optional field becomes absent rather than empty, and that removing every row
+  yields an empty array. It also pins the wrap the settings read path depends on — handing
+  the walker an unwrapped value opens a form with one row however many are stored.
 - `src/lib/server/content/validate.spec.ts` covers the content contracts: that each kind
   is accepted as the static modules author it, and that a renamed field, a missing
   required field, an empty required collection, a value outside a union, and an unknown
@@ -927,27 +990,28 @@ Ordered roughly by dependency:
 
 1. **Rename the package to `@banggai/admin`** and add root scripts
    (`pnpm --filter @banggai/admin dev`, …) if the admin is to be driven from the root.
-2. **Build the site-settings screen.** Packages, destinations, and articles now have list,
-   create, edit, preview, publish/unpublish, archive, reorder and revision-history screens
-   (Phase 3 — see [15](./15-admin-dashboard-plan.md#phase-3--cms-crud-and-publish-workflow)).
-   The one content screen still missing is **site settings**: the 13 keys are stored,
-   validated, and visible to the site, but there is no UI for them yet.
-3. **Commit the browser check.** The screens were verified by driving a real Chromium
-   against `pnpm dev` (sign-in, the whole shell, all five nav destinations, the theme
-   toggle, and a create → save → publish-refused → delete round trip). That script was a
-   throwaway; nothing in the repo re-runs it.
-4. **Write component tests.** The `client` Vitest project is configured and Chromium is
-   installed, but no `.svelte.spec.ts` files exist yet.
-5. **Migrate the legacy artwork into R2.** The 28 imported media rows still point at the
+2. **Commit the browser check.** Phase 3 is complete in code — packages, destinations and
+   articles have list, create, edit, preview, publish/unpublish, archive, reorder and
+   revision history, and **site settings** has its own screen (see
+   [Site settings](#site-settings)). Everything was verified by driving a real Chromium
+   against `pnpm dev`: sign-in, the shell, the theme toggle, the settings index and all
+   thirteen forms, a FAQ round trip, a refused save, and a create → save →
+   publish-refused → delete round trip. That script was a throwaway; nothing in the repo
+   re-runs it, and it is the only thing that would have caught the `method="post"` forms
+   posting to a `default` action the routes did not define.
+3. **Write component tests.** The `client` Vitest project is configured and Chromium is
+   installed, but no `.svelte.spec.ts` files exist yet. `forms.spec.ts` covers the form
+   model's invariants, not the components that render it.
+4. **Migrate the legacy artwork into R2.** The 28 imported media rows still point at the
    old CDN via `external_url`, which is why their `mime_type` is null. Moving the bytes
    into the bucket would let the legacy host be retired.
-6. **Wire content to the site.** The marketing site currently renders from static
+5. **Wire content to the site.** The marketing site currently renders from static
    TypeScript in `lib/data`. Making the admin the source of truth means giving the
    site a runtime data source — a significant architectural change; see
    [02-architecture](./02-architecture.md#content-first-architecture-and-its-trade-offs).
    Note that stored payloads now reference `media_assets` **ids**, so Phase 4's read path
    must resolve them to URLs (`publicMediaUrl`) rather than using the value directly.
-7. **Analytics — decided: Cloudflare Workers Analytics Engine (WAE).** The
+6. **Analytics — decided: Cloudflare Workers Analytics Engine (WAE).** The
    administrator requested a Cloudflare analytics option if it has a free tier. Use
    WAE to write validated page/content/CTA events from the public Worker and query
    aggregate data from the admin server. The current Cloudflare pricing page lists

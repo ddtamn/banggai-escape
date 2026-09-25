@@ -551,7 +551,7 @@ R2 (their `mime_type` is null precisely because the old host never recorded one)
 **Exit:** the administrator can create, edit, preview, publish, unpublish, and restore
 or safely replace content without editing source files.
 
-**Built, except site settings.** `(dashboard)/content/[kind]/` has the list (status filters,
+**Built.** `(dashboard)/content/[kind]/` has the list (status filters,
 search, reorder, feature, archive, delete), `new/`, `[slug]/` (edit, the publish workflow,
 revision history, redirects) and `[slug]/preview/`. All three kinds are driven by one
 field-spec model in `src/lib/content/forms.ts` and one service in
@@ -567,12 +567,20 @@ neon-http, `sql\`begin\`` is *not* a transaction). Status — `draft` / `publish
 `changed` / `archived` — is **derived** from the draft, the published revision and
 `archivedAt`, never stored, so it cannot drift out of step with the data.
 
-Verified by driving a real browser against `pnpm dev`: sign-in, the shell, all five nav
-destinations, the theme toggle, and create → save draft → publish-refused → delete. That
-check was a throwaway script, not a committed test.
+**Site settings** is the last screen: `(dashboard)/settings/` lists all thirteen keys grouped,
+and `settings/[key]/` edits one. It reuses the same field-spec model, so a setting is a content
+form with a single root field — the stored value *is* that field's value. The rule inverts
+here, though: a setting has no draft and no revision, the public site reads `site_settings`
+directly, so **saving is the gate** — `saveSetting` validates before writing and refuses with
+the offending paths named, and a refused save returns the submission so the edit is not
+discarded. `settingSpecs` is keyed by `SiteSettingKey`, so a new key in the contract fails
+`svelte-check` until it has a spec.
 
-Site settings is the one screen still missing; its 13 keys are stored and validated but
-have no UI.
+Verified by driving a real browser against `pnpm dev`: sign-in, the shell, all six nav
+destinations, the theme toggle, create → save draft → publish-refused → delete, and for
+settings the index, all thirteen forms, a FAQ add → save → reload → remove → save round trip,
+and an invalid save refused without writing. That check was a throwaway script, not a
+committed test.
 
 ### Phase 4 — switch the public site to Neon
 

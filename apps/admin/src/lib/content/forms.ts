@@ -22,21 +22,29 @@
  * small `$state` in the page, so add/remove works with JavaScript and the initial rows
  * work without it.
  */
-import type { ContentKind } from '@banggai/content-model';
+import type { ContentKind, SiteSettingKey } from '@banggai/content-model';
 
 /** Re-exported so the content UI imports its types from one place. */
-export type { ContentKind };
+export type { ContentKind, SiteSettingKey };
 
 /** A form field, as data. */
 export type FieldSpec =
 	/** One line of text. */
-	| { readonly type: 'text'; readonly name: string; readonly label: string; readonly hint?: string }
+	| {
+			readonly type: 'text';
+			readonly name: string;
+			readonly label: string;
+			readonly hint?: string;
+			/** Left blank means *absent*, not empty, for a contract field that is `.optional()`. */
+			readonly optional?: boolean;
+	  }
 	/** Multi-line prose. */
 	| {
 			readonly type: 'words';
 			readonly name: string;
 			readonly label: string;
 			readonly hint?: string;
+			readonly optional?: boolean;
 	  }
 	/** A URL segment: lowercase words, single hyphens. */
 	| { readonly type: 'slug'; readonly name: string; readonly label: string }
@@ -69,6 +77,14 @@ export type FieldSpec =
 			readonly name: string;
 			readonly label: string;
 			readonly item: 'text' | 'media';
+			/**
+			 * Set when the contract puts `.min(1)` on this field, so the control can state the
+			 * requirement where it applies. Declared rather than assumed because most of these
+			 * fields may legitimately be empty — FAQs and blog categories among them — and a
+			 * control that always says "at least one is required" teaches administrators to
+			 * ignore the one case where it is true.
+			 */
+			readonly atLeastOne?: boolean;
 	  }
 	/** A repeatable group of fields (`highlights`, `itinerary`). */
 	| {
@@ -76,6 +92,8 @@ export type FieldSpec =
 			readonly name: string;
 			readonly label: string;
 			readonly fields: readonly FieldSpec[];
+			/** See the note on `list`: only where the contract actually requires one. */
+			readonly atLeastOne?: boolean;
 	  }
 	/** The article body: a closed union of block kinds, each with its own fields. */
 	| { readonly type: 'blocks'; readonly name: string; readonly label: string };
@@ -92,6 +110,23 @@ const titleAndText: readonly FieldSpec[] = [
 	{ type: 'text', name: 'text', label: 'Text' },
 ];
 
+/** The four filler fields shared by `nav`, `footerDestinations`, and the two link lists. */
+const navFields: readonly FieldSpec[] = [
+	{ type: 'text', name: 'label', label: 'Label' },
+	{ type: 'text', name: 'href', label: 'Link', hint: 'A path such as /packages' },
+];
+
+/** `features` and `visionMission` are the same shape, so they are the same spec. */
+function featureSetting(name: string, label: string): FieldSpec {
+	return { type: 'rows', name, label, fields: featureFields };
+}
+
+const featureFields: readonly FieldSpec[] = [
+	{ type: 'text', name: 'icon', label: 'Icon', hint: 'A Font Awesome class' },
+	{ type: 'text', name: 'title', label: 'Title' },
+	{ type: 'words', name: 'text', label: 'Text' },
+];
+
 /** The four block kinds the contract allows. `h` needs an anchor id for the contents list. */
 export const blockSpecs: readonly BlockSpec[] = [
 	{ kind: 'p', label: 'Paragraph', fields: [{ type: 'words', name: 'text', label: 'Text' }] },
@@ -106,7 +141,9 @@ export const blockSpecs: readonly BlockSpec[] = [
 	{
 		kind: 'steps',
 		label: 'Steps',
-		fields: [{ type: 'rows', name: 'items', label: 'Steps', fields: titleAndText }],
+		fields: [
+			{ type: 'rows', name: 'items', label: 'Steps', fields: titleAndText, atLeastOne: true },
+		],
 	},
 	{
 		kind: 'callout',
@@ -143,8 +180,20 @@ export const fieldSpecs: Record<ContentKind, readonly FieldSpec[]> = {
 		{ type: 'text', name: 'groupSize', label: 'Group size' },
 		{ type: 'text', name: 'accommodation', label: 'Accommodation' },
 		{ type: 'words', name: 'overview', label: 'Overview' },
-		{ type: 'rows', name: 'highlights', label: 'Highlights', fields: titleAndText },
-		{ type: 'list', name: 'included', label: 'What is included', item: 'text' },
+		{
+			type: 'rows',
+			name: 'highlights',
+			label: 'Highlights',
+			fields: titleAndText,
+			atLeastOne: true,
+		},
+		{
+			type: 'list',
+			name: 'included',
+			label: 'What is included',
+			item: 'text',
+			atLeastOne: true,
+		},
 		{
 			type: 'rows',
 			name: 'itinerary',
@@ -154,6 +203,7 @@ export const fieldSpecs: Record<ContentKind, readonly FieldSpec[]> = {
 				{ type: 'text', name: 'title', label: 'Title' },
 				{ type: 'words', name: 'text', label: 'Text' },
 			],
+			atLeastOne: true,
 		},
 		{ type: 'boolean', name: 'featured', label: 'Feature on the homepage' },
 	],
@@ -163,7 +213,13 @@ export const fieldSpecs: Record<ContentKind, readonly FieldSpec[]> = {
 		{ type: 'text', name: 'region', label: 'Region' },
 		{ type: 'text', name: 'tagline', label: 'Tagline' },
 		{ type: 'media', name: 'image', label: 'Card image' },
-		{ type: 'list', name: 'overview', label: 'Overview paragraphs', item: 'text' },
+		{
+			type: 'list',
+			name: 'overview',
+			label: 'Overview paragraphs',
+			item: 'text',
+			atLeastOne: true,
+		},
 		{
 			type: 'object',
 			name: 'quickInfo',
@@ -175,8 +231,20 @@ export const fieldSpecs: Record<ContentKind, readonly FieldSpec[]> = {
 				{ type: 'text', name: 'accessibility', label: 'Accessibility' },
 			],
 		},
-		{ type: 'rows', name: 'experiences', label: 'Experiences', fields: titleAndText },
-		{ type: 'list', name: 'gallery', label: 'Gallery', item: 'media' },
+		{
+			type: 'rows',
+			name: 'experiences',
+			label: 'Experiences',
+			fields: titleAndText,
+			atLeastOne: true,
+		},
+		{
+			type: 'list',
+			name: 'gallery',
+			label: 'Gallery',
+			item: 'media',
+			atLeastOne: true,
+		},
 		{ type: 'boolean', name: 'featured', label: 'Feature on the homepage' },
 	],
 	article: [
@@ -210,6 +278,198 @@ export const kindLabels: Record<ContentKind, string> = {
 
 export const kinds: readonly ContentKind[] = ['package', 'destination', 'article'];
 
+// ---------------------------------------------------------------------------
+// Site settings
+// ---------------------------------------------------------------------------
+
+/**
+ * The site's own settings, as **one root field per key**.
+ *
+ * A setting's stored value *is* that field's value, so the root field is named after the
+ * key: `faqs` is a `rows` field named `faqs`, giving input names of
+ * `faqs[0].question` and a parsed value that is exactly the array the contract wants.
+ * That is what lets the same renderer, parser and path helpers serve both a content
+ * payload and a setting.
+ *
+ * The record is typed by `SiteSettingKey`, so adding a key to `@banggai/content-model`
+ * fails `svelte-check` here until a spec exists for it — the type is what keeps the two in
+ * step. Note that only the *type* is imported: importing the schema table would drag `zod`
+ * and every settings schema into the browser bundle for no reason.
+ *
+ * `optional: true` matters on `contactChannels.extra`, the contract's only optional field.
+ * A text input that submits `''` would fail `z.string().min(1).optional()` — `.optional()`
+ * permits absence, not emptiness — so a blank optional field has to parse to absent.
+ */
+export const settingSpecs: Record<SiteSettingKey, FieldSpec> = {
+	site: {
+		type: 'object',
+		name: 'site',
+		label: 'Brand and contact',
+		fields: [
+			{ type: 'text', name: 'name', label: 'Site name' },
+			{ type: 'text', name: 'tagline', label: 'Tagline' },
+			{ type: 'text', name: 'locale', label: 'Locale', hint: 'e.g. en' },
+			{ type: 'text', name: 'phone', label: 'Phone as displayed' },
+			{ type: 'text', name: 'phoneHref', label: 'Phone link', hint: 'tel:+62…' },
+			{ type: 'text', name: 'email', label: 'Email' },
+			{
+				type: 'list',
+				name: 'address',
+				label: 'Address lines',
+				item: 'text',
+				atLeastOne: true,
+			},
+			{ type: 'number', name: 'reviewCount', label: 'Review count', min: 0 },
+		],
+	},
+	nav: {
+		type: 'rows',
+		name: 'nav',
+		label: 'Main navigation',
+		fields: navFields,
+		// The contract's one required list besides `languages`: a site with no navigation
+		// cannot be saved, so the control says so up front rather than after a refusal.
+		atLeastOne: true,
+	},
+	languages: {
+		type: 'rows',
+		name: 'languages',
+		label: 'Languages',
+		fields: [
+			{ type: 'text', name: 'code', label: 'Code', hint: 'e.g. en' },
+			{ type: 'text', name: 'label', label: 'Label' },
+			{ type: 'text', name: 'flag', label: 'Flag' },
+		],
+		atLeastOne: true,
+	},
+	socials: {
+		type: 'rows',
+		name: 'socials',
+		label: 'Social links',
+		fields: [
+			{ type: 'text', name: 'label', label: 'Label' },
+			{ type: 'text', name: 'icon', label: 'Icon', hint: 'A Font Awesome class' },
+			{ type: 'text', name: 'href', label: 'Link' },
+		],
+	},
+	footerDestinations: {
+		type: 'rows',
+		name: 'footerDestinations',
+		label: 'Footer destinations',
+		fields: navFields,
+	},
+	features: featureSetting('features', 'Features'),
+	testimonials: {
+		type: 'rows',
+		name: 'testimonials',
+		label: 'Testimonials',
+		fields: [
+			{ type: 'words', name: 'quote', label: 'Quote' },
+			{ type: 'text', name: 'name', label: 'Name' },
+			{ type: 'text', name: 'country', label: 'Country' },
+			{ type: 'media', name: 'avatar', label: 'Avatar' },
+		],
+	},
+	faqs: {
+		type: 'rows',
+		name: 'faqs',
+		label: 'FAQs',
+		fields: [
+			{ type: 'text', name: 'question', label: 'Question' },
+			{ type: 'words', name: 'answer', label: 'Answer' },
+		],
+	},
+	stats: {
+		type: 'rows',
+		name: 'stats',
+		label: 'Stats',
+		fields: [
+			{ type: 'text', name: 'value', label: 'Value', hint: 'As displayed, e.g. 1,200+' },
+			{ type: 'text', name: 'label', label: 'Label' },
+		],
+	},
+	visionMission: featureSetting('visionMission', 'Vision and mission'),
+	contactChannels: {
+		type: 'rows',
+		name: 'contactChannels',
+		label: 'Contact channels',
+		fields: [
+			{ type: 'text', name: 'icon', label: 'Icon', hint: 'A Font Awesome class' },
+			{ type: 'text', name: 'title', label: 'Title' },
+			{ type: 'words', name: 'text', label: 'Text' },
+			{ type: 'text', name: 'value', label: 'Value' },
+			{
+				type: 'text',
+				name: 'extra',
+				label: 'Second line',
+				hint: 'Optional',
+				optional: true,
+			},
+			{ type: 'text', name: 'href', label: 'Link' },
+		],
+	},
+	blogCategories: {
+		type: 'list',
+		name: 'blogCategories',
+		label: 'Blog categories',
+		item: 'text',
+	},
+	ctaBackground: {
+		type: 'media',
+		name: 'ctaBackground',
+		label: 'CTA banner background',
+	},
+};
+
+/** The order the settings screen lists them in. Every key must appear exactly once. */
+export const settingGroups: readonly {
+	readonly title: string;
+	readonly keys: readonly SiteSettingKey[];
+}[] = [
+	{ title: 'Brand and contact', keys: ['site'] },
+	{
+		title: 'Navigation and chrome',
+		keys: ['nav', 'languages', 'socials', 'footerDestinations'],
+	},
+	{
+		title: 'Shared blocks',
+		keys: ['features', 'testimonials', 'stats', 'visionMission', 'ctaBackground'],
+	},
+	{ title: 'Contact page', keys: ['contactChannels', 'faqs'] },
+	{ title: 'Blog', keys: ['blogCategories'] },
+];
+
+/** One line per key for the index, where there is no room for the whole form. */
+export const settingNotes: Record<SiteSettingKey, string> = {
+	site: 'Name, tagline, the phone number and email, the postal address, and the review count in the header.',
+	nav: 'The links in the main navigation, in order.',
+	languages: 'The language switcher in the header.',
+	socials: 'The social links in the footer.',
+	footerDestinations: 'The destination links in the footer.',
+	features: '“The reason travellers choose Banggai Escape” — used on the home and about pages.',
+	testimonials: 'The reviews on the home page, with each reviewer’s avatar.',
+	stats: 'The counters in the about section.',
+	visionMission: 'The vision and mission cards on the about page.',
+	contactChannels: 'The cards on the contact page — phone, email, office, hours.',
+	faqs: 'The questions and answers shared by the home, about and contact pages.',
+	blogCategories: 'The filter chips above the blog listing.',
+	ctaBackground: 'The image behind the “plan your trip” banner on every page.',
+};
+
+/**
+ * Every key, in the order the groups present them.
+ *
+ * Derived from `settingGroups` so the index and the sidebar cannot disagree about the
+ * order. A key missing from a group is caught by a test rather than by a silent omission
+ * on the page.
+ */
+export const settingKeys: readonly SiteSettingKey[] = settingGroups.flatMap((group) => group.keys);
+
+/** Guards a route parameter before it reaches a spec lookup. */
+export function isSiteSettingKey(value: string | undefined): value is SiteSettingKey {
+	return typeof value === 'string' && Object.hasOwn(settingSpecs, value);
+}
+
 /** One row of the draft preview. */
 export type PreviewRow = {
 	readonly label: string;
@@ -228,7 +488,7 @@ export type PreviewRow = {
  * and reports what is stored, which is what makes a missing field visible before publish
  * rather than after.
  */
-export function describePayload(kind: ContentKind, payload: Record<string, unknown>): PreviewRow[] {
+export function describeFields(fields: readonly FieldSpec[], payload: unknown): PreviewRow[] {
 	const rows: PreviewRow[] = [];
 
 	const walk = (fields: readonly FieldSpec[], source: unknown, prefix: string) => {
@@ -314,9 +574,14 @@ export function describePayload(kind: ContentKind, payload: Record<string, unkno
 		}
 	};
 
-	walk(fieldSpecs[kind], payload, '');
+	walk(fields, payload, '');
 
 	return rows;
+}
+
+/** The same, for one content kind's payload. */
+export function describePayload(kind: ContentKind, payload: Record<string, unknown>): PreviewRow[] {
+	return describeFields(fieldSpecs[kind], payload);
 }
 
 /** One choosable image, as the media fields render it. */
@@ -406,57 +671,78 @@ function tokenise(path: string): { key?: string; index?: number }[] {
  * an administrator is not asked to understand why the form is blank. Once they remove it,
  * the count stays removed — that is what makes "you need at least one" reachable.
  */
-export function initialCounts(
-	kind: ContentKind,
-	payload: Record<string, unknown>,
-): Record<string, number> {
+export function countsFor(fields: readonly FieldSpec[], payload: unknown): Record<string, number> {
 	const counts: Record<string, number> = {};
 
 	const walk = (fields: readonly FieldSpec[], source: unknown, prefix: string) => {
 		for (const field of fields) {
 			const path = childPath(prefix, field.name);
 
-			if (field.type === 'list' || field.type === 'rows' || field.type === 'blocks') {
-				const value = readPath(source, field.name);
+			if (field.type === 'object') {
+				walk(field.fields, readPath(source, field.name), path);
+				continue;
+			}
 
-				counts[path] = Math.max(1, Array.isArray(value) ? value.length : 0);
+			if (field.type === 'blocks') {
+				const blocks = readPath(source, field.name);
 
-				if (field.type === 'rows') {
-					// Rows nest only inside a `steps` block, which is handled below.
-					continue;
+				counts[path] = Math.max(1, Array.isArray(blocks) ? blocks.length : 0);
+
+				// A block nests one level deeper than anything else: it owns the fields of
+				// whichever kind is selected for it, and those can be repeatable in turn
+				// (`steps.items`). Walking them here rather than in a second pass keyed on the
+				// content kind is what lets the same walk count a site setting.
+				for (const [index, block] of (Array.isArray(blocks) ? blocks : []).entries()) {
+					const spec = blockSpecs.find((entry) => entry.kind === String(readPath(block, 'kind')));
+
+					walk(spec?.fields ?? [], block, itemPath(path, index));
 				}
 
 				continue;
 			}
 
-			if (field.type === 'object') {
-				walk(field.fields, readPath(source, field.name), path);
+			if (field.type === 'list' || field.type === 'rows') {
+				const value = readPath(source, field.name);
+
+				counts[path] = Math.max(1, Array.isArray(value) ? value.length : 0);
 			}
 		}
 	};
 
-	walk(fieldSpecs[kind], payload, '');
-
-	// The article body nests one level deeper than the spec walk above, so blocks are
-	// counted separately.
-	if (kind === 'article') {
-		const blocks = readPath(payload, 'body');
-
-		for (const [index, block] of (Array.isArray(blocks) ? blocks : []).entries()) {
-			const path = itemPath('body', index);
-			const spec = blockSpecs.find((entry) => entry.kind === String(readPath(block, 'kind')));
-
-			for (const field of spec?.fields ?? []) {
-				if (field.type !== 'rows' && field.type !== 'list') continue;
-
-				const value = readPath(block, field.name);
-
-				counts[childPath(path, field.name)] = Math.max(1, Array.isArray(value) ? value.length : 0);
-			}
-		}
-	}
+	walk(fields, payload, '');
 
 	return counts;
+}
+
+/** The same, for one content kind's payload. */
+export function initialCounts(
+	kind: ContentKind,
+	payload: Record<string, unknown>,
+): Record<string, number> {
+	return countsFor(fieldSpecs[kind], payload);
+}
+
+/**
+ * A setting's value, wrapped in the object the path walkers navigate.
+ *
+ * A setting's stored value *is* its single root field's value, but every reader here —
+ * `readPath`, `countsFor`, the controls — starts from an object keyed by field name. So the
+ * read side wraps and the write side unwraps. Both directions live next to each other
+ * (`this` and `parseSettingForm`) because a mismatch between them is invisible until a form
+ * opens blank.
+ */
+export function settingFormValues(key: SiteSettingKey, value: unknown): Record<string, unknown> {
+	return { [key]: value };
+}
+
+/** The same, for one site setting's stored value. */
+export function initialSettingCounts(key: SiteSettingKey, value: unknown): Record<string, number> {
+	// Wrapped, because `countsFor` navigates from an object by field name: handed a bare
+	// array it would read `array['faqs']`, find nothing, and open the form with one blank row
+	// however many rows are stored.
+	// One spec in a list: a setting has a single root field, and `countsFor` walks field
+	// lists because that is what a content kind's payload needs.
+	return countsFor([settingSpecs[key]], settingFormValues(key, value));
 }
 
 /** The block kind selected for each position of the article body. */
@@ -490,14 +776,33 @@ export function initialBlockKinds(
  * The payload is returned even on a shape this could not finish, so the form can be
  * re-rendered with what the administrator typed.
  */
-export function parseContentForm(kind: ContentKind, form: FormData): Record<string, unknown> {
+export function parseFields(fields: readonly FieldSpec[], form: FormData): Record<string, unknown> {
 	const payload: Record<string, unknown> = {};
 
-	for (const spec of fieldSpecs[kind]) {
+	for (const spec of fields) {
 		payload[spec.name] = readField(spec, spec.name, form);
 	}
 
 	return payload;
+}
+
+/** The same, for one content kind's form. */
+export function parseContentForm(kind: ContentKind, form: FormData): Record<string, unknown> {
+	return parseFields(fieldSpecs[kind], form);
+}
+
+/**
+ * Parses one setting's form into the value its key stores.
+ *
+ * A setting has exactly one root field and the stored value *is* that field's value — an
+ * array for `faqs`, an object for `site`, a media id for `ctaBackground`. There is no
+ * wrapper object to unwrap, so `readField` on the root spec is the whole job and no
+ * per-key code is needed.
+ */
+export function parseSettingForm(key: SiteSettingKey, form: FormData): unknown {
+	const spec = settingSpecs[key];
+
+	return readField(spec, spec.name, form);
 }
 
 /** Reads the fields a block kind owns, and nothing else — the union is strict. */
@@ -527,7 +832,15 @@ function readBlock(
 function readField(spec: FieldSpec, path: string, form: FormData): unknown {
 	switch (spec.type) {
 		case 'text':
-		case 'words':
+		case 'words': {
+			const raw = text(form.get(path));
+
+			// Blank means *absent* for an `.optional()` contract field. Returning `''` would
+			// turn an untouched optional input into a validation error nobody can fix, since
+			// `z.string().min(1).optional()` rejects emptiness as well as absence.
+			return spec.optional && raw === '' ? undefined : raw;
+		}
+
 		case 'slug':
 			return text(form.get(path));
 

@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'vitest';
 import {
 	collectMediaIds,
 	collectSettingMediaIds,
 	rewriteMediaRefs,
 	rewriteSettingMediaRefs,
-} from './references';
+} from '@banggai/content-model';
+import { describe, expect, it } from 'vitest';
 
 const A = '11111111-1111-4111-8111-111111111111';
 const B = '22222222-2222-4222-8222-222222222222';

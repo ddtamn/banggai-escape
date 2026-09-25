@@ -1,21 +1,19 @@
 /**
- * Finding media references inside content.
+ * Finding and rewriting media references inside content.
  *
- * One walker serves two callers that must agree exactly:
+ * A media field is stored as a `media_assets` id and rendered as a URL, so three callers
+ * on opposite sides of the workspace need the same answer to "which fields are media":
  *
- * - the one-shot import, which swaps authored CDN values for `media_assets` ids;
- * - the deletion guard, which refuses to remove an asset that any content still points
- *   at.
+ * - the one-shot import, which swaps authored CDN values for ids;
+ * - the admin's deletion guard, which refuses to remove an asset anything still points at;
+ * - **the public site, which swaps ids back for URLs before it renders.**
  *
- * The field names come from `@banggai/content-model`, so there is exactly one
- * declaration of "which fields are media" across the workspace.
+ * It lives in the shared package rather than in `apps/admin` because that last caller
+ * cannot import from the admin app — and a second copy of this walker is how one side
+ * silently stops resolving a field the other side still writes.
  */
-import {
-	type ContentKind,
-	isMediaSettingKey,
-	mediaFieldsByKind,
-	mediaSettingFieldNames,
-} from '@banggai/content-model';
+import { type ContentKind, mediaFieldsByKind } from './content';
+import { isMediaSettingKey, mediaSettingFieldNames } from './settings';
 
 /** Which field names carry media, for a payload of this kind. */
 export function mediaFieldsFor(kind: ContentKind): readonly string[] {

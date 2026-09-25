@@ -10,10 +10,11 @@
  * (archiving) is the cheap, reversible action and is what an administrator normally
  * wants.
  */
+
+import { collectMediaIds, collectSettingMediaIds } from '@banggai/content-model';
 import { and, desc, eq, ilike, isNotNull, isNull, or, type SQL, sql } from 'drizzle-orm';
 import { db as defaultDb } from '$lib/server/db';
 import { contentEntries, contentRevisions, mediaAssets, siteSettings } from '$lib/server/db/schema';
-import { collectMediaIds, collectSettingMediaIds } from './references';
 
 /** A row as the library shows it. */
 export type MediaAsset = {

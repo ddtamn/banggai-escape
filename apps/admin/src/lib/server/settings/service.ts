@@ -15,7 +15,7 @@
  *
  * The values are media references in two of the thirteen keys (`testimonials[].avatar` and
  * `ctaBackground`), which is why the media library's delete guard walks settings as well
- * as content: see `$lib/server/media/references`.
+ * as content: see `collectSettingMediaIds` in `@banggai/content-model`.
  */
 import { parseSiteSetting, type SiteSettingKey } from '@banggai/content-model';
 import { eq } from 'drizzle-orm';

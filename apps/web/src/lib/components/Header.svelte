@@ -1,7 +1,15 @@
 <script lang="ts">
+import type { Language, NavItem, SiteProfile } from '@banggai/content-model';
 import { page } from '$app/state';
 import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
-import { nav, site } from '$lib/data/site';
+
+type Props = {
+	site: SiteProfile;
+	nav: NavItem[];
+	languages: Language[];
+};
+
+let { site, nav, languages }: Props = $props();
 
 let open = $state(false);
 
@@ -56,7 +64,7 @@ $effect(() => {
 		</nav>
 
 		<div class="flex items-center space-x-2 sm:space-x-5">
-			<LanguageSwitcher />
+			<LanguageSwitcher {languages} />
 
 			<a class="btn-gold hidden lg:inline-flex" href="/contact">Contact us</a>
 

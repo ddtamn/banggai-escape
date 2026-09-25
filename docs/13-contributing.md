@@ -53,15 +53,18 @@ Plus:
   accessibility problems. A new warning is a regression.
 - **No raw hex colours** in components; use the design tokens
   ([06-styling](./06-styling.md)).
-- **Content lives in `lib/data`**, not in markup ([08-content-data-layer](./08-content-data-layer.md)).
+- **Content lives in Neon, not in markup.** It is edited in the admin; a change to
+  `apps/web` that alters wording should be a change to a payload or a setting, not a
+  literal ([08-content-data-layer](./08-content-data-layer.md)).
 - **`DESIGN.md` is updated** if the change alters the design system (a new colour,
   pattern, or frame).
 - **The manual smoke test passes** for anything user-visible.
 
 ### Manual smoke test
 
-There is no automated test suite, so exercise the changed area by hand. With
-`pnpm dev` running:
+The public site has no automated test suite, so exercise the changed area by hand. With
+`pnpm dev` running — and a `DATABASE_URL` in `apps/web/.env`, without which every page is a
+500 by design:
 
 - `/` — hero, package grid, destinations, testimonials, FAQ, insights, CTA render.
 - `/packages` and `/destinations` and `/blog` — filters/search still work, and the
@@ -74,6 +77,9 @@ There is no automated test suite, so exercise the changed area by hand. With
   status 404 with the branded error page — header and footer intact, no bare
   “Not Found” copy. See [04-routing-and-pages](./04-routing-and-pages.md#the-error-page).
 - `/contact` — submitting swaps in the confirmation panel; `/about` renders.
+- Content that was just published in the admin appears. Remember the page you are
+  looking at may be up to **five minutes** old; a query string (`/blog?x=1`) is a
+  different cache key and reads straight from the database.
 
 If you change anything CSS-heavy, also do a final `pnpm build` and `pnpm preview`,
 because Tailwind emits at build time.
@@ -152,7 +158,9 @@ Full config reference: [10-tooling](./10-tooling.md#biome--lint--format).
 
 ### Changing a component
 
-- [ ] Props typed against the `lib/data` models, not re-declared shapes.
+- [ ] Props typed against the `@banggai/content-model` payload types, not re-declared
+      shapes, and no import from `$lib/server/` in a component (`lib/data/media.ts` is
+      the one module there a page may import, and only for decoration).
 - [ ] Shared classes from `layout.css` reused where they fit.
 - [ ] Design tokens, no raw hex.
 - [ ] Accessible: labels on inputs, `aria-*` on disclosure and current-page state.
@@ -162,21 +170,24 @@ Full config reference: [10-tooling](./10-tooling.md#biome--lint--format).
 
 - [ ] `src/routes/<segment>/+page.svelte` created; `<svelte:head>` sets a
       `Title — Banggai Escape` title and a description.
-- [ ] If dynamic, a sibling `+page.ts` resolving the slug or calling `error(404, …)`.
+- [ ] If dynamic, a sibling `+page.server.ts` loading from `$lib/server/content`, checking
+      `resolveSlugRedirect` before calling `error(404, …)`.
 - [ ] Uses `.section` + `.shell` (or the explicit `max-w-7xl px-6` frame).
-- [ ] Added to `nav` in `site.ts` **only if** it belongs in the header/footer.
+- [ ] Added to the `nav` setting **only if** it belongs in the header/footer.
 - [ ] `pnpm build` clean (routing changes need a real build).
+- [ ] The `data` it consumes is reached through `$derived`, so no
+      `state_referenced_locally` warning appears.
 
 ### Changing content
 
-- [ ] Entry added/changed in the right `lib/data` module with a unique, URL-safe
-      `slug`.
-- [ ] Media ids exist in `media.ts` (or a full `https://` URL is used).
+- [ ] Entry added or edited in the admin, with a unique, URL-safe `slug`.
+- [ ] Media chosen from the library, so the payload stores an asset id rather than a URL.
 - [ ] Blog posts: `category` matches a `blogCategories` pill, and every `h` block has
       a unique `id`.
-- [ ] Package ordering considered — moving an entry changes the home page, related
-      packages, and the article's "Popular Tour".
-- [ ] `pnpm check` clean.
+- [ ] Ordering considered — moving an entry changes the home page, related packages, and
+      the article's "Popular Tour".
+- [ ] **Published**, then seen on the site within five minutes. Publishing is the gate;
+      a draft never reaches a visitor.
 
 ### Touching styling
 
@@ -244,26 +255,25 @@ Good first contributions, roughly by size:
 
 On the site (`apps/web`):
 
-1. Replace the placeholder `'#'` social links in `site.ts`.
+1. Replace the placeholder `'#'` links in the `socials` site setting — Settings in the
+   admin, not code.
 2. Add Open Graph and Twitter Card tags to the layout.
 3. Wrap the mobile animations in a `prefers-reduced-motion` guard.
-4. Make `relatedPackages` / `relatedPosts` actually related (shared region or tags)
-   instead of "the first N others".
+4. Make the related-content loaders actually related (shared region or tags) instead of
+   "the first N by `sort_order`".
 5. Add a `handleError` hook so thrown errors are logged and sanitised.
-6. Cover the data-layer helpers (`formatPrice`, `durationLabel`, `tableOfContents`)
-   with tests — `apps/web` has no runner yet, so this means adding Vitest.
+6. Cover the presenters in `lib/content.ts` (`formatPrice`, `durationLabel`,
+   `tableOfContents`) and the read layer with tests — `apps/web` has no runner yet, so
+   this means adding Vitest.
 
 On the admin (`apps/admin`):
 
 7. Clean the scaffold's remaining formatting (`app.d.ts`, `utils.ts`, `+layout.svelte`,
    `vite.config.ts`, `wrangler.jsonc`, …) so `pnpm check:code` passes again.
-8. Rename the package to `@banggai/admin` and add matching root scripts.
-9. Build the CMS: CRUD, preview, publish/unpublish, media upload to R2, and analytics —
-   phases 2–5 of [15-admin-dashboard-plan](./15-admin-dashboard-plan.md#phased-delivery).
-10. Apply the requested shadcn-svelte preset and replace the minimal shell in
-    `(dashboard)/+layout.svelte` with the `dashboard-01` block.
-11. Delete the one-shot migration scripts (`apps/web/scripts/export-content.ts`,
-    `apps/admin/scripts/import-content.ts`) once the public site reads from Neon.
+8. Build the remaining CMS phase — analytics — phase 5 of
+   [15-admin-dashboard-plan](./15-admin-dashboard-plan.md#phased-delivery).
+9. Apply the requested shadcn-svelte preset and replace the minimal shell in
+   `(dashboard)/+layout.svelte` with the `dashboard-01` block.
 
 ## Related
 

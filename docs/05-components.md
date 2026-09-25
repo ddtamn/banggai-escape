@@ -27,14 +27,16 @@ Every component in this folder follows the same shape:
 
 ### `Header.svelte`
 
-The sticky forest bar. **No props.**
+The sticky forest bar. Props: `site: SiteProfile`, `nav: NavItem[]`,
+`languages: Language[]` — the chrome's settings, handed down by `+layout.svelte` from
+`+layout.server.ts`. It reaches for no content of its own.
 
 | Aspect | Detail |
 | --- | --- |
 | Position | `sticky top-0 z-50`, `h-20` (80 px), `bg-forest-deep`, `border-b border-forest-line/40` |
 | Frame | `mx-auto flex h-20 max-w-7xl items-center justify-between px-6` |
 | Logo | `/logomark.png` at `size-12`, linking home |
-| Nav | `hidden … lg:flex`, from `nav` in `lib/data/site.ts`; active state is `text-gold`, idle `text-stone-300 hover:text-white` |
+| Nav | `hidden … lg:flex`, from the `nav` prop (the `nav` site setting); active state is `text-gold`, idle `text-stone-300 hover:text-white` |
 | Active detection | `isActive()` reads `page.url.pathname` from `$app/state`: exact match for `/`, `startsWith` for everything else |
 | Utility cluster | `<LanguageSwitcher />`, a gold "Contact us" pill (`hidden lg:inline-flex`), and a `lg:hidden` menu trigger |
 | Mobile drawer | Full-screen `bg-black/60 backdrop-blur-sm` scrim over a forest panel that slides in; closes on backdrop click, link click, or **Escape**; `aria-expanded` on the trigger |
@@ -49,7 +51,8 @@ made the drawer full-bleed.
 
 ### `Footer.svelte`
 
-Brand + link columns. **No props.**
+Brand + link columns. Props: `site`, `nav`, `socials`, `footerDestinations` — again the
+layout's settings, not a loader of its own.
 
 - Forest field: `bg-forest-deep pt-16 pb-8`, `border-t border-forest-line/40`.
 - 12-column grid at `lg` collapsing to 2 columns: brand block (5 cols, with the
@@ -65,7 +68,8 @@ Brand + link columns. **No props.**
 
 ### `LanguageSwitcher.svelte`
 
-The EN/ID chip. **No props.**
+The EN/ID chip. Prop: `languages: Language[]`, passed through by `Header` from the
+`languages` site setting.
 
 - Local `$state` for the open flag and the selected language; selecting a language
   updates the chip and closes the menu. **There is no i18n layer** — the selection
@@ -218,7 +222,8 @@ type Props = {
 
 1. Create `src/lib/components/YourThing.svelte` with a local `type Props` and
    `$props()`.
-2. Type every content prop against the model in `lib/data` where possible
+2. Type every content prop against a `@banggai/content-model` payload type, never a
+   re-declared shape
    (`Package`, `Post`, `Destination`, `FaqItem`, …) instead of re-declaring shapes.
 3. Prefer the shared classes in `layout.css` (`.card`, `.btn-gold`, `.badge`,
    `.field`, …) over re-typing long utility strings.

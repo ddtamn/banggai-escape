@@ -1,11 +1,15 @@
 <script lang="ts">
+import type { TripType } from '@banggai/content-model';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
 import PageHero from '$lib/components/PageHero.svelte';
-import { ctaBackground } from '$lib/data/content';
 import { img, media } from '$lib/data/media';
-import { packages, type TripType } from '$lib/data/packages';
-import { site } from '$lib/data/site';
+
+let { data } = $props();
+
+const ctaBackground = $derived(data.settings.ctaBackground);
+const site = $derived(data.settings.site);
+const packages = $derived(data.packages);
 
 type Filter = 'All' | TripType;
 

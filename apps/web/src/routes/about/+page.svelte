@@ -1,8 +1,15 @@
 <script lang="ts">
 import CtaBanner from '$lib/components/CtaBanner.svelte';
-import { ctaBackground, features, stats, visionMission } from '$lib/data/content';
 import { img, media } from '$lib/data/media';
-import { site } from '$lib/data/site';
+
+let { data } = $props();
+
+// The site's shared editorial blocks, read once in the layout loader and inherited here.
+const ctaBackground = $derived(data.settings.ctaBackground);
+const features = $derived(data.settings.features);
+const site = $derived(data.settings.site);
+const stats = $derived(data.settings.stats);
+const visionMission = $derived(data.settings.visionMission);
 </script>
 
 <svelte:head>

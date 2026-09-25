@@ -20,7 +20,7 @@ banggai-escape/
 ├─ AGENTS.md                        # instructions for AI coding agents
 ├─ DESIGN.md                        # design system — source of truth
 ├─ README.md                        # quick start / scripts / deploy TL;DR
-├─ .migration/                      # one-shot content export/import snapshot — GIT-IGNORED
+├─ .migration/                      # leftover of the pre-Neon content export — GIT-IGNORED, unread
 ├─ biome.json                       # lint + format config for the whole workspace
 ├─ package.json                     # root scripts, Biome dev dep, engines, packageManager
 ├─ pnpm-workspace.yaml              # workspace packages + allowed build scripts
@@ -34,10 +34,10 @@ Three directories are worth calling out:
 
 - **`packages/content-model` is the only shared workspace package.** It holds the Zod
   schemas and inferred types for packages, destinations, articles, and site settings,
-  and nothing else — no SvelteKit, no database, no Tailwind. `apps/web` imports **types
-  only** from it (erased at build time); `apps/admin` imports the schemas and validates
-  with them. This is how the two apps agree on what a content item contains without
-  importing each other, which rule 7 forbids. See
+  plus the media-reference walker both apps need, and nothing else — no SvelteKit, no
+  database, no Tailwind. The admin validates with it before every write and the public
+  site validates with it again as each payload is read, which is how the two apps agree
+  on what a content item contains without importing each other (rule 7). See
   [14-admin-app](./14-admin-app.md#content-contracts-packagescontent-model).
 
 - **`.stitch/` is ignored** (`/.stitch` in `.gitignore`). It holds the original
@@ -57,33 +57,50 @@ apps/web/
 ├─ src/
 │  ├─ app.html                      # document shell: fonts, FA CDN, theme-color, viewport
 │  ├─ app.d.ts                      # App.Platform (env / ctx / caches / cf) + Cloudflare types
+│  ├─ hooks.server.ts               # the edge freshness policy: one Cache-Control header
 │  ├─ routes/
-│  │  ├─ +layout.svelte             # global chrome: Header · <main> · Footer + default meta
-│  │  ├─ +page.svelte               # /                       home
+│  │  ├─ +layout.server.ts          # loadSiteSettings() — the chrome every route inherits
+│  │  ├─ +layout.svelte             # Header · <main> · Footer + default meta
+│  │  ├─ +page.server.ts            # /  featured packages · curated destinations · latest posts
+│  │  ├─ +page.svelte               # /
 │  │  ├─ layout.css                 # Tailwind entry + @theme tokens + component classes
-│  │  ├─ about/+page.svelte         # /about
-│  │  ├─ contact/+page.svelte       # /contact
+│  │  ├─ about/+page.svelte         # /about                  (settings only — no loader)
+│  │  ├─ contact/+page.svelte       # /contact                (settings only — no loader)
 │  │  ├─ blog/
+│  │  │  ├─ +page.server.ts         # /blog                   published articles, in order
 │  │  │  ├─ +page.svelte            # /blog                   listing + filters
 │  │  │  └─ [slug]/
-│  │  │     ├─ +page.svelte         # /blog/:slug             article
-│  │  │     └─ +page.ts             # load(): getPost() or 404
+│  │  │     ├─ +page.server.ts      # /blog/:slug             article · related · popular · 301 or 404
+│  │  │     └─ +page.svelte         # /blog/:slug
 │  │  ├─ destinations/
+│  │  │  ├─ +page.server.ts         # /destinations           published destinations
 │  │  │  ├─ +page.svelte            # /destinations           listing + search
 │  │  │  └─ [slug]/
-│  │  │     ├─ +page.svelte         # /destinations/:slug     detail
-│  │  │     └─ +page.ts             # load(): getDestination() or 404
+│  │  │     ├─ +page.server.ts      # /destinations/:slug     detail · mosaic · related · 301 or 404
+│  │  │     └─ +page.svelte
 │  │  ├─ packages/
+│  │  │  ├─ +page.server.ts         # /packages               published packages
 │  │  │  ├─ +page.svelte            # /packages               listing + filters
 │  │  │  └─ [slug]/
-│  │  │     ├─ +page.svelte         # /packages/:slug         detail + gallery + booking
-│  │  │     └─ +page.ts             # load(): getPackage() or 404
+│  │  │     ├─ +page.server.ts      # /packages/:slug         detail · related · 301 or 404
+│  │  │     └─ +page.svelte         # /packages/:slug         detail + gallery + booking
 │  │  └─ +error.svelte              # branded 404 / 500; renders inside the layout
 │  ├─ lib/
 │  │  ├─ index.ts                   # placeholder re-export barrel (currently empty)
-│  │  ├─ components/                # shared UI (see 05-components.md)
-│  │  └─ data/                      # typed content (see 08-content-data-layer.md)
-│  └─ …                             # (no +layout.ts, hooks.server.ts, or +server.ts yet)
+│  │  ├─ content.ts                 # presenters: formatPrice, durationLabel, badgeDays, TOC, authorBio
+│  │  ├─ components/                # shared UI, props in (see 05-components.md)
+│  │  ├─ data/
+│  │  │  └─ media.ts                # GENERATED decoration manifest — the only data left here
+│  │  └─ server/
+│  │     ├─ db/index.ts             # lazy neon() client over $env/dynamic/private
+│  │     └─ content/                # the read layer (see 08-content-data-layer.md)
+│  │        ├─ index.ts             # the barrel pages import
+│  │        ├─ entries.ts           # published content, validated, media resolved
+│  │        ├─ settings.ts          # all thirteen site_settings rows
+│  │        ├─ redirects.ts         # slug_redirects, chains followed
+│  │        ├─ media.ts             # media_assets ids → URLs
+│  │        └─ issues.ts            # Zod issues → readable lines
+│  └─ …                             # (no +layout.ts and no +server.ts)
 ├─ static/
 │  ├─ favicon.png                   # browser tab icon
 │  ├─ apple-touch-icon.png          # iOS home-screen icon
@@ -117,16 +134,24 @@ Ten shared components. Each one and its props is documented in
 
 ### `src/lib/data/`
 
-Six modules. The full API is in [08-content-data-layer](./08-content-data-layer.md).
+The folder now holds exactly one module. Content comes from Neon; the full picture is in
+[08-content-data-layer](./08-content-data-layer.md).
 
-| File | Contents | Editable by hand? |
-| --- | --- | --- |
-| `site.ts` | Brand, nav, languages, socials, footer destination links | Yes |
-| `content.ts` | Features, testimonials, FAQs, stats, vision/mission, contact channels, blog categories, shared CTA background | Yes |
-| `destinations.ts` | 9 destinations + `getDestination`, `destinationImage` | Yes |
-| `packages.ts` | 8 packages + price/duration/badge formatters, `getPackage`, `featuredPackages`, `relatedPackages`, `packageImage` | Yes |
-| `posts.ts` | 3 posts + `author`, `getPost`, `relatedPosts`, `postImage`, `tableOfContents` | Yes |
-| `media.ts` | Image manifest: `img()`, `media`, `backgrounds` | **No — generated.** See below. |
+| File | Contents |
+| --- | --- |
+| `media.ts` | Decoration manifest: `img()`, `media`, `backgrounds` — generated, see below |
+
+The five typed modules that used to hold the content (`site.ts`, `content.ts`,
+`packages.ts`, `destinations.ts`, `posts.ts`) were deleted in Phase 6, along with the
+export that read them. Do not recreate them: two sources of truth for the content is the
+thing that switch existed to end.
+
+### `src/lib/server/`
+
+Server-only, and the only code in the app that reaches the database. `db/index.ts` owns
+the connection; `content/` is the read layer every page goes through. Neither may be
+imported from a component, and neither holds any presentation logic beyond turning a
+media id into a URL.
 
 ## `apps/admin/`
 
@@ -161,7 +186,7 @@ apps/admin/
 ├─ components.json                 # shadcn-svelte config (iconLibrary: lucide)
 ├─ drizzle.config.ts               # needs DATABASE_URL
 ├─ drizzle/                        # reviewable migrations + generated snapshots
-├─ scripts/                        # provision-admin, import-content, db-roles (one-shot tools)
+├─ scripts/                        # provision-admin, db-roles (one-shot tools)
 ├─ package.json · tsconfig.json · vite.config.ts (also Vitest config) · wrangler.jsonc
 └─ .env.example · .env.types · .gitignore · .vscode/
 ```
@@ -177,16 +202,18 @@ Paths in this table are relative to the app you are working in.
 
 | You are adding… | Put it in… | Then |
 | --- | --- | --- |
-| A page (`web`) | `apps/web/src/routes/<segment>/+page.svelte` | Add it to `nav` in `lib/data/site.ts` if it belongs in the header/footer |
-| A dynamic page (`web`) | `apps/web/src/routes/<segment>/[slug]/+page.svelte` + `+page.ts` | Export a `get<Thing>(slug)` lookup from `lib/data` |
+| A page (`web`) | `apps/web/src/routes/<segment>/+page.svelte` | Add it to the `nav` setting in the admin if it belongs in the header/footer |
+| A dynamic page (`web`) | `apps/web/src/routes/<segment>/[slug]/+page.svelte` + `+page.server.ts` | Load it with `loadPublishedEntry`, and check `resolveSlugRedirect` before 404ing |
 | Reusable UI (`web`) | `apps/web/src/lib/components/<Name>.svelte` | Type its props with a local `type Props` and `$props()` |
+| A new read (`web`) | `apps/web/src/lib/server/content/` | Export it from that folder's `index.ts`; only a `.server.ts` load may import it |
 | A shadcn component (`admin`) | added by the shadcn-svelte CLI into `apps/admin/src/lib/components/ui/` | Import from `$lib/components/ui/…` |
 | A design token or shared class (`web`) | `apps/web/src/routes/layout.css` (`@theme` / `@layer components`) | Update `DESIGN.md` if it changes the system |
 | A theme token (`admin`) | `apps/admin/src/routes/layout.css` (shadcn tokens) | Decide the brand-theming question first — see [14-admin-app](./14-admin-app.md#design-system-not-the-banggai-brand-system) |
-| Content for an existing collection (`web`) | The matching `apps/web/src/lib/data/*.ts` file | Run `pnpm --filter @banggai/web check` |
+| Content (`web`) | The admin's Packages / Destinations / Blog / Settings screens | Publish; the site shows it within five minutes |
 | A database table (`admin`) | `apps/admin/src/lib/server/db/schema.ts` | `pnpm --filter @banggai/admin db:generate`, review the SQL, then `db:migrate` |
 | A content field both apps need | `packages/content-model/src/` | Types in `apps/web` and validation in `apps/admin` follow automatically |
-| A new image (`web`) | `.stitch/gen-media.mjs` (if regenerating) or add the URL by hand to `media.ts` | Prefer `img()` over pasting raw URLs in components |
+| A content image (`web`) | The admin's media library (upload, then copy to R2) | Content stores the asset id; the read layer turns it into a URL |
+| A decoration image (`web`) | `.stitch/gen-media.mjs` (if regenerating) or add the URL by hand to `media.ts` | Keep `img()` calls to these — content images already arrive as URLs |
 | Tests | `apps/admin/src/**/*.{test,spec}.ts` (admin only) | `pnpm --filter @banggai/admin test` — see [14-admin-app](./14-admin-app.md#testing) |
 
 ## `worker-configuration.d.ts` — handle with care
@@ -223,9 +250,9 @@ pnpm gen
 | `apps/*/.wrangler/` | `wrangler dev` / `deploy` | No |
 | `node_modules/`, `build/`, `.output/` | tooling | No |
 | `.stitch/` | design exports | No |
-| `.env`, `.env.*` (except `.env.example`, `.env.test`, `.env.types`) | you | No — `apps/admin/.env` exists locally. `.dev.vars*` is git-ignored too |
+| `.env`, `.env.*` (except `.env.example`, `.env.test`, `.env.types`) | you | No — `apps/admin/.env` and `apps/web/.env` exist locally, each holding a `DATABASE_URL`. `.dev.vars*` is git-ignored too, and is what `wrangler dev` reads |
 | `apps/admin/drizzle/**` | `pnpm --filter @banggai/admin db:generate` | **Yes** — review the SQL before applying it |
-| `.migration/` | `pnpm --filter web migrate:export` | No — a one-shot snapshot, per developer |
+| `.migration/` | nothing, any more — a leftover of the pre-Neon export | No. May still exist on a machine that ran the migration; safe to delete |
 
 Biome additionally excludes `worker-configuration.d.ts`, `src/lib/data/media.ts`,
 `.agents/`, `.vscode/`, lockfiles, and build directories, because formatting

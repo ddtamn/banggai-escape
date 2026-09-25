@@ -3,17 +3,16 @@ import { fly } from 'svelte/transition';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import PostCard from '$lib/components/PostCard.svelte';
 import SectionHeader from '$lib/components/SectionHeader.svelte';
+import { authorBio, tableOfContents } from '$lib/content';
 import { img, media } from '$lib/data/media';
-import { packages } from '$lib/data/packages';
-import { author, relatedPosts, tableOfContents } from '$lib/data/posts';
-import { site } from '$lib/data/site';
 
 let { data } = $props();
 
+const site = $derived(data.settings.site);
 const post = $derived(data.post);
 const toc = $derived(tableOfContents(post));
-const related = $derived(relatedPosts(post.slug, 3));
-const popular = packages[0];
+const related = $derived(data.related);
+const popular = $derived(data.popular);
 
 let activeId = $state('');
 let tocOpen = $state(false);
@@ -162,7 +161,7 @@ const shares = [
 	<div class="overflow-hidden rounded-xl border border-stone-100 bg-white shadow-lg">
 		<img
 			class="h-auto max-h-[540px] w-full object-cover object-center transition-transform duration-500 hover:scale-[1.01]"
-			src={img(post.hero, 2000)}
+			src={post.hero}
 			alt={post.title}
 			width="2000"
 			height="1100"
@@ -243,7 +242,7 @@ const shares = [
 							{post.authorRole}
 						</span>
 					</div>
-					<p class="text-xs leading-relaxed text-stone-600">{author.bio}</p>
+					<p class="text-xs leading-relaxed text-stone-600">{authorBio}</p>
 				</div>
 			</div>
 		</article>
@@ -316,7 +315,7 @@ const shares = [
 						</span>
 						<img
 							class="h-44 w-full object-cover"
-							src={img(popular.image, 900)}
+							src={popular.image}
 							alt={popular.title}
 							loading="lazy"
 							width="900"

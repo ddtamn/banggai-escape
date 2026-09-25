@@ -142,15 +142,15 @@ root scripts delegate into whichever app they target.
 What the two apps share is deliberately narrow:
 
 - **`packages/content-model`** holds the content contracts — the Zod schemas and their
-  inferred types for packages, destinations, articles, and site settings. `apps/web`
-  imports **types only** from it (erased at build time, so the public bundle is
-  unchanged); `apps/admin` imports the schemas and validates with them before every
-  write. It is framework-agnostic by design: no SvelteKit, no database, no Tailwind.
+  inferred types for packages, destinations, articles, and site settings. Both apps
+  validate with them: `apps/admin` before every write, and `apps/web` again as each
+  payload comes back out of the database. It is framework-agnostic by design: no
+  SvelteKit, no database, no Tailwind.
 - Everything else is still separate: the admin has its own Drizzle schema, its own UI
   kit, and its own design tokens. No components, styles, or SvelteKit code are shared.
 
-The content *records* still live in `apps/web/src/lib/data/` — the package holds only
-what a record is, never the records themselves.
+The content *records* live in **Neon**, written by the admin and read by the public
+site. The package holds only what a record is, never the records themselves.
 
 When the admin needs another shape from the site, the move is the same: put the
 framework-agnostic part in `packages/content-model`, never import across apps.
@@ -160,20 +160,25 @@ framework-agnostic part in `packages/content-model`, never import across apps.
 Imports flow in one direction. Keep it that way.
 
 ```
-routes/  ──imports──▶  lib/components/  ──imports──▶  lib/data/
-   │                                                        ▲
-   └──────────────────────imports───────────────────────────┘
+routes/+*.server.ts  ──imports──▶  lib/server/content/  ──imports──▶  Neon
+        │                                  │
+        └──imports──▶  lib/components/  ◀──┘   (payloads, as props)
+                            │
+                            └──imports──▶  lib/data/media.ts   (decoration only)
 ```
 
 Rules the codebase follows:
 
-- **Pages are presentational.** Route files decide layout and compose components;
-  they do not invent copy. Every string comes from `lib/data`.
+- **Pages are presentational.** Route files decide layout and compose components from
+  what their loaders hand them. They do not invent copy and they do not query the
+  database; every string arrives as data or from a settings row.
 - **Components are props-in.** Shared components (`PackageCard`, `PostCard`,
   `DestinationCard`, `SectionHeader`, `PageHero`, `CtaBanner`, `Faq`) receive
-  typed props and render. They do not import collections of content themselves.
-- **Data has no UI.** `lib/data/*` imports nothing from `lib/components` or
-  `routes`. Its only outward dependency is `media.ts` for image ids.
+  typed props and render. They do not import content, and they do not reach for a
+  loader.
+- **Data has no UI.** `lib/server/content/*` imports nothing from `lib/components` or
+  `routes`, and is server-only. `lib/data/media.ts` is the one module left holding
+  data, and only the decoration images the design owns.
 - **No cross-app imports.** `apps/web` never reaches into `apps/admin`, and vice
   versa. Shared types belong in a `packages/*` workspace package.
 
@@ -190,19 +195,22 @@ request, which resolves a better-auth session before the route renders — see
 prerendering and no SSR opt-out anywhere in the web codebase:
 
 - no `export const prerender`, `ssr`, or `csr` appears in `apps/web/src`;
-- there is no `+layout.ts`, no `+server.ts`, and no `hooks.server.ts`;
-- only three `+page.ts` files exist, all of them local `load` functions for dynamic
-  routes (see [04-routing-and-pages](./04-routing-and-pages.md#dynamic-routes)).
+- there is no `+layout.ts` and no `+server.ts`;
+- content is read in `.server` loaders only — `+layout.server.ts` for the site's settings
+  and `+page.server.ts` for each page — so a page can never render from content that
+  reached the browser in a bundle;
+- `hooks.server.ts` exists for exactly one reason: it sets the edge cache's
+  `Cache-Control` header (see [08-content-data-layer](./08-content-data-layer.md#freshness-the-five-minute-edge-cache)).
 
 What that means in practice:
 
 | Behaviour | Detail |
 | --- | --- |
-| First paint | The Worker runs the component tree on the server and streams HTML. Data in `lib/data` is bundled into the Worker, so `load` functions are synchronous lookups — no network calls during render. |
+| First paint | The Worker runs the loaders, then the component tree, and streams HTML. Media ids are already swapped for URLs, so components render synchronously from props. |
 | Interactivity | Svelte hydrates on the client; `$state`/`$effect`-driven UI (filters, drawer, scroll spy, sticky bars) boots after hydration. |
-| Data loading | `load` runs **both** on the server and in the browser on client-side navigations. Because the dataset is a static array, the result is identical either way. |
-| Worker APIs | `platform.env`, `platform.ctx`, and `caches` are only present in the deployed Worker / `wrangler dev`, not in `pnpm dev`. Nothing in `src` uses them today, so development and production behave the same. |
-| Caching | No cache headers or `Cache-Control` are set by the app. Cloudflare's defaults for Workers + Assets apply. |
+| Data loading | Server loads run on the Worker against Neon. A client-side navigation re-fetches only `__data.json`, which carries no cache header and is therefore always fresh. |
+| Worker APIs | `platform.env`, `platform.ctx`, and `caches` are only present in the deployed Worker and under `wrangler dev`, not in `pnpm dev` — which is exactly why the edge cache is expressed as a response header the adapter understands rather than as a call to the Cache API. |
+| Caching | Five minutes at the edge, off in development. `Cache-Control: public, max-age=0, s-maxage=300, stale-while-revalidate=600`. |
 
 ## Request lifecycle
 
@@ -212,44 +220,55 @@ Browser request  GET /packages/paisu-pok-lake-day-trip
         ▼
 Cloudflare Worker  (_worker.js, built by adapter-cloudflare)
         │
-        ├─ SvelteKit router matches  src/routes/packages/[slug]/+page.svelte
+        ├─ Workers cache: a stored response for this URL and a document request?
+        │        └─ hit, and under five minutes old → served, Neon never read
         │
-        ├─ runs  src/routes/packages/[slug]/+page.ts  → load({ params })
-        │        └─ getPackage('paisu-pok-lake-day-trip')  ─┐
-        │                                                   │  misses?
-        │           error(404, …) ◀─────────────────────────┘
+        ├─ runs  src/routes/+layout.server.ts   ─┐
+        │        └─ loadSiteSettings()            │  one query for site_settings,
+        │           (nav · footer · brand · CTA)  │  whichever page asked
+        │        ─                                │
+        ├─ runs  src/routes/packages/[slug]/+page.server.ts
+        │        └─ loadPublishedEntries('package')  →  Neon, joined to its published revision
+        │             ├─ nothing at that slug?
+        │             │     └─ resolveSlugRedirect()  →  redirect(301, /packages/<new>)
+        │             │           └─ nothing recorded?  →  error(404, …)
+        │             ├─ parsePayload() each row         (the contract, before media)
+        │             └─ loadMedia(ids) → the R2 custom domain
         │
-        ├─ renders +page.svelte with data.pkg
-        │        └─ reads relatedPackages(pkg.slug) from the same dataset
+        ├─ renders +page.svelte with data.pkg · data.related · data.settings
         │
         ├─ wraps it in src/routes/+layout.svelte (Header · <main> · Footer)
         │
-        └─ emits HTML + the JS/CSS bundles, styled by src/routes/layout.css
+        └─ hooks.server.ts stamps Cache-Control → adapter stores it in the Workers cache
         │
         ▼
 Browser  →  hydrate  →  filters, drawer, scroll spy, sticky bars become live
 ```
 
-## Content-first architecture and its trade-offs
+## Where content lives, and its trade-offs
 
-The defining decision is: **all content is typed TypeScript in `lib/data`, and there
-is no backend or CMS.**
+The defining decision is: **all content lives in Neon, is authored in a separate admin
+app, and is read by the public site at request time.**
 
 Good consequences:
 
-- A single source of truth per collection; the type checker catches missing fields.
-- Zero runtime data fetching, no API layer, no database to run.
-- Content changes are code changes: they go through review and version control.
+- Editors publish without a developer, a pull request or a deploy.
+- One source of truth for both apps, and the contract is enforced twice — on the way in
+  by `publish`, and again on the way out as the site reads each payload.
+- A payload that cannot be rendered cannot be published, so the site never needs a
+  fallback for one.
+- The public bundle no longer carries the content.
 
 Costs, and where they would be addressed:
 
 | Cost | Current state | When it bites |
 | --- | --- | --- |
-| Non-developers cannot edit content | All copy is in `.ts` files | The moment marketing wants to publish without a PR → introduce a CMS or a git-based content pipeline. |
-| Content ships in the JS bundle | Collections are small (8 packages, 9 destinations, 3 posts) | Adding hundreds of entries would inflate the Worker bundle. |
-| URL/data shape is hand-maintained | New collection = new hand-written route pair + `+page.ts` | Fine at this size; revisit if routes become formulaic. |
+| The site cannot render without the database | A Neon outage is a 500, with no static fallback | Accepted deliberately: the alternative is two sources of truth, and a page quietly serving month-old copy is worse than an error that names the problem. |
+| Freshness is bounded | Five minutes at the edge | An urgent correction is visible "within five minutes", not instantly → shorten the TTL, or purge the URL from the admin on publish. |
+| Decoration images are still in code | Hero bands and mosaics live in `lib/data/media.ts` | The design changes; regenerate from Stitch, or move them into the media library. |
+| A new field is added in two places | The content-model schema and the admin's form spec | The compiler catches the second one, so this is a nuisance rather than a trap. |
 | No persistence | The contact form is a client-side success state only | It already needs a real destination — see below. |
-| No tests | Relies on types, svelte-check, and manual smoke tests | Add a test runner before the logic gets more complex. |
+| No public-site tests | Relies on types, svelte-check, `pnpm build`, and manual smoke tests | Add a browser suite for the web app, as the admin has. |
 
 ### Known functional gaps
 
@@ -262,18 +281,18 @@ These are intentional at the current stage, not oversights:
   and closes; there is no i18n layer and no translated content.
 - **The share buttons on an article do not share.** They render as buttons with
   `aria-label`s; no `navigator.share`/clipboard wiring exists yet.
-- **Social links are placeholders.** Every entry in `socials` (`site.ts`) points at
+- **Social links are placeholders.** Every entry in the `socials` setting points at
   `'#'`.
 
 ## How the pieces would extend
 
-- **Admin app.** Already scaffolded (see [14-admin-app](./14-admin-app.md)) but not
-  yet functional. Its next architectural step is a shared content model: lift the
-  `lib/data` types into a framework-agnostic `packages/*` package so both apps agree
-  on shapes instead of importing across apps.
-- **Real content source.** Replace the arrays in `lib/data` with a loader (CMS API,
-  or build-time files) while keeping the exported function signatures
-  (`getPackage`, `getPost`, …) stable — the routes would not need to change.
+- **Admin app.** Functional (see [14-admin-app](./14-admin-app.md)); not deployed yet.
+  Its next steps are analytics (Phase 5) and a staging branch with its own bindings
+  (Phase 6), not more architecture.
+- **Purging on publish.** The five-minute window is a ceiling, not a target. The next
+  refinement is for `publish` to call Cloudflare's cache-purge API for the URLs that
+  changed, which would make a correction visible immediately while keeping the TTL as a
+  safety net.
 - **Contact + booking.** Add a `+server.ts` endpoint or a form action (SvelteKit 2
   supports both). Remote functions would need `experimental.remoteFunctions` enabled
   in `vite.config.ts` first.

@@ -2,10 +2,13 @@
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import DestinationCard from '$lib/components/DestinationCard.svelte';
 import PageHero from '$lib/components/PageHero.svelte';
-import { ctaBackground } from '$lib/data/content';
-import { destinations } from '$lib/data/destinations';
 import { backgrounds, img } from '$lib/data/media';
-import { site } from '$lib/data/site';
+
+let { data } = $props();
+
+const ctaBackground = $derived(data.settings.ctaBackground);
+const site = $derived(data.settings.site);
+const destinations = $derived(data.destinations);
 
 let query = $state('');
 

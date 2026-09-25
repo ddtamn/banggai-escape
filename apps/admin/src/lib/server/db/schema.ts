@@ -72,9 +72,15 @@ export const contentEntries = pgTable(
  * one and moves `content_entries.published_revision_id` to it, which is what makes
  * history and rollback possible.
  *
- * `kind`, `slug` and `author_email` are denormalised on purpose. The public read path
- * looks a page up by `(kind, slug)` without joining the entry table, and the byline
- * has to survive the author's account being deleted.
+ * `kind`, `slug` and `author_email` are denormalised on purpose. A revision has to record the
+ * slug it was published under — that is what makes "this page used to live at /packages/<old>"
+ * answerable, and it is what the admin's revision list shows — and the byline has to survive
+ * the author's account being deleted.
+ *
+ * The public read path does **not** look a page up by this slug. It keys on the entry's slug
+ * and takes the payload from the revision `published_revision_id` names, because renaming a
+ * published entry moves the entry's slug before the next publish. See
+ * `apps/web/src/lib/server/content/entries.ts`.
  */
 export const contentRevisions = pgTable(
 	'content_revisions',

@@ -42,6 +42,9 @@ and served as assets by Cloudflare rather than by the Worker.
 		"binding": "ASSETS",
 		"directory": ".svelte-kit/cloudflare"
 	},
+	"vars": {
+		"MEDIA_PUBLIC_URL": "https://media.banggaiescape.com"
+	},
 	"workers_dev": true,
 	"preview_urls": true
 }
@@ -54,8 +57,12 @@ and served as assets by Cloudflare rather than by the Worker.
 | `compatibility_flags` | `nodejs_als` enables `AsyncLocalStorage` |
 | `main` | The Worker entry point, produced by the adapter |
 | `assets.binding` / `directory` | Static assets are served from the adapter output through an `ASSETS` binding |
+| `vars` | Non-secret configuration. `MEDIA_PUBLIC_URL` is the R2 custom domain that published media is read from |
 | `workers_dev` | Enables a `*.workers.dev` URL |
 | `preview_urls` | Enables per-version preview URLs |
+
+`DATABASE_URL` is deliberately **not** in this file: it is a secret, and it is read
+through `$env/dynamic/private` rather than from `platform.env` typings.
 
 `$schema` points into `node_modules`, so editors validate the file. It requires
 `pnpm install` to have run.
@@ -94,10 +101,38 @@ Useful for reviewing a branch. Promote it later with `wrangler versions deploy`.
 
 ## Environment and secrets
 
-**No environment variables are required.** The app reads no configuration at
-runtime — all content is bundled.
+Two values are required, and neither is committed:
 
-When something does need a secret:
+| Name | Kind | What it is |
+| --- | --- | --- |
+| `DATABASE_URL` | **secret** | The Neon connection the Worker reads published content with. In production this must be the `banggai_web` role — read-only, and **not** granted the auth tables. |
+| `MEDIA_PUBLIC_URL` | var | `https://media.banggaiescape.com`, the R2 custom domain published media is served from. Declared in `wrangler.jsonc`. |
+
+`banggai_web` does not exist until you make it, and its password cannot be read back
+afterwards, so it is a deliberate step rather than a side effect of deploying:
+
+```sh
+# 1. Create or converge the two roles and prove their grants hold. This resets the
+#    password of whichever roles you supply one for, so it is also the rotate command.
+WEB_DB_PASSWORD=$(openssl rand -hex 24) \
+  pnpm --filter @banggai/admin db:roles
+
+# 2. Build the connection string by swapping the user and password on DATABASE_URL
+#    (pooled for the Worker), then store it. Never put it in the repository.
+pnpm --filter @banggai/web exec wrangler secret put DATABASE_URL
+```
+
+The script prints no password and verifies itself by reconnecting as each role: it
+asserts that `banggai_web` **can** read `content_entries` and **cannot** read `user`,
+`session`, or write to `site_settings`.
+
+Locally, `vite dev` reads `apps/web/.env` and `pnpm preview` reads `apps/web/.dev.vars`
+(wrangler never reads `.env`). Both are git-ignored. They currently point at the same
+pooled connection as the admin, which is fine on a laptop and wrong in production — the
+deployed Worker must use `banggai_web`. See
+[12-troubleshooting](./12-troubleshooting.md#databasemedia-configuration).
+
+When something *else* needs a secret:
 
 ```sh
 pnpm --filter @banggai/web exec wrangler secret put MY_SECRET
@@ -127,7 +162,10 @@ pnpm --filter @banggai/web exec wrangler secret put MY_SECRET
    });
    ```
 
-   There is no `hooks.server.ts` today; add one if you need the value app-wide.
+   `hooks.server.ts` already exists (it stamps the edge cache header), so a value that
+   every request needs goes in its `handle`. For content specifically, prefer
+   `$env/dynamic/private` over `platform.env`: it is populated on Cloudflare *and* in
+   `pnpm dev`, which is why the read layer does not need a `platform` check.
 
 `platform` is `undefined` in `pnpm dev` (Node), so always optional-chain it.
 

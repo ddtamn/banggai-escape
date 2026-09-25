@@ -2,13 +2,13 @@
 import { fly } from 'svelte/transition';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
-import { ctaBackground } from '$lib/data/content';
+import { durationLabel, formatPrice } from '$lib/content';
 import { img, media } from '$lib/data/media';
-import { durationLabel, formatPrice, relatedPackages } from '$lib/data/packages';
-import { site } from '$lib/data/site';
 
 let { data } = $props();
 
+const ctaBackground = $derived(data.settings.ctaBackground);
+const site = $derived(data.settings.site);
 const pkg = $derived(data.pkg);
 
 /** The five-photo mosaic at the top of the detail page. */
@@ -31,7 +31,7 @@ const badges = [
 	{ icon: 'fa-solid fa-person-hiking', title: 'Tours', text: 'Expert Guides' },
 ];
 
-const related = $derived(relatedPackages(pkg.slug, 2));
+const related = $derived(data.related);
 
 let bookingCardEl = $state<HTMLElement | null>(null);
 let showBookingBar = $state(false);

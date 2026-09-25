@@ -1,124 +1,199 @@
 # 08 — Content & Data Layer
 
-All copy lives in typed modules under `apps/web/src/lib/data/`. Pages read from
-them; they never hardcode content. This document is the reference for those modules
-and the recipes for changing content.
+Content lives in **Neon**. It is authored and published through `apps/admin`, and the
+public site reads it on the server through a small read layer. No page hardcodes copy,
+and the typed TypeScript modules that used to hold it are deleted — there is no bundled
+copy of the content any more.
 
 ---
 
 ## The rule
 
 ```
-lib/data/*.ts  →  exports typed values and lookup helpers
-routes/*.svelte  →  imports them and renders
+Neon: content_entries · content_revisions · site_settings · media_assets · slug_redirects
+        │                                    (written only by apps/admin)
+        │  rows validated against @banggai/content-model
+        ▼
+apps/web/src/lib/server/content/     loaders → parsed payloads, media ids already URLs
+        │
+        ▼
++layout.server.ts · +page.server.ts  pick the items the page needs
+        │
+        ▼
+routes/**/+page.svelte · lib/components/**   render props; no content imports
 ```
 
-- **Content changes are code changes.** They go through review and version control.
+- **Content changes are admin changes.** Adding a package, fixing a typo or changing
+  the phone number goes through the back-office, not a pull request.
 - **Pages stay presentational.** If you find a string in a `.svelte` file that is
-  content (not UI chrome like "View Details"), it belongs in `lib/data`.
-- **Types are the schema.** `svelte-check` enforces that every entry has the right
-  shape, so a malformed entry fails `pnpm check`, not production.
+  content (not UI chrome like "View Details"), it belongs in the database.
+- **Types are the schema, and there is one of them.** `packages/content-model` holds
+  the Zod contracts. The admin validates against them before every write; the site
+  validates against them again as it reads. A page therefore cannot render a payload
+  that does not satisfy its contract — see [validation](#validation-runs-before-media-does).
 
 ---
 
-## Module reference
+## The read layer
 
-### `site.ts` — brand and chrome
+`apps/web/src/lib/server/content/` is the only place that touches the database.
+Everything there is server-only, reached through a `+page.server.ts` /
+`+layout.server.ts` load.
 
-| Export | Type | Purpose |
-| --- | --- | --- |
-| `site` | object | Name, tagline, locale, phone + `phoneHref`, email, `address: string[]`, `reviewCount` |
-| `nav` | `NavItem[]` | Header and footer menu. `{ label, href }` |
-| `languages` | `Language[]` | Language switcher options. `{ code, label, flag }` — UI only |
-| `socials` | `{ label, icon, href }[]` | Footer icon circles. `href` values are `'#'` placeholders |
-| `footerDestinations` | `NavItem[]` | Footer "Destinations" column (hand-maintained — keep it in step with `destinations.ts`) |
+### `../db/index.ts` — the connection
 
-### `content.ts` — shared editorial copy
+A lazily built `neon()` client reading `DATABASE_URL` from `$env/dynamic/private`.
+Raw SQL, deliberately: the admin owns the migrations and table declarations, and
+mirroring them here would be a second definition of the same schema to keep in step —
+for type safety the payloads do not get from it anyway, because they are validated
+against the contract as they are read.
 
-| Export | Type | Used by |
-| --- | --- | --- |
-| `ctaBackground` | `string` | The image used by **every** `CtaBanner` |
-| `features` | `Feature[]` | Home "Why travelers choose us", About "Reason Travelers Choose…" |
-| `testimonials` | `Testimonial[]` | Home testimonials |
-| `faqs` | `FaqItem[]` | Home FAQ accordion |
-| `stats` | `Stat[]` | About stats strip |
-| `visionMission` | `Feature[]` | About Vision & Mission cards |
-| `contactChannels` | `ContactChannel[]` | Contact "We'd Love to Hear From You" |
-| `blogCategories` | `string[]` | Blog filter pills |
+### `entries.ts` — published content
 
-`Feature` is `{ icon, title, text }`, where `icon` is a full Font Awesome class
-string (e.g. `'fa-regular fa-compass'`). `ContactChannel` is
-`{ icon, title, text, value, extra?, href }` — `extra` is the second address line
-and `href` is where the card links.
+| Export | Returns |
+| --- | --- |
+| `loadPublishedEntries(kind)` | Every published, unarchived entry of that kind, ordered by `sort_order` then `slug` |
+| `loadPublishedEntry(kind, slug)` | One, or `null` |
 
-### `packages.ts` — tour packages
+Each entry is `{ slug, sortOrder, featured, payload }`. Three properties matter:
+
+- **Only `content_entries.published_revision_id` is read.** A published page stays
+  live while its next edit is still a draft, and a revision that is not the pointer's
+  target is history. Selecting "the newest revision" would leak drafts onto the site.
+- **The public URL is `content_entries.slug`.** Renaming a published entry moves the
+  entry's slug immediately and records a redirect (see `redirects.ts`), so a renamed
+  page is live at its new URL before the next publish.
+- **Archived entries are invisible.** They keep their slug reserved but do not appear
+  in a list and 404 on their own URL.
+
+### `settings.ts` — the site's own content
+
+`loadSiteSettings()` reads all thirteen `site_settings` rows and returns them keyed by
+`SiteSettingKey`, each validated against its own contract. The mapped return type is
+what makes a new key in the contract a type error here until it is read.
+
+Unlike content, a setting has **no draft and no revision**: the admin validates on save
+and the site reads the row, so a change is live as soon as the edge cache expires. Every
+key must have a row — the settings screen writes all thirteen, and a missing one would
+render chrome with holes in it (an empty nav, a footer with no address), which looks
+like a CSS bug rather than a data problem.
+
+### `redirects.ts` — old URLs
+
+`resolveSlugRedirect(kind, slug)` returns the slug a recorded redirect leads to, walking
+chains so a page renamed twice lands on its current URL in a single 301. It returns
+`null` when nothing redirects away from the slug, when the row points at the slug
+already in use, or when the chain loops. Something that 404s for a *slug reason* is a
+404 only after this has been asked.
+
+### `media.ts` — ids to URLs
+
+A payload stores a `media_assets` id; a page renders a URL.
+
+| Export | Purpose |
+| --- | --- |
+| `loadMedia(ids)` | One query for every image on the page; returns a lookup whose `url(id)` throws if it was not asked for |
+
+Ids are de-duplicated and fetched at once, because a page's payloads share images
+heavily. A reference with **no row is an error, not a missing image**: the admin refuses
+to delete an asset anything points at, so a dangling id means the database is
+inconsistent, and saying so beats an `<img>` that silently fails.
+
+If an asset has an `object_key` (everything uploaded through the admin, and everything
+copied from the legacy host) its URL is `${MEDIA_PUBLIC_URL}/${object_key}` — the R2
+custom domain. An asset with an `external_url` is still served from wherever it always
+was, and wins over the object key.
+
+#### Validation runs before media does
+
+The stored payload is validated **first**, then its media ids are swapped for URLs. The
+order is not cosmetic: a stored media field is a `media_assets` id and is validated as a
+UUID, while a rendered one is a URL. Resolving first would hand `z.uuid()` a URL and fail
+every page on the site.
+
+A payload that fails validation throws, naming the item and the offending fields, and
+the request 500s. That is intentional. `publish` is the gate — the admin refuses to write
+a revision that does not satisfy the contract — so a stored payload that fails to parse
+means the contract moved underneath existing data, which is a bug to surface, not a page
+to render half of.
+
+---
+
+## Freshness: the five-minute edge cache
+
+`apps/web/src/hooks.server.ts` sets
+`Cache-Control: public, max-age=0, s-maxage=300, stale-while-revalidate=600` on rendered
+documents. The Cloudflare adapter's own Worker does the rest: it looks every request up
+in the Workers cache and stores a response only when it carries that header, so the
+policy is one header rather than a second cache implementation.
+
+Consequences worth knowing:
+
+- A publish reaches the public site **within five minutes**, with no build, no deploy
+  and nothing to purge by hand. That is the Phase 4 exit criterion.
+- Browser requests are not held (`max-age=0`); the edge is.
+- Only a document a browser navigated to is cached. SvelteKit fetches the same route as
+  `__data.json` during client-side navigation, with a `_routes` parameter that varies
+  with which layouts the browser already has, so those are left alone — which also means
+  clicking around the site always shows the newest content.
+- Redirects and errors carry no cache header and are never stored.
+- `vite dev` sets nothing: development has no edge, and a five-minute-old page while
+  editing a component looks like a broken build. To exercise the cache locally you need
+  the built Worker (`pnpm build && pnpm preview`).
+
+---
+
+## The payload contracts
+
+The authority is `packages/content-model/src/{content,settings}.ts`. The shapes below
+are a summary; the Zod schemas are strict, so an unknown key is a failure.
+
+`mediaFieldsByKind` (`package: ['image']`, `destination: ['image', 'gallery']`,
+`article: ['image', 'hero']`) and the settings' `avatar` / `ctaBackground` are declared
+in the contract because three callers have to agree exactly on which fields are media:
+the one-shot import, the admin's delete guard, and the public site's swap back to URLs.
+
+### `package`
 
 ```ts
-type TripType = 'Open Trip' | 'Private Trip';
-
-type ItineraryDay = { label: string; title: string; text: string };
-
 type Package = {
 	slug: string;
 	title: string;
-	subtitle: string;      // e.g. '3D2N'
+	subtitle: string;      // '3D2N'
 	region: string;
 	days: number;
-	nights: number;
-	tripType: TripType;
+	nights: number;        // 0 for a single-day trip
+	tripType: 'Open Trip' | 'Private Trip';
 	price: number;         // per person, in IDR
-	image: string;         // media asset id
-	groupSize: string;     // e.g. 'Min 8, Max 25'
+	image: string;         // media_assets id (a URL once rendered)
+	groupSize: string;     // 'Min 8, Max 25'
 	accommodation: string;
 	overview: string;
-	highlights: { title: string; text: string }[];
-	included: string[];
-	itinerary: ItineraryDay[];
-	featured?: boolean;    // currently unused by any page
+	highlights: { title: string; text: string }[];   // at least one
+	included: string[];                              // at least one
+	itinerary: { label: string; title: string; text: string }[];  // at least one
+	featured?: boolean;
 };
 ```
 
-Formatters and selectors:
-
-| Export | Behaviour |
-| --- | --- |
-| `formatPrice(price)` | `2850000` → `'IDR 2.850.000'` (id-ID grouping) |
-| `durationLabel(pkg)` | `'3 Days 2 Nights'`, or `'1 Day'` when `days === 1` |
-| `badgeDays(pkg)` | Zero-padded card badge: `'03 days'` / `'01 day'` |
-| `getPackage(slug)` | Lookup, `undefined` if absent |
-| `featuredPackages` | **`packages.slice(0, 4)`** — order matters (see below) |
-| `relatedPackages(slug, count = 2)` | Every package **except** `slug`, first `count` |
-| `packageImage(pkg, width = 900)` | Resolves `pkg.image` through `img()` |
-
-### `destinations.ts` — destinations
+### `destination`
 
 ```ts
-type QuickInfo = { bestTime: string; duration: string; highlights: string; accessibility: string };
-type Experience = { title: string; text: string };
-
 type Destination = {
 	slug: string;
 	name: string;
 	region: string;
 	tagline: string;
-	image: string;         // media asset id
+	image: string;
 	overview: string[];    // one string per paragraph
-	quickInfo: QuickInfo;
-	experiences: Experience[];
-	gallery: string[];     // media asset ids
-	featured?: boolean;    // currently unused by any page
+	quickInfo: { bestTime: string; duration: string; highlights: string; accessibility: string };
+	experiences: { title: string; text: string }[];  // at least one
+	gallery: string[];                               // at least one
+	featured?: boolean;
 };
 ```
 
-| Export | Behaviour |
-| --- | --- |
-| `getDestination(slug)` | Lookup, `undefined` if absent |
-| `destinationImage(destination, width = 900)` | Resolves `destination.image` through `img()` |
-
-The listing page searches `name + region + tagline`; the detail page renders
-`overview` paragraphs inside a `max-w-3xl` column.
-
-### `posts.ts` — blog articles
+### `article`
 
 ```ts
 type Block =
@@ -127,36 +202,30 @@ type Block =
 	| { kind: 'steps'; items: { title: string; text: string }[] }
 	| { kind: 'callout'; title: string; text: string };
 
-type Post = {
+type Article = {
 	slug: string;
-	category: string;      // must match a blogCategories pill (see gotcha below)
+	category: string;      // matched against a blogCategories pill (see gotcha 5)
 	tags: string[];
 	title: string;
 	excerpt: string;
-	image: string;         // card image, media asset id
-	date: string;
-	updated: string;       // display string, e.g. 'Updated 2 hours ago'
-	readTime: string;      // e.g. '14 min read'
-	author: string;
+	image: string;
+	date: string;          // display strings as published, not ISO dates
+	updated: string;
+	readTime: string;
+	author: string;        // the published byline, not the admin who pressed publish
 	authorRole: string;
-	hero: string;          // hero image, media asset id
-	body: Block[];
+	hero: string;
+	body: Block[];         // at least one
 };
 ```
 
-| Export | Behaviour |
-| --- | --- |
-| `author` | Shared byline object: `{ name, role, bio }` — the bio renders in the author card on every article |
-| `posts` | The collection |
-| `getPost(slug)` | Lookup, `undefined` if absent |
-| `relatedPosts(slug, count = 3)` | Every post **except** `slug`, first `count` |
-| `postImage(post, width = 900)` | Resolves `post.image` through `img()` |
-| `tableOfContents(post)` | Every `kind: 'h'` block, as `{ id, text }[]` |
+`content_revisions.author_email` records the administrator who pressed publish. It is
+audit data and is a different person from the byline; both are kept.
 
 #### The Block union
 
 `body` is an array of discriminated blocks, rendered by an `{#if}` chain in
-`routes/blog/[slug]/+page.svelte`. Each maps to a distinct layout:
+`routes/blog/[slug]/+page.svelte`:
 
 | `kind` | Renders as |
 | --- | --- |
@@ -165,14 +234,57 @@ type Post = {
 | `steps` | A 3-up grid of small titled cards |
 | `callout` | A gold left-border panel with a bold lead-in |
 
-Because `h` blocks drive both the anchoring and `tableOfContents()`, **the `id`
-must be unique and URL-safe** (lowercase, hyphenated). The scroll spy depends on
-those ids existing in the DOM.
+Because `h` blocks drive both the anchoring and `tableOfContents()`, **the `id` must be
+unique and URL-safe**. The scroll spy depends on those ids existing in the DOM.
 
-### `media.ts` — the image manifest
+### The settings keys
+
+| Key | Shape | Rendered by |
+| --- | --- | --- |
+| `site` | `{ name, tagline, locale, phone, phoneHref, email, address[], reviewCount }` | Every page's `<title>`, the footer, the home reviews link |
+| `nav` | `{ label, href }[]` | Header, mobile drawer, footer menu |
+| `languages` | `{ code, label, flag }[]` | Header switcher (UI only — no translation is wired up) |
+| `socials` | `{ label, icon, href }[]` | Footer icon circles |
+| `footerDestinations` | `{ label, href }[]` | Footer "Destinations" column |
+| `features` | `{ icon, title, text }[]` | Home "Why travelers choose us", About |
+| `testimonials` | `{ quote, name, country, avatar }[]` | Home |
+| `faqs` | `{ question, answer }[]` | Home accordion |
+| `stats` | `{ value, label }[]` | About stats strip |
+| `visionMission` | `{ icon, title, text }[]` | About Vision & Mission |
+| `contactChannels` | `{ icon, title, text, value, extra?, href }[]` | Contact |
+| `blogCategories` | `string[]` | Blog filter pills |
+| `ctaBackground` | media id | The image used by **every** `CtaBanner` |
+
+`icon` is a full Font Awesome class string (e.g. `'fa-regular fa-compass'`).
+
+---
+
+## Presenters: `apps/web/src/lib/content.ts`
+
+The pieces of the old modules that were never data — they take a payload and return a
+string or a list, so a card can format whatever it is handed.
+
+| Export | Behaviour |
+| --- | --- |
+| `formatPrice(price)` | `2850000` → `'IDR 2.850.000'` (id-ID grouping) |
+| `durationLabel(pkg)` | `'3 Days 2 Nights'`, or `'1 Day'` when `days === 1` |
+| `badgeDays(pkg)` | Zero-padded card badge: `'03 days'` / `'01 day'` |
+| `tableOfContents(post)` | Every `kind: 'h'` block, as `{ id, text }[]` |
+| `authorBio` | The author-card biography — the one piece of copy with no content-model field |
+
+Nothing in it touches media. A component renders the URL it was given; the width
+arguments the CDN used to take are gone, because an object in R2 has one size.
+
+---
+
+## `apps/web/src/lib/data/media.ts` — page decoration only
 
 > **Generated file. Do not edit by hand.** Regenerate with
 > `node .stitch/gen-media.mjs` after re-exporting designs from Stitch.
+
+This is what is left of the static data layer, and it keeps only the images the *design*
+owns rather than the editors: full-bleed hero backgrounds, the About photographs, the
+package-detail mosaic, the decorative arc clips. All of it is still on the AIDA CDN.
 
 ```ts
 const AIDA = 'https://lh3.googleusercontent.com/aida-public/';
@@ -185,172 +297,145 @@ export const media = { /* page-scoped, `as const` */ } as const;
 export const backgrounds = { /* page-scoped CSS background URLs */ } as const;
 ```
 
-- `media` is keyed **by page**, then by a slugified description of the image's alt
-  text. Page keys today: `home`, `about-us`, `contact`, `blog`,
-  `blog-details-how-to-get-to-banggai-islands`, `packages`,
-  `package-details-untouched-banggai-discovery`,
-  `destination-details-paisu-pok-lake`, `destinations`.
+- `media` is keyed **by page**, then by a slugified description of the image's alt text.
 - `backgrounds` holds full URLs (mostly Unsplash) for CSS `background-image` use.
-- **`img()` is idempotent**: it returns the id untouched if it already starts with
-  `http(s)`, so an entry can hold either an AIDA asset id or a full URL.
-- Keys are `as const`, so `media.home['banggai-escape-team-at-sea']` is
-  compile-time checked — a typo fails `pnpm check`.
+- **`img()` is idempotent**: an id that already starts with `http(s)` is returned
+  untouched.
+- Keys are `as const`, so `media.home['banggai-escape-team-at-sea']` is compile-time
+  checked — a typo fails `pnpm check`.
 
-Two things to know about the current image strategy:
-
-1. Assets are served from Google's **AIDA CDN**, not from the project. To self-host,
-   swap the `AIDA` constant for a local path (e.g. `/images/`) and place the files in
-   `apps/web/static/` — no component changes needed, because everything goes through
-   `img()`.
-2. There is only **one** `blog-details-*` and one `destination-details-*` bucket, and
-   the article page's `CtaBanner` image is hardcoded to the
-   `blog-details-how-to-get-to-banggai-islands` bucket for every post. New detail
-   pages reuse these buckets rather than getting their own.
+**Why widths still appear on some calls.** A *content* image comes from the read layer
+already resolved, so `img()` around it would be a no-op — pages pass those straight
+through. A *decoration* image is still an AIDA asset id, so it goes through `img(id,
+width)` and the CDN does the resizing. When a slot needs another size, that is the call
+to change.
 
 ---
 
-## Ordering matters: the package array
+## The retired modules are gone
 
-The order of `packages` is load-bearing in three places:
+The typed static content — `src/lib/data/{site,content,destinations,packages,posts}.ts` —
+was deleted in Phase 6, along with the one-shot migration pair that read it
+(`apps/web/scripts/export-content.ts` and `apps/admin/scripts/import-content.ts`, and
+their `migrate:export` / `migrate:import` scripts).
+
+What that means in practice:
+
+- **There is no rollback to a static site**, and no second copy of the content to
+  drift from Neon. The database is the only source of truth, so make sure the backup
+  you trust is a Neon one.
+- **A `.migration/` directory may still sit in the repo root** on a machine that ran the
+  export. It is git-ignored and nothing reads it any more; it is kept only as a
+  human-readable snapshot of what was migrated. Deleting it is safe.
+- **`node_modules` may still hold `tsx`** for `apps/admin`, which uses it for
+  `provision` and `db:roles` — `apps/web` no longer needs it at all.
+
+If you ever need to see what the site looked like before the switch, use git — the
+modules are in the history, not the working tree.
+
+---
+
+## Ordering matters
+
+Order comes from `content_entries.sort_order`, which the admin's list screen controls
+with move up / move down, and it is load-bearing in three places:
 
 | Consumer | Uses |
 | --- | --- |
-| Home "The Banggai Experience" | `featuredPackages` = `packages.slice(0, 4)` |
-| Package detail "You Might Also Like" | `relatedPackages(slug, 2)` = the first two entries that are not the current one |
-| Article aside "Popular Tour" | `packages[0]` |
+| Home "The Banggai Experience" | The first four published packages |
+| Package detail "You Might Also Like" | The first two published packages that are not the current one |
+| Article aside "Popular Tour" | The first published package (the card is omitted when there are none) |
 
-So moving a package to the top of the array promotes it to the home page **and** to
-the article sidebar. `relatedPackages` / `relatedPosts` do **not** compute real
-similarity — they are "the first N others". If you want genuine relatedness
-(same region, shared tags), that is the function to change.
+So moving a package to the top of the list promotes it to the home page **and** to the
+article sidebar. Neither list computes real similarity — they are "the first N others".
+If you want genuine relatedness (same region, shared tags), that is the loader to change.
+
+The home page's **four curated destinations** are different: they are named in
+`routes/+page.server.ts` and looked up by slug, so one that is archived or unpublished
+drops out of the row instead of leaving a hole. Their order there is the mosaic's
+left-to-right pairing, not `sort_order`.
 
 ---
 
 ## Recipes
 
-### Add a package
+### Change content
 
-1. Append an entry to `packages` in `packages.ts`, copying an existing one as a
-   template and filling **every** field. Pick a unique, URL-safe `slug` — it becomes
-   `/packages/<slug>`.
-2. Ensure the `image` id exists in `media.packages` (or pass a full `https://` URL,
-   which `img()` passes through).
-3. Place the entry where you want it in the array (see ordering above).
-4. Run `pnpm check`. Then visit `/packages` and `/packages/<slug>`.
+Use the admin: open the item, edit, **Save draft**, then **Publish**. The site shows it
+within five minutes. Nothing is rebuilt and nothing is deployed.
 
-```ts
-{
-	slug: 'new-island-escape',
-	title: 'New Island Escape',
-	subtitle: '2D1N',
-	region: 'Banggai Kepulauan',
-	days: 2,
-	nights: 1,
-	tripType: 'Open Trip',
-	price: 1950000,
-	image: media.packages['banggai-lagoon-with-boats'],
-	groupSize: 'Min 6, Max 16',
-	accommodation: 'Beachfront Lodge (1 Night)',
-	overview: 'A short, bright introduction…',
-	highlights: [{ title: 'Somewhere', text: 'What you do there.' }],
-	included: ['Accommodation', 'All transfers', 'Meals'],
-	itinerary: [
-		{ label: 'Day 1', title: 'Arrival', text: 'What happens on day one.' },
-		{ label: 'Day 2', title: 'Departure', text: 'What happens on day two.' },
-	],
-},
-```
+### Add a package, destination or article
 
-### Add a destination
+1. **New** in the matching admin section. A new item goes to the end of its list, so
+   inserting one never reshuffles the public order.
+2. Fill every field. Publish refuses — naming the fields — while anything required is
+   missing, which is the point: a draft may be incomplete, a published revision may not.
+3. For an image, upload it in the media library or pick an existing asset. Add alt text.
+4. **Publish**, then check the public page.
 
-1. Append to `destinations` in `destinations.ts` with a unique `slug`.
-2. `overview` is an **array of paragraphs**; `gallery` is an array of media ids —
-   the detail page de-duplicates them and tops the mosaic up from
-   `media.destinations`, so a short gallery still fills the grid.
-3. Optionally add it to `footerDestinations` in `site.ts` so it appears in the
-   footer.
-4. Run `pnpm check`; visit `/destinations` and `/destinations/<slug>`.
+### Add a new field to a collection
 
-### Add a blog post
-
-1. Append to `posts` in `posts.ts`. Set `category` to match one of the
-   `blogCategories` pills (see the gotcha below), and give `body` an array of
-   `Block`s.
-2. Every `kind: 'h'` block needs a unique, lowercased, hyphenated `id` — it becomes
-   the anchor and the TOC entry.
-3. Set `readTime`/`updated` as display strings (they are not computed).
-4. Run `pnpm check`; visit `/blog` and `/blog/<slug>`.
-
-```ts
-{
-	slug: 'packing-for-the-islands',
-	category: 'Travel Tips',
-	tags: ['Packing', 'Banggai'],
-	title: 'Packing for the Islands',
-	excerpt: 'One-paragraph summary used on cards and as the meta description.',
-	image: media.blog['how-to-get-to-banggai-islands'],
-	date: 'May 4, 2026',
-	updated: 'Updated 1 day ago',
-	readTime: '6 min read',
-	author: author.name,
-	authorRole: author.role,
-	hero: media['blog-details-how-to-get-to-banggai-islands'][
-		'lush-cascades-and-untouched-karst-valleys-across-banggai-kepulauan-central-sulawesi'
-	],
-	body: [
-		{ kind: 'p', text: 'Opening paragraph.' },
-		{ kind: 'h', id: 'what-to-bring', text: 'What to Bring' },
-		{ kind: 'steps', items: [{ title: 'Reef-safe sunscreen', text: 'Why it matters.' }] },
-		{ kind: 'callout', title: 'Bring cash', text: 'ATMs are only in Luwuk and Salakan.' },
-	],
-},
-```
+1. Add it to the Zod schema in `packages/content-model/src/content.ts`. Because the
+   schemas are `strictObject`, every stored payload must then carry it — which is what
+   makes the admin refuse to publish without it.
+2. Add it to the admin's form spec, or `svelte-check` will not let `settingSpecs` /
+   the content forms compile.
+3. Use it on the page. The loader's type follows the schema, so nothing else changes.
+4. If it is a media field, add its name to `mediaFieldsByKind` — that is what makes the
+   walker, the delete guard and the site all agree it is media.
 
 ### Change brand chrome
 
-- **Phone, email, address, review count** → `site` in `site.ts`. `contactChannels`
-  in `content.ts` reads `site.email` / `site.phone` / `site.address`, so those
-  update in both places automatically.
-- **Menu items** → `nav` in `site.ts` (drives the header, mobile drawer, and footer).
-- **Social links** → `socials`; replace the `'#'` placeholders with real URLs.
-- The **footer copyright year** is a hardcoded `const year = 2026` in
-  `Footer.svelte`, not derived from the system clock.
+Everything in the settings table is edited in **Settings** in the admin: phone, email,
+address, review count, the menu, social links, the footer destination column, the FAQ,
+the testimonials, the categories, the shared CTA background. The contact page's
+channels are stored values, not derived from `site`, so change them in the same screen.
 
-### Add or change an image
+The footer's copyright year is still a hardcoded `const year = 2026` in `Footer.svelte`.
 
-- **By hand (common):** add the asset id (or a full URL) to the right bucket in
-  `media.ts`. `img()` accepts both.
-- **Regenerate (rare):** re-export designs in Stitch, then run
-  `node .stitch/gen-media.mjs` from the repo root. `.stitch/` is git-ignored, so this
-  requires the local folder.
-- **Full-size vs. thumbnail:** `img(id, width)` controls the requested width.
-  Prefer passing a width that matches the slot (e.g. avatars at `120`–`200`, heroes
-  at `2000`, cards at the `900` default). Avoid upscaling a small export — the
-  packages hero comment in `routes/packages/+page.svelte` documents a case where a
-  512 px export was replaced with a larger shot for exactly this reason.
+### Add an image to a page's decoration
+
+Re-export the designs in Stitch, then run `node .stitch/gen-media.mjs` from the repo
+root. `.stitch/` is git-ignored, so this needs the local folder.
 
 ---
 
 ## Invariants and gotchas
 
-1. **Slugs are the URL and the key.** They must be unique within their collection,
-   lowercased, and hyphenated. Duplicate slugs silently shadow each other in
-   `find()`.
-2. **Blog categories are matched by prefix.** The filter pills are plural
-   (`'Destination Guides'`) while `post.category` is singular
-   (`'Destination Guide'`), and `routes/blog/+page.svelte` compares with the
-   trailing `s` stripped and `startsWith`. If you invent a new category, add the
-   pill to `blogCategories` **and** keep the singular/plural pairing consistent.
-3. **`heading` ids must be unique across a post**, because they are DOM ids.
-4. **`quickInfo.highlights` is a single string**, not an array
-   (`'Canoeing, Swimming, Photography'`) — it renders as one line in the Quick Info
-   card.
-5. **`itinerary[].label`** is a display string (`'Day 1'`), and the day accordion
-   opens the first item by index (`open={index === 0}`).
-6. **`media` keys are compile-time checked.** A typo is a build error, which is the
+1. **Slugs are the URL and the key.** They are unique per kind and lowercased and
+   hyphenated by the contract. Renaming a published item writes a `slug_redirects` row,
+   so old links keep working — do not delete those rows by hand.
+2. **A media field holds an id, never a URL.** The contract validates it as a UUID. A
+   URL in a stored payload fails the read and 500s the page rather than rendering a
+   broken image; the admin's import and media screens are what put ids there.
+3. **Drafts are never visible.** The site reads `published_revision_id` and nothing else.
+   "Published with unpublished changes" serves the published revision.
+4. **Archived entries are invisible.** They 404 and drop out of every list, and they
+   keep their slug reserved.
+5. **Blog categories are matched by prefix.** The filter pills are plural
+   (`'Destination Guides'`) while `post.category` is singular (`'Destination Guide'`),
+   and `routes/blog/+page.svelte` compares with the trailing `s` stripped and
+   `startsWith`. A new category needs the pill **and** the singular/plural pairing.
+6. **`heading` ids must be unique across an article**, because they are DOM ids.
+7. **`quickInfo.highlights` is a single string**, not an array
+   (`'Canoeing, Swimming, Photography'`) — it renders as one line.
+8. **`itinerary[].label`** is a display string (`'Day 1'`), and the day accordion opens
+   the first item by index.
+9. **`media` keys are compile-time checked.** A typo is a build error, which is the
    point — do not reach for `// @ts-ignore`.
-7. **`post.date` is unused in the UI** today; the byline shows `updated`. Keep it
-   populated anyway for future sort/display work.
+10. **The page you are looking at may be up to five minutes old.** If a publish seems
+    not to have landed, that is the cache, not the admin.
+
+## Known gaps
+
+- **Nothing renders the media library's alt text.** Images use content text as their
+  `alt` (`alt={pkg.title}`, `alt={destination.name}`), and every legacy row has a null
+  `alt_text`. The detail pages' images are therefore described by the item's title, not
+  by a description of the photograph.
+- **`post.date` is unused in the UI**; the byline shows `updated`. It stays populated for
+  future sort/display work.
+- **The stage and production Workers share one database.** There is no separate staging
+  branch wired up yet; see [11-deployment](./11-deployment.md).
 
 ## Related
 
@@ -358,3 +443,5 @@ similarity — they are "the first N others". If you want genuine relatedness
 - [05-components](./05-components.md) — the cards that consume these types.
 - [09-seo-and-metadata](./09-seo-and-metadata.md) — where `excerpt`, `tagline`, and
   `overview` become meta descriptions.
+- [14-admin-app](./14-admin-app.md) — the screens that write this content.
+- [15-admin-dashboard-plan](./15-admin-dashboard-plan.md) — the phase this landed in.

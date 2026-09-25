@@ -2,10 +2,14 @@
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import PageHero from '$lib/components/PageHero.svelte';
 import PostCard from '$lib/components/PostCard.svelte';
-import { blogCategories, ctaBackground } from '$lib/data/content';
 import { backgrounds, img } from '$lib/data/media';
-import { posts } from '$lib/data/posts';
-import { site } from '$lib/data/site';
+
+let { data } = $props();
+
+const blogCategories = $derived(data.settings.blogCategories);
+const ctaBackground = $derived(data.settings.ctaBackground);
+const site = $derived(data.settings.site);
+const posts = $derived(data.posts);
 
 /** The pill labels are plural where the post categories are singular. */
 const matchesCategory = (category: string, filter: string) =>

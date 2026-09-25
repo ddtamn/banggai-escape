@@ -2,21 +2,14 @@
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
 import SectionHeader from '$lib/components/SectionHeader.svelte';
-import { ctaBackground } from '$lib/data/content';
-import { img, media } from '$lib/data/media';
-import { packages } from '$lib/data/packages';
-import { site } from '$lib/data/site';
 
 let { data } = $props();
 
+const ctaBackground = $derived(data.settings.ctaBackground);
+const site = $derived(data.settings.site);
 const destination = $derived(data.destination);
-
 /** A representative mosaic drawn from the destination photography set. */
-const mosaic = $derived(
-	[...destination.gallery, ...Object.values(media.destinations).map((id) => img(id, 1200))]
-		.filter((src, index, all) => all.indexOf(src) === index)
-		.slice(0, 6),
-);
+const mosaic = $derived(data.mosaic);
 
 const quickInfo = $derived([
 	{ label: 'BEST TIME', value: destination.quickInfo.bestTime },
@@ -25,7 +18,7 @@ const quickInfo = $derived([
 	{ label: 'ACCESSIBILITY', value: destination.quickInfo.accessibility },
 ]);
 
-const related = $derived(packages.slice(0, 3));
+const related = $derived(data.related);
 </script>
 
 <svelte:head>
@@ -37,7 +30,7 @@ const related = $derived(packages.slice(0, 3));
 <section class="relative flex h-[480px] items-center justify-center overflow-hidden sm:h-[560px] lg:h-[640px]">
 	<img
 		class="absolute inset-0 size-full object-cover object-center"
-		src={img(destination.image, 2000)}
+		src={destination.image}
 		alt={destination.name}
 		width="2000"
 		height="1200"

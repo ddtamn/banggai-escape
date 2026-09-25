@@ -1,11 +1,15 @@
 <script lang="ts">
-import { type Language, languages } from '$lib/data/site';
+import type { Language } from '@banggai/content-model';
+
+let { languages }: { languages: Language[] } = $props();
 
 let open = $state(false);
-let current = $state<Language>(languages[0]);
+/** The chosen language's code, or null while the first offered language is in use. */
+let selected = $state<string | null>(null);
+const current = $derived(languages.find((language) => language.code === selected) ?? languages[0]);
 
 function select(language: Language) {
-	current = language;
+	selected = language.code;
 	open = false;
 }
 

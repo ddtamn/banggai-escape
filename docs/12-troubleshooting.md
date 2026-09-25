@@ -217,7 +217,26 @@ complete strings, so constructed names are never generated.
 
 **Symptom:** a broken image, or a card with an empty frame.
 
-**Causes and checks:**
+The site has **two** sources of images, and the checks differ. Work out which one the
+broken slot uses first: content images come from the database and are served from
+`media.banggaiescape.com`; decoration images (hero bands, the About photographs, the
+package mosaic) still come from the AIDA CDN and live in `lib/data/media.ts`.
+
+**If it is a content image** — a package card, a destination gallery, a testimonial
+avatar, the shared CTA background:
+
+1. **`MEDIA_PUBLIC_URL` is not set.** `loadMedia` throws naming the asset, and the page
+   500s rather than rendering a bare object key. Check `.env` / `.dev.vars` locally and
+   the `vars` block in `wrangler.jsonc` in production.
+2. **The URL 404s.** The object is not in the bucket. `curl -I` the URL the page renders
+   and compare its key against `media_assets.object_key`. This is the failure the
+   [promoted-media entry](#promoted-media-404s-from-the-media-domain) describes.
+3. **The page 500s naming a payload field.** The stored value is not a `media_assets` id.
+   A URL in a media field fails validation (`Invalid UUID`) on purpose — see
+   [08-content-data-layer](./08-content-data-layer.md). Re-import or re-point the asset; do
+   not "fix" it by loosening the contract.
+
+**If it is a decoration image:**
 
 1. **A media id typo.** Keys are `as const`, so this should be a *type* error — run
    `pnpm check`. If the key exists but points at a missing asset, you get a 404 from
@@ -227,10 +246,9 @@ complete strings, so constructed names are never generated.
    `media.contact[...]`, `media['about-us'][...]`, and the two `*-details-*` buckets.
    Using a `home` id from a `packages` context is a type error, but copying a wrong
    string literal is not always caught.
-3. **A full URL in a field that expects an id** is fine — `img()` passes `http(s)`
-   through untouched — but a *relative* path (e.g. `/images/foo.png`) is treated as
-   an asset id and prefixed with the AIDA base. Put local files in
-   `apps/web/static/` and either use an absolute URL or change the `AIDA` base.
+3. **A relative path** (e.g. `/images/foo.png`) is treated as an asset id and prefixed
+   with the AIDA base. Put local files in `apps/web/static/` and either use an absolute
+   URL or change the `AIDA` base.
 4. **The AIDA CDN rejected the width.** `img()` appends `=w<width>`; extremely large
    widths can fail. Match the width to the slot.
 
@@ -246,9 +264,14 @@ in preview. If the page renders unstyled, the build is stale or the CSS bundle w
 not regenerated — rebuild.
 
 Remember the runtime difference: `platform.env`, `ctx`, and `caches` exist in
-`wrangler dev`/production but are `undefined` in `pnpm dev` (Node). Always
-optional-chain `platform` — `apps/admin`'s media code reads
-`platform?.env.MEDIA_PUBLIC_URL` and `platform?.env.R2_MEDIA`.
+`wrangler dev`/production but are `undefined` in `pnpm dev` (Node). `apps/admin`'s media
+code reads `platform?.env.MEDIA_PUBLIC_URL` and `platform?.env.R2_MEDIA`; `apps/web` needs
+no `platform` at all, because its cache policy is a response header the adapter acts on.
+
+`apps/web` needs its own `.dev.vars` for the same reason the admin does — a Worker's `env`
+never comes from `.env`. If `pnpm preview` returns `500` with
+`DATABASE_URL is not set, so the site cannot read its content.`, that file is missing or
+empty. See the next entry.
 
 ---
 
@@ -283,6 +306,71 @@ BETTER_AUTH_SECRET="…"
 Production has no `.dev.vars` at all — the same values are Worker secrets set with
 `wrangler secret put`. See
 [14-admin-app](./14-admin-app.md#local-environment-files).
+
+---
+
+## Database and media configuration (`apps/web`)
+
+**Symptom:** every page on the public site is a `500`. The worker log (`/tmp/web-dev.log`,
+`pnpm preview`'s output, or `wrangler tail`) names one of:
+
+```
+DATABASE_URL is not set, so the site cannot read its content.
+MEDIA_PUBLIC_URL is not set, so media asset <id> has no public URL to render.
+The stored site setting “…” does not satisfy its contract…
+```
+
+**Cause:** since Phase 4 the public site renders from Neon, so it has no fallback. The
+first two messages are configuration; the third is data.
+
+**Fix:**
+
+| Message | Where it comes from |
+| --- | --- |
+| `DATABASE_URL is not set` | `apps/web/.env` (for `pnpm dev`) and `apps/web/.dev.vars` (for `pnpm preview`). Both are git-ignored; copy the pooled connection string from `apps/admin/.env`. |
+| `MEDIA_PUBLIC_URL is not set` | The `vars` block in `apps/web/wrangler.jsonc`, or the same key in `.env` / `.dev.vars`. It is `https://media.banggaiescape.com`. |
+| A setting or payload fails its contract | Real data drift. The message names the key and the offending field path; fix the row, or the contract, in that order of suspicion. |
+
+The site deliberately has **no static fallback**. Serving a bundled copy of the content
+when the database is unreachable would be two sources of truth and a page that is quietly
+months out of date — and since Phase 6 there is no copy left to serve (see
+[08-content-data-layer](./08-content-data-layer.md#the-retired-modules-are-gone)).
+
+Two things worth knowing about the connection itself:
+
+- Locally it is the same pooled string the admin uses, which means `neondb_owner` on a
+  laptop. **Production must use `banggai_web`** — the read-only role, created with
+  `pnpm --filter @banggai/admin db:roles` and stored with
+  `wrangler secret put DATABASE_URL`.
+- If role creation fails with `Role banggai_web does not exist. Set its password environment
+  variable to create it.`, pass `WEB_DB_PASSWORD` as the entry says. A password cannot be
+  read back out of Postgres, so the script can only set one.
+
+---
+
+## A publish has not appeared on the public site
+
+**Symptom:** the admin shows a page as published, but the public URL still shows the old
+version. Reloading changes nothing.
+
+**This is the design, for up to five minutes.** `apps/web/src/hooks.server.ts` sets
+`Cache-Control: public, max-age=0, s-maxage=300`, and the Cloudflare adapter's Worker keeps
+the rendered page in the Workers cache for that long. A publish is therefore visible
+"within five minutes", not instantly, and no deploy is involved either way.
+
+**To see it sooner:**
+
+- Be sure the admin's action really published — "Published — unpublished changes" is still
+the *previous* revision being served.
+- Any URL with a query string is a different cache key, so `?v=2` reads straight from the
+database and is the quickest way to confirm the data is right.
+- `Cache-Control: no-cache` on the request also bypasses the stored copy.
+- Restarting `wrangler dev` clears the local cache; the deployed Worker has no dev server to
+  restart, so wait the five minutes or add cache purging on publish (see
+  [02-architecture](./02-architecture.md)).
+
+**Related:** a bug that only reproduces on a second request, or content that looks one
+revision behind, is often the cache rather than the loader.
 
 ---
 

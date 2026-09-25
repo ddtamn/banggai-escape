@@ -1,6 +1,15 @@
 <script lang="ts">
 import { page } from '$app/state';
-import { site } from '$lib/data/site';
+
+/**
+ * The brand name is written out here rather than read from the settings, and this is the
+ * only place in the site that does so. The error page has to render when the layout's own
+ * loader failed — a missing database, an unreadable setting — and reaching for the settings
+ * that could not be loaded is how a helpful 500 turns into a blank page. The name is also a
+ * string that does not change; the layout already states the site's description in the same
+ * way.
+ */
+const siteName = 'Banggai Escape';
 
 const isNotFound = $derived(page.status === 404);
 
@@ -22,7 +31,7 @@ const shortcuts = [
 </script>
 
 <svelte:head>
-	<title>{page.status} — {site.name}</title>
+	<title>{page.status} — {siteName}</title>
 	<meta name="robots" content="noindex" />
 </svelte:head>
 

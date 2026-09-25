@@ -85,7 +85,7 @@ page. Match it.
 
 ## Content that maps to SEO fields
 
-The data layer already holds the strings SEO needs. Use them rather than
+The payload contract already holds the strings SEO needs. Use them rather than
 duplicating:
 
 | Field | Becomes |
@@ -168,8 +168,8 @@ Not bugs at this stage, but the obvious next steps, roughly in priority order:
 2. **`sitemap.xml`** and a `Sitemap:` line in `robots.txt`.
 3. **Canonical URLs** — `<link rel="canonical">` using `page.url` from `$app/state`.
 4. **Structured data (JSON-LD)** — `TravelAgency`/`LocalBusiness` for the brand,
-   `BlogPosting` for articles, `Product`/`TouristTrip` for packages. The typed data
-   in `lib/data` is already the right shape to serialise.
+   `BlogPosting` for articles, `Product`/`TouristTrip` for packages. The parsed
+   payloads the loaders return are already the right shape to serialise.
 5. **`lang` per locale** once the language switcher does something — `<html lang="en">`
    is hardcoded in `app.html`.
 

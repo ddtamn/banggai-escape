@@ -53,7 +53,7 @@ every record against the content-model schemas, seeds `content_entries` with a p
 `content_revisions` row plus `media_assets` entries, and is idempotent on `(kind, slug)`
 so it can be re-run safely. It prints a reconciliation table — counts per kind, slugs,
 featured flags, unresolved media — which is the review artifact. `tsx` is added as a
-devDependency in each app (`pnpm --filter web migrate:export`,
+devDependency in each app (`pnpm --filter @banggai/web migrate:export`,
 `pnpm --filter @banggai/admin migrate:import`), and both scripts are deleted after cutover, so no
 permanent cross-app import is created.
 
@@ -596,6 +596,56 @@ committed test.
 **Exit:** a publish from admin appears on the public site within five minutes and
 requires no marketing Worker redeploy; drafts remain invisible to visitors.
 
+**Built.** `apps/web/src/lib/server/content/` is the whole read path and the only code in
+the app that touches Neon: `entries.ts` (published content), `settings.ts` (all thirteen
+settings rows), `redirects.ts` (old URLs), `media.ts` (asset ids → URLs) and `issues.ts`.
+`+layout.server.ts` reads the settings once for every route, each route has a
+`+page.server.ts` that picks the items it needs, and the components stopped importing
+`$lib/data` — they take typed props. The retired arrays are no longer reachable from a
+route and are gone from the built Worker.
+
+Three decisions carry the phase:
+
+- **Validate, then resolve media.** A stored media field is a `media_assets` id and the
+  contract checks it as a UUID; a rendered one is a URL. Resolving first hands `z.uuid()` a
+  URL and 500s every page. This is the ordering bug that was written and then caught by
+  driving the site, not by reading it.
+- **The public URL is the entry's slug, and only `published_revision_id` is read.**
+  Renaming a published item moves its URL immediately and 
+  `resolveSlugRedirect` answers the old one with a 301 — following chains, and refusing to
+  follow a loop. A drafts-only edit leaves the served revision untouched.
+- **Freshness is one response header.** `hooks.server.ts` sets
+  `Cache-Control: public, max-age=0, s-maxage=300, stale-while-revalidate=600` and stops
+there, because `adapter-cloudflare`'s own Worker already looks every request up in the
+Workers cache and stores only what carries that header. Documents only: SvelteKit's
+`__data.json` navigations, redirects and errors carry none, so clicking around the site is
+always fresh.
+
+Configuration is `MEDIA_PUBLIC_URL` (a var in `wrangler.jsonc`) and `DATABASE_URL` (a
+secret). In production the connection must be the `banggai_web` role — read-only, and not
+granted the auth tables.
+
+**Verified** against `vite dev` and then against the built Worker under workerd: all
+thirteen routes 200 with real content and real `media.banggaiescape.com` URLs; every image
+on the home page decoded in Chromium (21/21, none broken); all three detail 404s keep their
+exact messages; a probe redirect 301s, a two-row chain collapses to one hop, and a loop
+404s. The cache was proven rather than assumed — a `site_settings` value was changed in the
+database and the same URL kept serving the old page while a previously unseen URL served the
+new one. `pnpm check`, `npx biome check apps/web` and `pnpm build` are clean.
+
+**Still open.** The deployed Worker does not exist yet, so `banggai_web`, the secret and
+the var are documented but unset. There is no test suite for the public site, nothing
+renders the media library's alt text, and the five-minute window is a ceiling rather than a
+purge-on-publish. The local `.env` reads as `neondb_owner`, which is fine on a laptop and
+must not be what the deployed Worker uses.
+
+**Phase 6 cleanup, done.** The five retired modules — `src/lib/data/{site,content,
+packages,destinations,posts}.ts` — and the one-shot migration pair
+(`apps/web/scripts/export-content.ts`, `apps/admin/scripts/import-content.ts`, and their
+`migrate:export` / `migrate:import` scripts) are deleted. Neon is now the only copy of the
+content: there is no rollback to the static site, so the database's own backups are the
+recovery path.
+
 ### Phase 5 — Cloudflare analytics
 
 - Add the WAE dataset binding to the public Worker and regenerate its Cloudflare
@@ -612,6 +662,9 @@ no analytics credential or personal data is exposed.
 
 ### Phase 6 — hardening and release
 
+- Delete the retired static content modules and the one-shot migration scripts. **Done** —
+  see the note at the end of Phase 4. `apps/web/src/lib/data/` now holds only the generated
+  decoration manifest, and `apps/web` no longer depends on `tsx`.
 - Run functional, browser, security, migration, and performance checks; verify mobile
   and keyboard workflows and check logs for failed Neon/R2/analytics operations.
 - Configure separate staging and production Worker bindings/secrets; deploy admin

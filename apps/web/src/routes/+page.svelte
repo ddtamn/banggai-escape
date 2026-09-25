@@ -5,18 +5,21 @@ import Faq from '$lib/components/Faq.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
 import PostCard from '$lib/components/PostCard.svelte';
 import SectionHeader from '$lib/components/SectionHeader.svelte';
-import { ctaBackground, faqs, features, testimonials } from '$lib/data/content';
-import { getDestination } from '$lib/data/destinations';
 import { img, media } from '$lib/data/media';
-import { featuredPackages } from '$lib/data/packages';
-import { posts } from '$lib/data/posts';
-import { site } from '$lib/data/site';
 
-const curated = ['paisu-pok-lake', 'pulau-dua', 'piala-waterfall', 'mokokawa-waterfall']
-	.map((slug) => getDestination(slug))
-	.filter((destination) => destination !== undefined);
+let { data } = $props();
 
-const insights = posts.slice(0, 3);
+const ctaBackground = $derived(data.settings.ctaBackground);
+const faqs = $derived(data.settings.faqs);
+const features = $derived(data.settings.features);
+const site = $derived(data.settings.site);
+const testimonials = $derived(data.settings.testimonials);
+
+// Which items these are is decided in the loader; the page renders what it is handed.
+const destinations = $derived(data.destinations);
+const packages = $derived(data.packages);
+const posts = $derived(data.posts);
+
 const stars = [1, 2, 3, 4, 5];
 const heroFacts = [
 	{
@@ -128,7 +131,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 			action={{ label: "View all packages", href: "/packages" }}
 		/>
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-			{#each featuredPackages as pkg (pkg.slug)}
+			{#each packages as pkg (pkg.slug)}
 				<PackageCard {pkg} />
 			{/each}
 		</div>
@@ -143,7 +146,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 			action={{ label: "View all destinations", href: "/destinations" }}
 		/>
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-			{#each curated as destination (destination.slug)}
+			{#each destinations as destination (destination.slug)}
 				<DestinationCard {destination} />
 			{/each}
 		</div>
@@ -259,7 +262,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 					<div class="flex items-center gap-3 border-t border-stone-100 pt-3">
 						<img
 							class="size-9 rounded-full object-cover"
-							src={img(testimonial.avatar, 120)}
+							src={testimonial.avatar}
 							alt={testimonial.name}
 							loading="lazy"
 							width="72"
@@ -325,7 +328,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 			action={{ label: "View All Articles", href: "/blog" }}
 		/>
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-			{#each insights as post (post.slug)}
+			{#each posts as post (post.slug)}
 				<PostCard {post} />
 			{/each}
 		</div>

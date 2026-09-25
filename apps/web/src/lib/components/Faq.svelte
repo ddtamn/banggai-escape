@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { FaqItem } from '$lib/data/content';
+import type { FaqItem } from '@banggai/content-model';
 
 type Props = {
 	items: FaqItem[];

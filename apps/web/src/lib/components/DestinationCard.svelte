@@ -1,21 +1,19 @@
 <script lang="ts">
-import { type Destination, destinationImage } from '$lib/data/destinations';
+import type { DestinationPayload } from '@banggai/content-model';
 
-type Props = { destination: Destination; href?: string };
+type Props = { destination: DestinationPayload; href?: string };
 
 let { destination, href = `/destinations/${destination.slug}` }: Props = $props();
-
-const image = $derived(destinationImage(destination, 1200));
 </script>
 
 <a
 	class="group relative block h-64 overflow-hidden rounded-3xl shadow-sm sm:h-72"
-	href={href}
+	{href}
 	aria-label="Explore {destination.name}"
 >
 	<img
 		class="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-		src={image}
+		src={destination.image}
 		alt={destination.name}
 		loading="lazy"
 		width="1200"

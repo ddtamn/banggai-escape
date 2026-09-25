@@ -29,11 +29,11 @@ illustrative — when a snippet and the source disagree, the source wins.
 - [05 Components](./05-components.md): The 10 shared components in apps/web with props, behaviour, and authoring conventions
 - [06 Styling](./06-styling.md): Tailwind v4 setup, the @theme token table, the component/utility class layer, the filter-bar pattern, styling conventions
 - [07 Design system](./07-design-system.md): A developer's map of DESIGN.md — where each rule is implemented, the non-negotiables, mobile patterns
-- [08 Content data layer](./08-content-data-layer.md): The typed content modules, their exported API and types, recipes for adding packages/destinations/posts/images, invariants
+- [08 Content data layer](./08-content-data-layer.md): The read layer and its exports, the payload contracts, the five-minute edge cache, recipes for adding packages/destinations/articles/images, invariants
 - [09 SEO, metadata and accessibility](./09-seo-and-metadata.md): Document shell, per-page head tags, image conventions, a11y patterns, crawling, roadmap
 - [10 Tooling](./10-tooling.md): pnpm workspace, Biome config, svelte-check and tsconfig, skipLibCheck, Vite/SvelteKit config, wrangler types, admin-only tooling
 - [11 Deployment](./11-deployment.md): Build output, wrangler.jsonc, build/preview/deploy, environment and secrets, the admin Worker, deploy checklist
-- [12 Troubleshooting](./12-troubleshooting.md): The wrangler types trap and 18 more known failure modes with causes and fixes
+- [12 Troubleshooting](./12-troubleshooting.md): The wrangler types trap and 20 more known failure modes with causes and fixes
 - [13 Contributing](./13-contributing.md): Workflow, definition of done, Conventional Commits, code style, task checklists, first contributions
 - [14 Admin app](./14-admin-app.md): The apps/admin scaffold — stack, better-auth, Drizzle/Neon, shadcn-svelte, scripts, testing, gaps and next steps
 - [15 Admin dashboard plan](./15-admin-dashboard-plan.md): Phased product and engineering plan for the CMS, Neon-backed publishing, R2 media, secure administration, and Cloudflare Workers Analytics Engine on the free tier
@@ -47,9 +47,12 @@ illustrative — when a snippet and the source disagree, the source wins.
 - **Never add `wrangler types --check` back into either app's `check`/`build`**, and
   clear `.svelte-kit/cloudflare` before regenerating types.
 - `apps/web` **`bg-white` is Warm Sand `#F7F3ED`**, and `text-white` is Warm Sand too.
-- Content lives in `apps/web/src/lib/data/`; pages are presentational.
+- Content lives in **Neon**, edited in `apps/admin`; `apps/web` reads it in
+  `+page.server.ts` / `+layout.server.ts` loaders through `src/lib/server/content/`.
+  Pages stay presentational, and the old `src/lib/data/*.ts` modules are retired.
 - Biome owns formatting (tabs, single quotes, 100 columns); run `pnpm fix`.
-- The admin package is named `admin`, so its filter is `pnpm --filter @banggai/admin …`.
+- The admin package is named `@banggai/admin`, so its filter is
+  `pnpm --filter @banggai/admin …` (and the root shortcuts are `pnpm admin:*`).
 - `pnpm check:code` currently fails on the unformatted admin scaffold; gate the site
   with `npx biome check apps/web` until that is cleaned up.
 

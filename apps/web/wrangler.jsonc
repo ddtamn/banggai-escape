@@ -8,6 +8,17 @@
 		"binding": "ASSETS",
 		"directory": ".svelte-kit/cloudflare"
 	},
+	// Where a published media object is read from: the R2 custom domain, not the bucket itself.
+	// A var rather than a constant so a local run can point somewhere else — and, because this
+	// site has no `/media/<key>` fallback of its own, so that a missing value is a startup error
+	// naming MEDIA_PUBLIC_URL rather than a page full of broken images. See
+	// docs/08-content-data-layer.md#media-ts--ids-to-urls.
+	//
+	// DATABASE_URL is deliberately absent: it is a secret, set with `wrangler secret put` in
+	// production and supplied by .env / .dev.vars locally.
+	"vars": {
+		"MEDIA_PUBLIC_URL": "https://media.banggaiescape.com"
+	},
 	"workers_dev": true,
 	"preview_urls": true
 }

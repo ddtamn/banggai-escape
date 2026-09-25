@@ -618,10 +618,16 @@ export type PackagePayload = z.infer<typeof packagePayloadSchema>;
 export function parsePayload(kind: ContentKind, value: unknown);
 ```
 
-`apps/web` imports **types only** (`import type { Package } from …`), which is erased at
-build time, so the public bundle does not grow and the contract cannot drift from what
-is rendered. Each of `apps/web/src/lib/data/*.ts` keeps its existing export names as
-aliases — `export type Package = PackagePayload` — so nothing downstream changed.
+`apps/web` uses the package as **values**, not just types. Its read layer validates every
+payload on the way out of the database with the same `parsePayload`, so the contract the
+admin enforced on the way in is checked again on the way out, and the components take
+the payload types directly as props (`PackagePayload`, `DestinationPayload`,
+`ArticlePayload`) with nothing in between to drift.
+
+The package also owns `references.ts` — the walker that answers "which fields are
+media". Three callers have to agree on it exactly (the one-shot import, the admin's
+delete guard, and the public site's swap back to URLs), and it lives here because that
+last caller cannot import from `apps/admin`.
 
 `apps/admin` imports the schemas as values and validates before every write, through
 `src/lib/server/content/validate.ts`:
@@ -683,18 +689,22 @@ The script interpolates a password into `alter role … password '…'`, which c
 bind parameter, so it accepts only `[A-Za-z0-9._~!*()-]{16,}` — an alphabet that needs
 no quoting. That is a real constraint on the generated value, not a style preference.
 
-### Migrating the static content
+### How the static content got here (the one-shot migration)
 
-A one-shot, cross-app workflow that exchanges a JSON snapshot rather than creating a
-permanent import between the two apps:
+Recorded because it explains the shape of what is in the tables. **The scripts are gone**
+— `apps/web/scripts/export-content.ts` and `apps/admin/scripts/import-content.ts` were
+deleted in Phase 6, along with the `migrate:export` and `migrate:import` scripts they ran.
+
+At the time they exchanged a JSON snapshot rather than an import between the two apps:
 
 ```sh
-pnpm --filter web migrate:export          # reads src/lib/data, writes ./.migration/
-pnpm --filter @banggai/admin migrate:import        # validates, seeds, reconciles
+pnpm --filter @banggai/web migrate:export   # read the static modules, write ./.migration/
+pnpm --filter @banggai/admin migrate:import # validate, seed, reconcile
 ```
 
-`.migration/` is git-ignored and holds one file per kind plus `settings.json`,
-`media.json`, and a `snapshot.json` of counts. Both scripts are deleted after cutover.
+`.migration/` was git-ignored and held one file per kind plus `settings.json`,
+`media.json`, and a `snapshot.json` of counts. A directory of that name may still sit in
+the repo root on the machine that ran the export; nothing reads it.
 
 - **The export validates as it writes.** Every record goes through the content-model
   schemas, so a contract that no longer matches the live content fails there, at the
@@ -912,8 +922,6 @@ The package is **`@banggai/admin`**, and the four common ones have root shortcut
 | `pnpm --filter @banggai/admin auth:schema` | Regenerate `auth.schema.ts` from `auth.ts` |
 | `pnpm --filter @banggai/admin provision` | Create/reset the administrator and grant membership: `-- <email> <password> ['Name']` |
 | `pnpm --filter @banggai/admin db:roles` | Create/converge `banggai_admin` and `banggai_web`, then verify the grants |
-| `pnpm --filter @banggai/admin migrate:import` | Import the `.migration/` snapshot (`-- --replace` to re-seed) |
-| `pnpm --filter web migrate:export` | Write the `.migration/` snapshot from the static modules |
 
 > **Neither script gates on `wrangler types --check`.** The scaffold's `build` and
 > `check` both started with it, but that check is state-dependent: once a build leaves
@@ -957,7 +965,7 @@ The package is **`@banggai/admin`**, and the four common ones have root shortcut
   yields an empty array. It also pins the wrap the settings read path depends on — handing
   the walker an unwrapped value opens a form with one row however many are stored.
 - `src/lib/server/content/validate.spec.ts` covers the content contracts: that each kind
-  is accepted as the static modules author it, and that a renamed field, a missing
+  is accepted as the migrated content is stored, and that a renamed field, a missing
   required field, an empty required collection, a value outside a union, and an unknown
   article block kind are all refused by name.
 - The scaffold's `src/lib/vitest-examples/` demos (a unit test and a component test)
@@ -1058,22 +1066,26 @@ introduces no new tokens: it is built from the same shadcn neutrals as everythin
 
 Ordered roughly by dependency:
 
-Phase 3 is complete in code, and its three loose ends are done: the package is
+Phases 0–4 are complete in code. The three Phase 3 loose ends are done: the package is
 `@banggai/admin` with root shortcuts, the browser checks are committed (`test:e2e`), and all
 29 legacy images were copied into the bucket (verified served from the custom domain with
-byte-identical content). The database no longer references the design-tool host, though
-`apps/web/src/lib/data/*` still does until Phase 4.
+byte-identical content). Phase 4 has landed as well — the public site renders from Neon, its
+read layer resolves stored `media_assets` ids through the web-side equivalent of
+`publicMediaUrl`, slug renames 301 to the new URL, and pages are served from a five-minute
+edge cache. The database no longer references the design-tool host; only the site's
+page-decoration images still come from the AIDA CDN. **Neither Worker is deployed yet.**
 
 1. **Write component tests.** The `client` Vitest project is configured and Chromium is
    installed, but no `.svelte.spec.ts` files exist yet. `forms.spec.ts` covers the form
    model's invariants, and the browser checks cover the screens end to end — so this is
    about rendering edge cases, not wiring.
-2. **Wire content to the site.** The marketing site currently renders from static
-   TypeScript in `lib/data`. Making the admin the source of truth means giving the
-   site a runtime data source — a significant architectural change; see
-   [02-architecture](./02-architecture.md#content-first-architecture-and-its-trade-offs).
-   Note that stored payloads now reference `media_assets` **ids**, so Phase 4's read path
-   must resolve them to URLs (`publicMediaUrl`) rather than using the value directly.
+2. **Deploy both Workers, with a least-privilege connection for the public one.** The
+   site's Worker still has no `banggai_web` role behind it — the role, the secret and
+   `MEDIA_PUBLIC_URL` are documented but unset — so Phase 6's staging/production split
+   is the gate before any of this is live. See
+   [11-deployment](./11-deployment.md#environment-and-secrets).
+   [02-architecture](./02-architecture.md) records what the site trades away by having no
+   static fallback.
 3. **Analytics — decided: Cloudflare Workers Analytics Engine (WAE).** The
    administrator requested a Cloudflare analytics option if it has a free tier. Use
    WAE to write validated page/content/CTA events from the public Worker and query

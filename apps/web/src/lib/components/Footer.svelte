@@ -1,5 +1,14 @@
 <script lang="ts">
-import { footerDestinations, nav, site, socials } from '$lib/data/site';
+import type { NavItem, SiteProfile, Social } from '@banggai/content-model';
+
+type Props = {
+	site: SiteProfile;
+	nav: NavItem[];
+	socials: Social[];
+	footerDestinations: NavItem[];
+};
+
+let { site, nav, socials, footerDestinations }: Props = $props();
 
 const year = 2026;
 </script>

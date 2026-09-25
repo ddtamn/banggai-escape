@@ -70,7 +70,7 @@ pnpm --filter @banggai/admin auth:schema
 pnpm --filter @banggai/admin provision  # create/reset the administrator: -- <email> <password>
 
 # shared contracts
-pnpm --filter content-model check   # tsc --noEmit
+pnpm --filter @banggai/content-model check   # tsc --noEmit
 ```
 
 `R2_MEDIA` (bucket `banggaiescape-media`) and `MEDIA_PUBLIC_URL` are declared in
@@ -80,15 +80,12 @@ pnpm --filter content-model check   # tsc --noEmit
 Worker's own `/media/<key>` route instead — the production hostname cannot serve a local
 R2 simulation. See [docs/14](./docs/14-admin-app.md#media-r2-and-the-media-library).
 
-Migration and database scripts (one-shot tools, deleted after the public site reads
-from Neon — see [docs/14](./docs/14-admin-app.md#migrating-the-static-content)):
+Database scripts:
 
 ```sh
 pnpm --filter @banggai/admin db:generate    # write a reviewable migration — read the SQL first
 pnpm --filter @banggai/admin db:migrate
 pnpm --filter @banggai/admin db:roles       # converge banggai_admin / banggai_web and verify them
-pnpm --filter web migrate:export   # static modules -> .migration/ (git-ignored)
-pnpm --filter @banggai/admin migrate:import # validate + seed; `-- --replace` re-seeds
 ```
 
 ## Definition of done
@@ -105,6 +102,14 @@ pnpm build        # expect: exit 0 — required for routing/config/CSS changes
   and the project holds at zero.
 - **Never report success without running the checks.** "It should work" is not a
   result.
+- **The three commands above are not enough for a change to how a page is rendered.**
+  They typecheck and build without ever running a loader. The site reads Neon at request
+  time, so a data or routing change also wants a real request against `pnpm dev` (which
+  needs `DATABASE_URL` and `MEDIA_PUBLIC_URL` in `apps/web/.env` — copy
+  `apps/web/.env.example`), and a `pnpm preview` look for anything that touches
+  `wrangler.jsonc` or `hooks.server.ts` (the built Worker reads `apps/web/.dev.vars`,
+  never `.env`). Use a browser-like `Accept: text/html` header when curling: the site
+  only caches a document, and it decides what a document is from that header.
 - **`pnpm check:code` currently fails on the unformatted `apps/admin` scaffold**
   (spaces/double-quotes vs. tabs/single-quotes). This is pre-existing and unrelated
   to your change. Until it is cleaned up, gate the site with
@@ -156,19 +161,33 @@ These are non-negotiable; they exist because each one has already caused a real 
 
 ### `apps/web`
 
-- **Content lives in `apps/web/src/lib/data/`** — pages are presentational and must
-  not hardcode copy. See [docs/08-content-data-layer.md](./docs/08-content-data-layer.md).
-  - `site.ts` (brand/nav/contact), `content.ts` (features, FAQs, testimonials, stats),
-    `destinations.ts`, `packages.ts`, `posts.ts`, `media.ts` (generated).
-  - **The shape of each record is not declared here.** It comes from
-    `@banggai/content-model` and is re-exported under the existing names
-    (`export type Package = PackagePayload`), so adding a field means editing the
-    schema in `packages/content-model`, not the module.
+- **Content lives in Neon**, is edited in the admin, and is read on the server through
+  `apps/web/src/lib/server/content/` — the only code in the app that may touch the
+  database. Pages are presentational and must not hardcode copy. See
+  [docs/08-content-data-layer.md](./docs/08-content-data-layer.md).
+  - **The shape of each record is not declared in the app.** It comes from
+    `@banggai/content-model`, and the read layer validates every payload against it as it
+    reads. Adding a field means editing the schema there, then the admin's form spec.
+  - `+layout.server.ts` loads the site's settings once and every route inherits them; a
+    page's own loader picks the content it renders. **Compute related lists in the
+    loader**, not in the component.
+  - Never import `$lib/server/**` from a component. The typed static modules that used to
+    hold the content (`site.ts`, `content.ts`, `packages.ts`, `destinations.ts`,
+    `posts.ts`) **were deleted in Phase 6** — do not add them back, and do not add a
+    second copy of any content. `lib/data/media.ts` *is* live, but only for the images the
+    design owns.
+  - A media field holds a `media_assets` id, and the read layer turns it into a URL. Do not
+    paste a URL into a payload.
 - **Shared UI lives in `apps/web/src/lib/components/`** — typed props, no content
-  imports. See [docs/05-components.md](./docs/05-components.md).
+  imports, and `$derived` for anything read from `data` (a plain destructure captures the
+  first value and warns). See [docs/05-components.md](./docs/05-components.md).
+- **Presenters live in `apps/web/src/lib/content.ts`** — pure functions over a payload
+  (`formatPrice`, `durationLabel`, `badgeDays`, `tableOfContents`).
 - **Design tokens live in `apps/web/src/routes/layout.css`** (`@theme`). Use tokens
   (`text-gold`, `bg-forest-deep`, `border-hairline`) — **never raw hex** in markup.
 - **Page frame is `.shell` inside `.section`** (`mx-auto max-w-7xl px-6`).
+- **Pages are edge-cached for five minutes** (`hooks.server.ts`). A publish appears within
+  that window; a query string is a different cache key when you need to see it sooner.
 
 ### Styling rules (summary — full detail in DESIGN.md and docs/06-styling.md)
 

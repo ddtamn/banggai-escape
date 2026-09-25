@@ -29,15 +29,14 @@ is **not yet production-ready**.
 ```
 apps/
 ├─ web/                     # @banggai/web — the marketing site (SvelteKit + Cloudflare Workers)
-│  ├─ src/                  # app.html, routes/, lib/{components,data}
+│  ├─ src/                  # app.html, routes/, lib/{components,server,content}
 │  ├─ static/               # favicon, logo assets, robots.txt
-│  ├─ scripts/              # migrate:export — one-shot content snapshot
-│  ├─ wrangler.jsonc        # Worker name, compatibility date, Assets binding
+│  ├─ wrangler.jsonc        # Worker name, compatibility date, Assets binding, MEDIA_PUBLIC_URL
 │  └─ worker-configuration.d.ts
-└─ admin/                   # admin — back-office (SvelteKit + better-auth + Drizzle/Neon)
+└─ admin/                   # @banggai/admin — back-office (SvelteKit + better-auth + Drizzle/Neon)
    ├─ src/lib/server/       # auth.ts, authz.ts, content/, db/ (auth schema is generated)
    ├─ drizzle/              # reviewable migrations + generated snapshots
-   ├─ scripts/              # provision-admin, import-content, db-roles
+   ├─ scripts/              # provision-admin, db-roles
    ├─ wrangler.jsonc        # Worker name "admin"
    └─ README.md             # how the app was scaffolded
 packages/
@@ -102,17 +101,12 @@ root shortcut for the common ones (`pnpm admin:dev`, `pnpm admin:check`, `pnpm a
 `pnpm admin:build`) — for anything else use a filter, for example
 `pnpm --filter @banggai/admin db:studio`.
 
-The database and migration scripts are one-shot tools; they are deleted once the public
-site reads from Neon instead of from `apps/web/src/lib/data`:
-
 | Command                          | What it does                                                    |
 | -------------------------------- | --------------------------------------------------------------- |
 | `pnpm --filter @banggai/admin db:generate` | Write a reviewable SQL migration — read it before applying it   |
 | `pnpm --filter @banggai/admin db:migrate`  | Apply pending migrations                                        |
 | `pnpm --filter @banggai/admin db:roles`    | Create/converge `banggai_admin` and `banggai_web`, then verify them |
 | `pnpm --filter @banggai/admin provision`   | Create or reset an administrator and grant them membership       |
-| `pnpm --filter web migrate:export`| Snapshot the static content modules to `.migration/`             |
-| `pnpm --filter @banggai/admin migrate:import` | Validate the snapshot, seed Neon, print the reconciliation   |
 
 ## Code quality
 
@@ -134,9 +128,12 @@ Run `pnpm check:code` before committing, or `pnpm fix` to let Biome apply its sa
 apps/web/
 ├─ src/
 │  ├─ app.html                 # Document shell (fonts, meta, theme-color)
+│  ├─ hooks.server.ts          # The five-minute edge-cache policy
 │  ├─ routes/
+│  │  ├─ +layout.server.ts     # Loads the site's settings once for every route
 │  │  ├─ +layout.svelte        # Header + Footer around every page
 │  │  ├─ layout.css            # Tailwind entry + @theme design tokens
+│  │  ├─ +page.server.ts       # Loaders: published packages, curated destinations, posts
 │  │  ├─ +page.svelte          # /                 home
 │  │  ├─ about/                # /about
 │  │  ├─ contact/              # /contact
@@ -144,21 +141,32 @@ apps/web/
 │  │  ├─ destinations/         # /destinations and /destinations/[slug]
 │  │  └─ packages/             # /packages and /packages/[slug]
 │  └─ lib/
-│     ├─ components/           # Header, Footer, PageHero, cards, CtaBanner, Faq, …
-│     └─ data/                 # Typed content: site, content, destinations, packages, posts, media
+│     ├─ components/           # Header, Footer, PageHero, cards, CtaBanner, Faq, … (props in)
+│     ├─ content.ts            # Presenters: formatPrice, durationLabel, badgeDays, TOC
+│     ├─ data/media.ts         # GENERATED decoration images — the only data left here
+│     └─ server/content/       # The read layer: entries, settings, redirects, media
 └─ static/                     # favicon, logo assets, robots.txt
 ```
 
 ### Content data layer
 
-All copy is typed and centralised under `src/lib/data/` so pages stay presentational:
+Content lives in **Neon** and is edited in `apps/admin`. The public site reads it on the
+server, validates every payload against the shared contract, and swaps stored media ids for
+URLs before rendering:
 
-- `site.ts` — brand, nav, languages, socials, footer links
-- `content.ts` — features, testimonials, FAQs, stats, contact channels, CTA backgrounds
-- `destinations.ts`, `packages.ts`, `posts.ts` — collection content
-- `media.ts` — generated image manifest with an `img()` helper
+- `src/lib/server/content/` — the read layer, and the only code in the app that touches the
+  database. `entries.ts` (published content), `settings.ts`, `redirects.ts`, `media.ts`
+- `src/routes/+layout.server.ts` — the chrome's settings, inherited by every route
+- `src/lib/content.ts` — presenters that take a payload, not a collection
+- `src/lib/data/media.ts` — generated, and now only the images the *design* owns
 
-Dynamic routes (`blog/[slug]`, `destinations/[slug]`, `packages/[slug]`) resolve their entry in a `+page.ts` `load` function.
+The old typed modules (`site.ts`, `content.ts`, `destinations.ts`, `packages.ts`, `posts.ts`)
+and the one-shot migration scripts that read them are **gone** — deleted once the site was
+reading from Neon. Neon is the only copy of the content.
+
+A dynamic route resolves its entry in a `+page.server.ts` loader, which 301s a renamed slug
+before it 404s. Read [08-content-data-layer](./docs/08-content-data-layer.md) for the whole
+picture.
 
 ### Design system
 

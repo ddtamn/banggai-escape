@@ -62,7 +62,7 @@ admin dashboard implementation.
 | 05 | [Components](./05-components.md) | Reuse or change a shared component |
 | 06 | [Styling](./06-styling.md) | Work with Tailwind v4, design tokens, and the class layer |
 | 07 | [Design system](./07-design-system.md) | Map `DESIGN.md` rules onto the code that implements them |
-| 08 | [Content & data layer](./08-content-data-layer.md) | Add or edit a package, destination, post, or image |
+| 08 | [Content & data layer](./08-content-data-layer.md) | Change a package, destination, article, or image — or work on how the site reads and caches them |
 | 09 | [SEO, metadata & accessibility](./09-seo-and-metadata.md) | Touch titles, descriptions, images, or a11y attributes |
 | 10 | [Tooling](./10-tooling.md) | Lint, format, typecheck, or reason about the config files |
 | 11 | [Deployment](./11-deployment.md) | Build, preview, ship, or configure Cloudflare |
@@ -100,13 +100,15 @@ Terms that appear throughout these docs and in the codebase.
 | **Shell / frame** | `mx-auto max-w-7xl px-6` — the 1280 px content frame used on every route. In CSS: `.shell` plus the `px-6` in `.section`. |
 | **Section rhythm** | The 64 / 80 / 96 / 112 px vertical band spacing wired into `.section` and `.section-wide`. |
 | **Runed / runes mode** | Svelte 5's signal-based reactivity (`$state`, `$derived`, `$effect`, `$props`). Forced on for all project files. |
-| **Data layer** | The typed content modules in `apps/web/src/lib/data/`. Pages read from these; no copy is hardcoded in markup. |
-| **Media manifest** | `src/lib/data/media.ts` — a generated map of image ids to CDN URLs, plus the `img()` URL builder. |
+| **Content model** | `packages/content-model` — the one definition of what a package, destination, article, or setting contains. Both apps validate against it. |
+| **Read layer** | `apps/web/src/lib/server/content/` — the only public-site code that touches the database. Validates payloads and resolves media ids to URLs. |
+| **Media manifest** | `src/lib/data/media.ts` — a generated map of decoration-image ids to CDN URLs, plus the `img()` builder. Content images come from the media library instead. |
+| **Edge cache** | The five-minute window a rendered page may be served from the Workers cache. One `Cache-Control` header in `hooks.server.ts`; see [08-content-data-layer](./08-content-data-layer.md). |
 | **Stitch** | The design tool that produced the original screen exports under a git-ignored `.stitch/` folder. `DESIGN.md` is derived from it. |
 | **Adapter** | `@sveltejs/adapter-cloudflare`, which builds the app into a Cloudflare Worker plus static assets. |
 | **The wrangler trap** | A known interaction between `wrangler types` output and `svelte-check`. Fully explained in [12-troubleshooting](./12-troubleshooting.md#the-wrangler-types--svelte-check-trap). |
 | **better-auth** | The auth library used by `apps/admin` (email + password, session cookies), wired through `hooks.server.ts` into `event.locals`. |
 | **Drizzle** | The TypeScript ORM used by `apps/admin`; its schema lives in `src/lib/server/db/schema.ts`, and `drizzle-kit` generates migrations. |
-| **Neon** | The managed Postgres database the admin connects to, over an HTTP driver (`@neondatabase/serverless`) suitable for Workers. |
+| **Neon** | The managed Postgres database both apps connect to, over an HTTP driver (`@neondatabase/serverless`) suitable for Workers. The admin writes it; the site reads it. |
 | **shadcn-svelte** | The component-library CLI/config behind the admin's UI; components are copied into `$lib/components/ui` rather than installed as a dependency. |
 | **`sv`** | The official Svelte CLI (`pnpm dlx sv create`) used to scaffold `apps/admin`. Its choices are recorded in `apps/admin/README.md`. |

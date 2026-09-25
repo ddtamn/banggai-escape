@@ -32,7 +32,9 @@ const [email, password, name] = process.argv
 	.filter((arg, index) => !(index === 0 && arg === '--'));
 
 if (!email || !password) {
-	console.error("usage: pnpm --filter @banggai/admin provision -- <email> <password> ['Display Name']");
+	console.error(
+		"usage: pnpm --filter @banggai/admin provision -- <email> <password> ['Display Name']",
+	);
 	process.exit(1);
 }
 

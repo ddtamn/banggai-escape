@@ -275,38 +275,59 @@ Choose Banggai Escape" (`features` in 1 / 2 / 3) → `CtaBanner`.
 
 ## Dynamic routes
 
-All three dynamic routes follow the same two-file pattern.
+All three dynamic routes follow the same two-file pattern: a **server** loader that reads
+Neon, and a component that renders what it was handed.
 
-**`+page.ts`** — a synchronous local `load` that resolves the slug or throws a 404:
+**`+page.server.ts`** — resolves the slug, prefers a redirect to a 404, and computes the
+related list from the same rows:
 
 ```ts
-import { error } from '@sveltejs/kit';
-import { getPackage } from '$lib/data/packages';
-import type { PageLoad } from './$types';
+import { error, redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
+import { loadPublishedEntries, resolveSlugRedirect } from '$lib/server/content';
 
-export const load: PageLoad = ({ params }) => {
-	const pkg = getPackage(params.slug);
-	if (!pkg) {
+export const load: PageServerLoad = async ({ params }) => {
+	const packages = await loadPublishedEntries('package');
+	const entry = packages.find((candidate) => candidate.slug === params.slug);
+
+	if (!entry) {
+		// A page that was published and renamed keeps working.
+		const movedTo = await resolveSlugRedirect('package', params.slug);
+		if (movedTo) redirect(301, `/packages/${movedTo}`);
+
 		error(404, `We could not find a package called “${params.slug}”.`);
 	}
-	return { pkg };
+
+	return {
+		pkg: entry.payload,
+		related: packages
+			.filter((candidate) => candidate.slug !== params.slug)
+			.slice(0, 2)
+			.map((candidate) => candidate.payload),
+	};
 };
 ```
 
-The return value is typed by `PageLoad` and read in the component as
-`let { data } = $props()` followed by `const pkg = $derived(data.pkg)`.
+The return value is typed by `PageServerLoad`, and the component reads it as
+`let { data } = $props()` followed by `const pkg = $derived(data.pkg)`. The settings the
+layout loaded are merged into the same `data`, so a page gets `data.settings` for free —
+and because `data` is reactive state, every value taken from it is declared with
+`$derived` (a plain destructure would capture the first value and warn).
 
-**`+page.svelte`** — renders from `data`, sets its own `<svelte:head>`, and pulls
-"related" content from the data layer rather than from `load`.
+**`+page.svelte`** — renders from `data` and sets its own `<svelte:head>`. It never
+imports content, and it never reaches for a loader.
 
 Conventions to keep:
 
 - Name the loaded thing after its type (`pkg`, `destination`, `post`) so downstream
   references read consistently.
-- Do **not** put related/derived content in `load` — the data layer is static, so
-  `relatedPackages()` and friends can be called during render.
+- **Compute related content in the loader**, not in the component: it comes from the same
+  rows the page already read, and one query then answers both. The one exception is
+  client-side filtering (the listings' search and filter pills), which is presentation and
+  stays in the component.
 - Keep the 404 message human and quotable; the current messages interpolate the
-  slug in curly quotes.
+  slug in curly quotes. A slug miss is only a 404 after `resolveSlugRedirect` has been
+  asked — see [08-content-data-layer](./08-content-data-layer.md).
 
 ## SEO habits per page
 
@@ -329,13 +350,15 @@ Detail pages derive it instead: `<title>{pkg.title} — {site.name}</title>` and
 Known missing pieces, in rough priority order:
 
 - **No central error logging.** `+error.svelte` renders errors, but nothing reports
-  them: there is no `handleError` in `hooks.server.ts` (and no `hooks.server.ts` at
-  all). Add one when error visibility matters.
+  them: `hooks.server.ts` sets one cache header and does nothing else. Add a `handleError`
+  when error visibility matters — and note that a 500 from a bad payload already names the
+  item and the offending fields in its message.
 - **No `sitemap.xml`.** `static/robots.txt` allows everything but does not point at
-  a sitemap.
-- **No redirects or trailing-slash policy** beyond SvelteKit defaults.
-- **No per-route `load` for listing pages.** Filtering and search are client-side
-  `$state`; a page reload does not preserve them and there are no shareable filtered
-  URLs.
+  a sitemap. Now that slugs can move, the redirect table would be a natural input to one.
+- **No trailing-slash or redirect policy beyond SvelteKit defaults.** Slug renames are
+  handled (a 301 from the old URL); anything else is not.
+- **The listings filter client-side.** Filtering and search are `$state`; a page reload
+  does not preserve them and there are no shareable filtered URLs. The rows themselves
+  come from the loader, so a server-side filter would be a small change.
 - **`svelte:head` has no Open Graph or Twitter Card tags** on any page.
 - **Nested `<main>` elements** on several pages (the layout already provides one).

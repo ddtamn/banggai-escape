@@ -1,11 +1,9 @@
 <script lang="ts">
-import { type Post, postImage } from '$lib/data/posts';
+import type { ArticlePayload } from '@banggai/content-model';
 
-type Props = { post: Post };
+type Props = { post: ArticlePayload };
 
 let { post }: Props = $props();
-
-const image = $derived(postImage(post));
 </script>
 
 <article
@@ -15,7 +13,7 @@ const image = $derived(postImage(post));
 		<a class="block h-44 overflow-hidden" href="/blog/{post.slug}">
 			<img
 				class="size-full object-cover transition-transform duration-300 hover:scale-105"
-				src={image}
+				src={post.image}
 				alt={post.title}
 				loading="lazy"
 				width="900"

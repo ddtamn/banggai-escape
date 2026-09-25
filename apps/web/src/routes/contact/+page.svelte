@@ -1,8 +1,12 @@
 <script lang="ts">
 import CtaBanner from '$lib/components/CtaBanner.svelte';
-import { contactChannels, ctaBackground } from '$lib/data/content';
 import { img, media } from '$lib/data/media';
-import { site } from '$lib/data/site';
+
+let { data } = $props();
+
+const contactChannels = $derived(data.settings.contactChannels);
+const ctaBackground = $derived(data.settings.ctaBackground);
+const site = $derived(data.settings.site);
 
 let submitted = $state(false);
 

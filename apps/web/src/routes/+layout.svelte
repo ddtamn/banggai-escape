@@ -3,7 +3,7 @@ import './layout.css';
 import Footer from '$lib/components/Footer.svelte';
 import Header from '$lib/components/Header.svelte';
 
-let { children } = $props();
+let { data, children } = $props();
 </script>
 
 <svelte:head>
@@ -15,8 +15,17 @@ let { children } = $props();
 	/>
 </svelte:head>
 
-<Header />
+<Header
+	site={data.settings.site}
+	nav={data.settings.nav}
+	languages={data.settings.languages}
+/>
 <main>
 	{@render children()}
 </main>
-<Footer />
+<Footer
+	site={data.settings.site}
+	nav={data.settings.nav}
+	socials={data.settings.socials}
+	footerDestinations={data.settings.footerDestinations}
+/>

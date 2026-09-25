@@ -29,18 +29,22 @@ pnpm install
 ```
 
 `pnpm install` installs the workspace root and every package matched by
-`pnpm-workspace.yaml` (`apps/*`) — today that is `apps/web` (`@banggai/web`) and
-`apps/admin` (`admin`). See [02-architecture](./02-architecture.md#the-workspace).
+`pnpm-workspace.yaml` (`apps/*`) — today that is `apps/web` (`@banggai/web`),
+`apps/admin` (`@banggai/admin`), and `packages/content-model` (`@banggai/content-model`).
+See [02-architecture](./02-architecture.md#the-workspace).
 
 `apps/admin` has its own database and auth setup. It needs a `.env`
 (copy `apps/admin/.env.example`) and generated auth/Worker types before its `check` and
 `build` scripts will pass — see
-[14-admin-app](./14-admin-app.md#gaps-and-next-steps). You do **not** need any of
-that to work on the public site.
+[14-admin-app](./14-admin-app.md#gaps-and-next-steps).
 
-**No environment variables are required for local development.** Runtime
-configuration lives in `apps/web/wrangler.jsonc`; see
-[11-deployment](./11-deployment.md#environment-and-secrets) for adding secrets.
+The **public site reads its content from the same Neon database**, so it needs a
+`DATABASE_URL` too: copy `apps/web/.env.example` and paste the connection string (the
+`banggai_web` role — read-only). `MEDIA_PUBLIC_URL` comes from
+`apps/web/wrangler.jsonc`, so it needs nothing local. Without `DATABASE_URL` the site
+still boots, but the first page render throws rather than serving stale copy — see
+[08-content-data-layer](./08-content-data-layer.md#the-read-layer) and
+[11-deployment](./11-deployment.md#environment-and-secrets).
 
 ## Run it
 
@@ -133,7 +137,7 @@ formatter-on-save.
 
 ## Your first change (a five-minute tour)
 
-A quick end-to-end loop that touches the data layer, the design tokens, and the
+A quick end-to-end loop that touches the design tokens, the content, and the
 checks.
 
 1. **Start the dev server.**
@@ -142,9 +146,10 @@ checks.
    pnpm dev
    ```
 
-2. **Edit content.** Open `apps/web/src/lib/data/packages.ts`, find the package
-   with `slug: 'untouched-banggai-discovery'`, and change its `price`. Save. The
-   home page and `/packages` update instantly — all copy is typed data, not markup
+2. **Edit content.** Content is not in this repo any more — it lives in Neon and is
+   edited in the back-office. In a second terminal run `pnpm admin:dev`, sign in, open
+   a package, change its price, then **Save draft** and **Publish**. Refresh the site:
+   the home page and `/packages` show the new price. No rebuild, no deploy
    ([08-content-data-layer](./08-content-data-layer.md)).
 
 3. **Edit a token.** Open `apps/web/src/routes/layout.css` and change
@@ -156,10 +161,10 @@ checks.
 
    ```sh
    pnpm check
-   pnpm check:code
+   npx biome check apps/web
    ```
 
-   Both should be clean. Now you know the loop: edit data or a component, watch it
+   Both should be clean. Now you know the loop: edit a component or a token, watch it
    hot-reload, then run the two checks.
 
 5. **Revert** your scratch edits (`git checkout -- .`) before you do real work.

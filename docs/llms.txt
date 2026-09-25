@@ -1,0 +1,59 @@
+# Banggai Escape — Engineering Documentation
+
+> Developer and agent index for the Banggai Escape pnpm workspace: a public SvelteKit 2
+> marketing site (`apps/web`) and a scaffolded back-office (`apps/admin`), both deployed
+> to Cloudflare Workers.
+
+Scope: developer/contributor documentation. Not end-user help. All content is
+Markdown in this folder; there is no docs website to crawl.
+
+Canonical entry points:
+
+- [`README.md`](./README.md) — documentation index, reading order, glossary
+- [`../AGENTS.md`](../AGENTS.md) — the operational contract for coding agents
+- [`../DESIGN.md`](../DESIGN.md) — design system, source of truth for `apps/web`
+- [`../README.md`](../README.md) — quick start, scripts, deploy TL;DR
+- [`../apps/admin/README.md`](../apps/admin/README.md) — how the admin app was scaffolded
+
+Conventions for agents: docs are numbered for reading order; every file states its
+**Scope**, names the paths that implement what it describes, and ends with a
+**Related** section. Relative links and heading anchors are verified. Snippets are
+illustrative — when a snippet and the source disagree, the source wins.
+
+## Docs
+
+- [01 Getting started](./01-getting-started.md): Prerequisites, install, all root and per-app scripts, the verification loop, editor setup, a first-change tour
+- [02 Architecture](./02-architecture.md): Workspace model, both apps' stacks, module boundaries, rendering model, request lifecycle, content-first trade-offs and known gaps
+- [03 Project structure](./03-project-structure.md): Annotated file tree for the repo and both apps; where new code goes; generated vs. ignored paths
+- [04 Routing and pages](./04-routing-and-pages.md): Full route table, current content slugs, page-by-page anatomy, dynamic-route pattern, SEO habits, routing gaps
+- [05 Components](./05-components.md): The 10 shared components in apps/web with props, behaviour, and authoring conventions
+- [06 Styling](./06-styling.md): Tailwind v4 setup, the @theme token table, the component/utility class layer, the filter-bar pattern, styling conventions
+- [07 Design system](./07-design-system.md): A developer's map of DESIGN.md — where each rule is implemented, the non-negotiables, mobile patterns
+- [08 Content data layer](./08-content-data-layer.md): The typed content modules, their exported API and types, recipes for adding packages/destinations/posts/images, invariants
+- [09 SEO, metadata and accessibility](./09-seo-and-metadata.md): Document shell, per-page head tags, image conventions, a11y patterns, crawling, roadmap
+- [10 Tooling](./10-tooling.md): pnpm workspace, Biome config, svelte-check and tsconfig, skipLibCheck, Vite/SvelteKit config, wrangler types, admin-only tooling
+- [11 Deployment](./11-deployment.md): Build output, wrangler.jsonc, build/preview/deploy, environment and secrets, the admin Worker, deploy checklist
+- [12 Troubleshooting](./12-troubleshooting.md): The wrangler types trap and 18 more known failure modes with causes and fixes
+- [13 Contributing](./13-contributing.md): Workflow, definition of done, Conventional Commits, code style, task checklists, first contributions
+- [14 Admin app](./14-admin-app.md): The apps/admin scaffold — stack, better-auth, Drizzle/Neon, shadcn-svelte, scripts, testing, gaps and next steps
+- [15 Admin dashboard plan](./15-admin-dashboard-plan.md): Phased product and engineering plan for the CMS, Neon-backed publishing, R2 media, secure administration, and Cloudflare Workers Analytics Engine on the free tier
+
+## Key facts an agent must not get wrong
+
+- Both apps run **SvelteKit 2 stable**; do not upgrade to `next`. `$lib` and inline
+  `sveltekit({...})` config both work.
+- **`skipLibCheck: true` is required** in every tsconfig — Cloudflare runtime types
+  otherwise collide with `lib.dom.d.ts`.
+- **Never add `wrangler types --check` back into either app's `check`/`build`**, and
+  clear `.svelte-kit/cloudflare` before regenerating types.
+- `apps/web` **`bg-white` is Warm Sand `#F7F3ED`**, and `text-white` is Warm Sand too.
+- Content lives in `apps/web/src/lib/data/`; pages are presentational.
+- Biome owns formatting (tabs, single quotes, 100 columns); run `pnpm fix`.
+- The admin package is named `admin`, so its filter is `pnpm --filter admin …`.
+- `pnpm check:code` currently fails on the unformatted admin scaffold; gate the site
+  with `npx biome check apps/web` until that is cleaned up.
+
+## Optional
+
+- [Repository README](../README.md): The human-facing quick start, kept short
+- [Admin README](../apps/admin/README.md): The `sv` generator command recorded by the scaffold

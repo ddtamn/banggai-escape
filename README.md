@@ -2,23 +2,48 @@
 
 Marketing website for **Banggai Escape** — *"Connecting Curious Travelers with Authentic Island Life."* A multi-page site covering tour packages, destinations, a travel blog, and contact details for Luwuk Banggai, Central Sulawesi.
 
-Built with **SvelteKit 5** (runes), **Tailwind CSS v4**, and the **Cloudflare adapter**, written in TypeScript and managed with **pnpm**.
+Built with **SvelteKit 2** (Svelte 5, runes mode), **Tailwind CSS v4**, and the **Cloudflare adapter**, written in TypeScript and managed with **pnpm**.
+
+Both workspace apps run the same stable SvelteKit 2 major.
+
+## Documentation
+
+This README is the quick start. The full engineering documentation lives in
+[`docs/`](./docs/README.md):
+
+- [Getting started](./docs/01-getting-started.md) · [Architecture](./docs/02-architecture.md) · [Project structure](./docs/03-project-structure.md)
+- [Routing & pages](./docs/04-routing-and-pages.md) · [Components](./docs/05-components.md)
+- [Styling](./docs/06-styling.md) · [Design system](./docs/07-design-system.md)
+- [Content & data layer](./docs/08-content-data-layer.md) · [SEO & accessibility](./docs/09-seo-and-metadata.md)
+- [Tooling](./docs/10-tooling.md) · [Deployment](./docs/11-deployment.md)
+- [Troubleshooting](./docs/12-troubleshooting.md) · [Contributing](./docs/13-contributing.md)
+- [The admin app](./docs/14-admin-app.md) · [Admin dashboard implementation plan](./docs/15-admin-dashboard-plan.md)
 
 ## Repository layout
 
-This is a **pnpm workspace**. The marketing site lives in `apps/web`; `apps/admin` is a reserved
-placeholder for the future back-office app and is intentionally not scaffolded yet.
+This is a **pnpm workspace** with two apps and one shared package. The public marketing
+site is `apps/web` (`@banggai/web`). `apps/admin` (`admin`) is the back-office — sign-in,
+a route guard, and the content schema are in place, but there is **no CMS UI yet**, so it
+is **not yet production-ready**.
 
 ```
 apps/
-├─ web/                     # the marketing site (SvelteKit + Cloudflare Workers)
+├─ web/                     # @banggai/web — the marketing site (SvelteKit + Cloudflare Workers)
 │  ├─ src/                  # app.html, routes/, lib/{components,data}
 │  ├─ static/               # favicon, logo assets, robots.txt
+│  ├─ scripts/              # migrate:export — one-shot content snapshot
 │  ├─ wrangler.jsonc        # Worker name, compatibility date, Assets binding
 │  └─ worker-configuration.d.ts
-└─ admin/                   # placeholder — see apps/admin/README.md
+└─ admin/                   # admin — back-office (SvelteKit + better-auth + Drizzle/Neon)
+   ├─ src/lib/server/       # auth.ts, authz.ts, content/, db/ (auth schema is generated)
+   ├─ drizzle/              # reviewable migrations + generated snapshots
+   ├─ scripts/              # provision-admin, import-content, db-roles
+   ├─ wrangler.jsonc        # Worker name "admin"
+   └─ README.md             # how the app was scaffolded
+packages/
+└─ content-model/           # @banggai/content-model — the content contracts both apps share
 biome.json                  # lint + format config for the whole workspace
-DESIGN.md                   # the design system all apps follow
+DESIGN.md                   # the design system the marketing site follows
 ```
 
 ## Tech stack
@@ -44,7 +69,13 @@ DESIGN.md                   # the design system all apps follow
 pnpm install
 ```
 
-That's it — no environment variables are required for local development. Runtime configuration lives in [`apps/web/wrangler.jsonc`](./apps/web/wrangler.jsonc); secrets for production deployments can be added there or with `wrangler secret put`.
+That's it for the marketing site — no environment variables are required to run
+`apps/web`. Runtime configuration lives in [`apps/web/wrangler.jsonc`](./apps/web/wrangler.jsonc);
+secrets for production deployments can be added there or with `wrangler secret put`.
+
+The admin app additionally needs a `.env` (copy [`apps/admin/.env.example`](./apps/admin/.env.example))
+with `DATABASE_URL`, `ORIGIN`, and `BETTER_AUTH_SECRET`, plus generated Worker and
+auth types before its checks pass — see [docs/14-admin-app.md](./docs/14-admin-app.md).
 
 ## Scripts
 
@@ -64,6 +95,22 @@ Root scripts delegate to `apps/web`, so the everyday commands are unchanged:
 | `pnpm fix`         | Apply every safe Biome fix (lint + format + import sorting).                     |
 
 Anything app-specific can be run directly with a filter, for example `pnpm --filter @banggai/web check:watch`.
+
+The admin app is **not** wired into the root scripts (and its package is named
+`admin`, not `@banggai/admin`), so run it with its own filter — for example
+`pnpm --filter admin dev`, `pnpm --filter admin test`, `pnpm --filter admin db:studio`.
+
+The database and migration scripts are one-shot tools; they are deleted once the public
+site reads from Neon instead of from `apps/web/src/lib/data`:
+
+| Command                          | What it does                                                    |
+| -------------------------------- | --------------------------------------------------------------- |
+| `pnpm --filter admin db:generate` | Write a reviewable SQL migration — read it before applying it   |
+| `pnpm --filter admin db:migrate`  | Apply pending migrations                                        |
+| `pnpm --filter admin db:roles`    | Create/converge `banggai_admin` and `banggai_web`, then verify them |
+| `pnpm --filter admin provision`   | Create or reset an administrator and grant them membership       |
+| `pnpm --filter web migrate:export`| Snapshot the static content modules to `.migration/`             |
+| `pnpm --filter admin migrate:import` | Validate the snapshot, seed Neon, print the reconciliation   |
 
 ## Code quality
 
@@ -136,6 +183,14 @@ pnpm --filter @banggai/web exec wrangler deploy
 
 `workers_dev` and `preview_urls` are enabled in `wrangler.jsonc`, so a `*.workers.dev` URL is available after the first deploy. Non-production branches can be shipped with `pnpm --filter @banggai/web exec wrangler versions upload`.
 
+The admin app deploys to its own Worker (`admin`) separately, and needs
+`DATABASE_URL`, `BETTER_AUTH_SECRET`, and `ORIGIN` set as secrets first:
+
+```sh
+pnpm --filter admin build
+pnpm --filter admin exec wrangler deploy
+```
+
 ## Troubleshooting
 
 **`wrangler types` output flips between two shapes.** When the adapter output
@@ -144,7 +199,8 @@ the built worker; when it does not, that block is omitted. Because `tsconfig.jso
 `worker-configuration.d.ts` under `compilerOptions.types`, that import pulls the whole build output into
 the type program, and `svelte-check` then reports hundreds of errors from generated files.
 
-`pnpm check` and `pnpm build` therefore no longer gate on `wrangler types --check`; regenerating types
+`pnpm check` and `pnpm build` therefore no longer gate on `wrangler types --check`, and neither do the
+admin's — that check flips with the adapter output, so it cannot be a reliable gate. Regenerating types
 is explicit (`pnpm gen`). If you do regenerate, run it with no build output present so the committed
 file stays in its build-independent shape:
 

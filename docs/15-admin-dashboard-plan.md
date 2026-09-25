@@ -660,6 +660,59 @@ recovery path.
 **Exit:** admin displays real aggregate events from the live/staging public site;
 no analytics credential or personal data is exposed.
 
+**Built — the write path.** The vocabulary lives in `packages/content-model/src/analytics.ts`
+(event names, the `7 | 30 | 90` ranges, the dataset name, `parseAnalyticsRange()`, the strict
+event schema, `contentRefForPath()` and `analyticsDataPoint()`), so the two apps agree on the
+column layout without importing each other. Its spec runs in the admin, like the media
+walker's, and it **caught a real hole** while being written: `//evil.example` passed the path
+pattern, and a browser reads that as another host — the same shape `safeRedirectTo()` already
+refuses in the admin's auth callback.
+
+The public site records events through `apps/web/src/lib/server/analytics.ts` (a fail-open
+writer over the `ANALYTICS` binding: no binding, no await, no throw) and
+`/api/events` (POST-only, same-origin, strict schema, 1 KB cap, bare status codes).
+`apps/web/src/lib/analytics.ts` posts `{ event, path }` from `afterNavigate` — never from a
+prefetch, and never for a 4xx — and one delegated listener reports anything carrying
+`data-track`, which is now on the header, footer, the booking banner and the package
+"Book Now". Regenerating the public Worker's Cloudflare types for the new binding exposed a
+footgun worth recording: `wrangler types` had folded the local `.env` `DATABASE_URL` into the
+committed `worker-configuration.d.ts`. The fix is `apps/web/.env.types` — intentionally
+empty, matching the admin — passed to `wrangler types --env-file`.
+
+**Built — the read path.** `apps/admin/src/lib/server/analytics/` holds the SQL API client
+(`client.ts`), the five fixed aggregate statements and their row mappers (`queries.ts`), and
+the assembly (`service.ts`). Three decisions carry it:
+
+- **A missing credential is a described state, not an error**, alongside `error` and
+  `ready`, because the site is not deployed yet and an empty chart with no explanation is
+  what makes people distrust a dashboard. An empty *window* is still `ready`.
+- **Sampling is unavoidable, so it is acknowledged.** Every count is
+  `SUM(_sample_interval)` — a bare `COUNT()` under-reports — and the page says a busy day is
+  an estimate rather than an exact figure.
+- **No request value reaches a query string.** The SQL API has no bind parameters, so the
+  only varying part of a statement is the range, and it varies as a number already forced
+  onto `7 | 30 | 90` by `parseAnalyticsRange()`.
+
+The dashboard at `(dashboard)/analytics/` is a range filter, three KPI cards, a daily bar
+chart built on the shadcn-svelte chart component, the most-read pages and content, and the
+CTA clicks — with quiet days filled in as zeros so the axis is continuous, a screen-reader
+copy of the series, and a Refresh button rather than a poll. It labels the headline *page
+views*, because nothing in the pipeline identifies a person and "visitors" would be a lie an
+editor would repeat.
+
+**Verified.** The public write path was driven end to end against the built Worker under
+workerd: the custom guards answered (not merely SvelteKit's CSRF check), and a real browser
+produced seven `POST /api/events → 204` with the binding in place. 50 new unit tests cover
+the vocabulary, the SQL shape, and the client and assembly against a stubbed API. The read
+path against the live SQL API **cannot** be verified from here — neither Worker is deployed
+and no token exists — so the dashboard has been exercised in its unconfigured state and
+through those tests, which is the limit the phase ships with.
+
+**Still open.** Deploy both Workers, mint the read-only token, and watch the first real
+aggregates; a browser test for the dashboard needs a deployed dataset to be worth writing.
+The account's published Free-tier limits (100,000 writes/day, 10,000 read queries/day) should
+be reconfirmed before release, as the plan notes.
+
 ### Phase 6 — hardening and release
 
 - Delete the retired static content modules and the one-shot migration scripts. **Done** —
@@ -704,7 +757,8 @@ bucket/custom domain and least-privilege API token in Cloudflare before staging.
 - **Admin tests:** `pnpm --filter @banggai/admin test` for validators, publish state changes,
   authorization, media validation/reference rules, and analytics query parsing. The browser
   tests exist as `pnpm --filter @banggai/admin test:e2e` (sign-in, guarded routes, the shell,
-  the settings screen, the media library); analytics query parsing lands with Phase 5.
+  the settings screen, the media library); analytics query parsing and the SQL API client are
+  covered by unit tests instead, because a browser test would need a deployed dataset.
 - **Web checks:** `pnpm check`, `npx biome check apps/web`, and `pnpm build` for
   public-site data/routing/CSS changes. Root checks target `apps/web` only.
 - **Admin style:** run Biome on changed admin files without reformatting the

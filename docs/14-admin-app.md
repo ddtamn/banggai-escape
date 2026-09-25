@@ -96,10 +96,11 @@ apps/admin/
 │  │  │  ├─ nav-main.svelte         # active item = longest matching prefix
 │  │  │  ├─ nav-user.svelte         # identity + POST to /logout
 │  │  │  ├─ login-form.svelte       # the sign-in card
-│  │  │  └─ content/
-│  │  │     ├─ EntryForm.svelte     # a content payload's fields
-│  │  │     ├─ FieldControl.svelte  # one field, including the repeatable ones
-│  │  │     └─ status-badge.svelte  # draft / published / changed / archived
+│  │  │  ├─ content/
+│  │  │  │  ├─ EntryForm.svelte     # a content payload's fields
+│  │  │  │  ├─ FieldControl.svelte  # one field, including the repeatable ones
+│  │  │  │  └─ status-badge.svelte  # draft / published / changed / archived
+│  │  │  └─ ui/                     # shadcn-svelte components, incl. `chart/` (layerchart)
 │  │  ├─ content/forms.ts           # the field-spec model for content *and* settings
 │  │  ├─ content/forms.spec.ts      # unit tests (server project)
 │  │  ├─ navigation.ts              # the one list of sections, for the sidebar and header
@@ -112,6 +113,7 @@ apps/admin/
 │  │  │  │  ├─ validate.ts          # assertValidPayload / assertValidSiteSetting
 │  │  │  │  └─ validate.spec.ts     # contract tests (server project)
 │  │  │  ├─ media/                  # upload, keys, references, picker options
+│  │  │  ├─ analytics/              # Cloudflare Analytics Engine: client, queries, assembly
 │  │  │  ├─ settings/service.ts     # listSettings / getSetting / saveSetting
 │  │  │  └─ db/
 │  │  │     ├─ index.ts             # LAZY neon() + drizzle() client
@@ -127,6 +129,7 @@ apps/admin/
 │  │     ├─ +layout.server.ts       # session, then administrators-table guard
 │  │     ├─ +layout.svelte          # sidebar shell: AppSidebar + SiteHeader
 │  │     ├─ dashboard/+page.svelte  # overview placeholder
+│  │     ├─ analytics/              # the dashboard: range filter, KPIs, chart, rankings
 │  │     ├─ content/[kind]/         # list, new/, [slug]/ (edit, publish), [slug]/preview/
 │  │     ├─ media/                  # the media library
 │  │     ├─ settings/               # the index, and [key]/ to edit one
@@ -278,6 +281,8 @@ BETTER_AUTH_SECRET=""
 | `ADMIN_DB_PASSWORD` | `scripts/db-roles.ts` only | Sets `banggai_admin`'s password. Not read by the app |
 | `WEB_DB_PASSWORD` | `scripts/db-roles.ts` only | Sets `banggai_web`'s password. Not read by the app |
 | `CLOUDFLARE_API_TOKEN` | `wrangler` only | Not read by the app. Lets `wrangler r2 …` run non-interactively — see [Managing the bucket from the CLI](#managing-the-bucket-from-the-cli) |
+| `CLOUDFLARE_ACCOUNT_ID` | `src/lib/server/analytics/client.ts` | Which account's Analytics Engine dataset to query. The `vars` entry in `wrangler.jsonc` in production — an identifier, not a credential |
+| `CLOUDFLARE_ANALYTICS_TOKEN` | `src/lib/server/analytics/client.ts` | **Needed by the analytics dashboard only.** Read-only token (`Account → Account Analytics → Read`). Server-only; see [Analytics](#analytics-cloudflare-workers-analytics-engine) |
 
 Administrator membership is **not** an environment variable. It is a row in the
 `administrators` table, granted by `provision` — see
@@ -310,7 +315,7 @@ in `.dev.vars` is ignored; a binding in `.env` is invisible to the Worker.
 > that asymmetry is what makes this easy to miss until the first preview. Copy
 > `DATABASE_URL`, `ORIGIN` and `BETTER_AUTH_SECRET` into `.dev.vars` to run the production
 > bundle locally. See
-> [12-troubleshooting](./12-troubleshooting.md#pnpm---filter-admin-preview-500s-with-database_url-is-not-set).
+> [12-troubleshooting](./12-troubleshooting.md#pnpm---filter-banggaiadmin-preview-500s-with-database_url-is-not-set).
 
 The committed `.dev.vars.example` sets `MEDIA_PUBLIC_URL=""` for local development. That
 is not a default anyone should copy blindly — see [Serving an
@@ -320,7 +325,7 @@ The `.env.types` file exists so the committed `worker-configuration.d.ts` is the
 for every developer. Without it, `wrangler types` folds whatever is in the local `.env`
 into the generated `Env` interface, and a machine with no `.env` regenerates a different
 file. With it, the committed types describe the bindings declared in `wrangler.jsonc`
-(`ASSETS` and `R2_MEDIA` today; the Analytics Engine binding later) and nothing about
+(`ASSETS` and `R2_MEDIA` today) and nothing about
 anyone's machine. Runtime variables stay out of the types on purpose — they are read
 through `$env/dynamic/private`, which is untyped by design.
 
@@ -900,6 +905,120 @@ pnpm --filter @banggai/admin exec wrangler r2 bucket domain add banggaiescape-me
   --domain media.banggaiescape.com --zone-id <zone-id> --min-tls 1.2
 ```
 
+## Analytics (Cloudflare Workers Analytics Engine)
+
+`/analytics` answers four questions: how many page views, per day and per page; which
+package, destination and article pages were read; and how often the tracked calls to action
+were clicked. It reads **Workers Analytics Engine (WAE)**, which is not Neon — there is no
+SQL adapter for it — so it has its own credential, its own client and its own failure modes.
+
+**It counts page views, not people, and says so.** Nothing in the pipeline records an IP
+address, a user agent, a cookie, a referrer, a query string or any identifier. There is no
+visitor id, so a "unique visitors" card is not a number this system can produce, and the
+page avoids the word rather than inventing one.
+
+### The write path (public site)
+
+The vocabulary — event names, ranges, the dataset name, the column layout — lives in
+`packages/content-model/src/analytics.ts`, because both apps need it and neither may import
+the other. One data point is:
+
+| Column | Holds |
+| --- | --- |
+| `index1` | the event name — the sampling key |
+| `blob1` | the event name |
+| `blob2` | the path, with no query string |
+| `blob3` | `package` \| `destination` \| `article`, or `''` |
+| `blob4` | the content slug, or `''` |
+
+- **The browser posts to `/api/events`; the Worker writes the point.** `$lib/analytics` in
+  the public site sends `{ event, path }`, and `src/lib/server/analytics.ts` calls
+  `writeDataPoint()`. Writing server-side means an ad blocker that never loads our script
+  cannot hide a page view, and the browser never holds anything that could write to the
+  dataset directly.
+- **Four events, three names.** `page_view`, `booking_cta_click` and `contact_click`.
+  There is deliberately no `package_view`: a package page view *is* a page view, and the
+  kind is a dimension of it (`blob3`), so the same visit is never counted twice. The kind
+  and slug are **derived on the server** from the path, so a caller has no dimension to lie
+  about.
+- **The endpoint is public and narrow rather than secret.** POST only (which is also why no
+  `OPTIONS` is implemented — a cross-origin JSON POST cannot be sent without a preflight),
+  a same-origin check on `Sec-Fetch-Site` with `Origin` as fallback, a strict two-field
+  schema that refuses an invented key, and a 1 KB body cap. A path that could carry an email
+  address, a token or free prose is refused. Every refusal is a bare status code, and the
+  client ignores the response, so analytics can never surface as an error to a visitor.
+- **Page views come from `afterNavigate`**, once per real navigation, and never from a
+  prefetch or a `__data.json` refetch. A 404 is not counted; `data-track` clicks are
+  collected by one delegated listener on the window.
+- **Fail open, always.** A missing binding, an exhausted allowance or a runtime refusal is
+  logged and swallowed — `recordEvent()` does not await and never throws — so the failure
+  mode is a flat chart, not a broken page. Under `vite dev` there is no binding and the
+  write is a silent no-op.
+
+`index1` is the event name on purpose: Analytics Engine samples per index *value*, so the
+high-volume event absorbs the sampling while the rare clicks stay exact for far longer.
+
+### The read path (admin)
+
+`src/lib/server/analytics/` is imported only by the page's loader:
+
+| File | Does |
+| --- | --- |
+| `client.ts` | Resolves `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_ANALYTICS_TOKEN` per call, and posts one statement to the SQL API |
+| `queries.ts` | Builds the five fixed aggregate statements and maps their rows |
+| `service.ts` | Runs them together (`Promise.all`) and assembles the summary |
+
+- **Five aggregates, one page load.** Totals per event, page views per day, top pages, top
+  content and CTA clicks — all at once, never one query per chart point and never a poll.
+  Refreshing is a button that calls `invalidateAll()`, so a dashboard left open overnight
+  costs nothing. Free Workers allow 10,000 read queries/day, so a page load is 5 of them.
+- **Every count is `SUM(_sample_interval)`.** A sampled row stands for many original rows,
+  so a bare `COUNT()` under-reports. The consequence is stated on the page: a busy day is an
+  estimate, not an exact figure.
+- **The SQL API takes no bind parameters**, so the rule is that no request value ever
+  reaches a query string. The only varying part is the date range, and it varies as a
+  number that `parseAnalyticsRange()` has already forced onto `7 | 30 | 90`; everything else
+  is a literal. There is no "run this SQL" surface anywhere in the admin.
+- **The API renders every value as a string, and can return `null`.** Rows are coerced, and
+  a count that cannot be read **throws** rather than rendering as a zero — a zero is a fact,
+  and a dashboard that mixes the two is one nobody can trust.
+- **Three states, all first-class:** `unconfigured` (no credential), `error` (Cloudflare
+  said no), and `ready`. An *empty window* is `ready`, because "no traffic in the last seven
+  days" is a fact and not a failure. Days with no events are filled in as explicit zeros, so
+  the chart's x-axis is continuous — three bars for three days a week apart would otherwise
+  draw as evenly spaced activity.
+- **The daily series has a text alternative.** The same numbers are rendered in a
+  screen-reader-only table, so the chart is not the only way to read them.
+
+WAE keeps **three months** of data, which is why `90` is the longest range offered — a wider
+one would only draw empty days and read as an outage.
+
+### Configuring it
+
+| Setting | Where | Notes |
+| --- | --- | --- |
+| `ANALYTICS` | `apps/web/wrangler.jsonc` binding | `BANGGAI_SITE_EVENTS`. Cloudflare creates the dataset on the first write, so this is the only place its name is declared — renaming it starts a second, empty table |
+| `CLOUDFLARE_ACCOUNT_ID` | `apps/admin/wrangler.jsonc` `vars`, or `.env` locally | An identifier, not a credential |
+| `CLOUDFLARE_ANALYTICS_TOKEN` | `wrangler secret put`, or `.env` locally | Read-only: **Account → Account Analytics → Read**, scoped to the account. Server-only |
+
+```sh
+pnpm --filter @banggai/admin exec wrangler secret put CLOUDFLARE_ANALYTICS_TOKEN
+```
+
+Until both are present the dashboard renders its instructions instead of failing, naming
+the variables that are missing — including the half-configured case, which is the likelier
+slip. Until the public Worker is deployed and writing there is nothing to show even with a
+working token.
+
+### What is verified, and what is not
+
+The whole write path was driven end to end against the built Worker under workerd: a real
+browser produced seven `POST /api/events → 204` through the guards, with the dataset binding
+in place. `pnpm --filter @banggai/admin test` covers the vocabulary, the SQL shape and the
+client. What **cannot** be verified from a laptop is the read path against the live SQL API,
+because neither Worker is deployed and no token exists yet: the dashboard has been exercised
+in its `unconfigured` state and through those unit tests, not against real aggregate data.
+
 ## Scripts
 
 The package is **`@banggai/admin`**, and the four common ones have root shortcuts —
@@ -976,6 +1095,22 @@ The package is **`@banggai/admin`**, and the four common ones have root shortcut
   deleted again if the row update fails, and that a redirect is re-checked. Its fetch stub
   is duck-typed rather than a real `Response`, because a constructed `Response` has an empty
   `url` — and the module re-checks the final URL after redirects.
+- `src/lib/server/analytics/vocabulary.spec.ts` covers the shared analytics contract from
+  the app that consumes it: that a range is coerced onto the three offered values, that a
+  detail path maps to a kind and slug while a listing path does not, that the event parser
+  refuses an unknown name, an invented dimension and a personal-looking path — including
+  `//evil.example`, which a browser reads as another host — and that a data point carries
+  exactly one index, because Analytics Engine drops a point with two.
+- `src/lib/server/analytics/queries.spec.ts` pins the shape of every query: the shared
+  dataset, `SUM(_sample_interval)` and never `COUNT(`, the window, the ranking filters, and
+  that the only varying part of a statement is a number already forced onto an allowlist.
+  A hostile `?range=` is interpolated to prove it cannot reach the SQL. The row mappers are
+  covered too, including that an unreadable count throws instead of rendering as a zero.
+- `src/lib/server/analytics/client.spec.ts` covers the SQL API client and the dashboard
+  assembly against a stubbed `fetch`: the endpoint and bearer token a query uses, how each
+  failure is reported (a refused credential named as a permission, no token echoed into a
+  message a page will render), and both configured outcomes. The unconfigured state is
+  asserted to make **no** request at all.
 - Every test above runs in the **`server`** project. The `client` project is configured
   but currently has no files, so component tests are still unwritten. Chromium **is**
   installed here (`pnpm --filter @banggai/admin exec playwright install --with-deps chromium`),
@@ -1066,14 +1201,17 @@ introduces no new tokens: it is built from the same shadcn neutrals as everythin
 
 Ordered roughly by dependency:
 
-Phases 0–4 are complete in code. The three Phase 3 loose ends are done: the package is
+Phases 0–5 are complete in code. The three Phase 3 loose ends are done: the package is
 `@banggai/admin` with root shortcuts, the browser checks are committed (`test:e2e`), and all
 29 legacy images were copied into the bucket (verified served from the custom domain with
 byte-identical content). Phase 4 has landed as well — the public site renders from Neon, its
 read layer resolves stored `media_assets` ids through the web-side equivalent of
 `publicMediaUrl`, slug renames 301 to the new URL, and pages are served from a five-minute
-edge cache. The database no longer references the design-tool host; only the site's
-page-decoration images still come from the AIDA CDN. **Neither Worker is deployed yet.**
+edge cache. Phase 5 has landed too: the public Worker records validated page views and
+clicks, and the admin reads them back from Cloudflare's SQL API. The database no longer
+references the design-tool host; only the site's page-decoration images still come from the
+AIDA CDN. **Neither Worker is deployed yet**, which is also why the dashboard has never been
+seen against real aggregates.
 
 1. **Write component tests.** The `client` Vitest project is configured and Chromium is
    installed, but no `.svelte.spec.ts` files exist yet. `forms.spec.ts` covers the form
@@ -1086,15 +1224,17 @@ page-decoration images still come from the AIDA CDN. **Neither Worker is deploye
    [11-deployment](./11-deployment.md#environment-and-secrets).
    [02-architecture](./02-architecture.md) records what the site trades away by having no
    static fallback.
-3. **Analytics — decided: Cloudflare Workers Analytics Engine (WAE).** The
-   administrator requested a Cloudflare analytics option if it has a free tier. Use
-   WAE to write validated page/content/CTA events from the public Worker and query
-   aggregate data from the admin server. The current Cloudflare pricing page lists
-   100,000 data points written/day and 10,000 SQL read queries/day on Workers Free,
-   and notes billing is not yet active while the published pricing is forward-looking;
-   Cloudflare also documents three-month retention. Reconfirm the account's terms
-   before release. Cloudflare Web Analytics remains an optional free RUM/performance
-   dashboard, but it does not support custom events and is not the source for the
+3. **Analytics — Cloudflare Workers Analytics Engine. Built.** The write path is live in
+   the public Worker and the dashboard reads it in the admin; see
+   [Analytics](#analytics-cloudflare-workers-analytics-engine) for what is wired and what
+   only a deploy can prove. The decision it implements is unchanged: the administrator
+   asked for a Cloudflare analytics option with a free tier, so WAE writes validated
+   page/content/CTA events from the public Worker and the admin queries aggregates from its
+   server. Cloudflare's published pricing for Workers Free lists 100,000 data points
+   written/day and 10,000 SQL read queries/day, and documents three-month retention; it also
+   notes that billing is not yet active while the pricing is forward-looking, so reconfirm
+   the account's terms before release. Cloudflare Web Analytics remains an optional free
+   RUM/performance dashboard, but it supports no custom events and is not the source for the
    in-admin content analytics view. See the full data model, limits, privacy notes,
    implementation plan, and official references in
    [15 — Admin Dashboard Plan](./15-admin-dashboard-plan.md#analytics-decision-cloudflare-workers-analytics-engine).
@@ -1108,8 +1248,8 @@ pnpm --filter @banggai/admin build
 pnpm --filter @banggai/admin exec wrangler deploy
 ```
 
-Set secrets with `wrangler secret put DATABASE_URL` / `BETTER_AUTH_SECRET` / `ORIGIN`
-before the first deploy — the app throws on the first database call without
+Set secrets with `wrangler secret put DATABASE_URL` / `BETTER_AUTH_SECRET` / `ORIGIN` /
+`CLOUDFLARE_ANALYTICS_TOKEN` before the first deploy — the app throws on the first database call without
 `DATABASE_URL`, so a misconfigured deploy fails as soon as it serves a request (which
 is the desired fail-fast behaviour, but means a missing secret shows up as a runtime
 error in the logs rather than at deploy time).

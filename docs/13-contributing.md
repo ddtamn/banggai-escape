@@ -270,8 +270,10 @@ On the admin (`apps/admin`):
 
 7. Clean the scaffold's remaining formatting (`app.d.ts`, `utils.ts`, `+layout.svelte`,
    `vite.config.ts`, `wrangler.jsonc`, …) so `pnpm check:code` passes again.
-8. Build the remaining CMS phase — analytics — phase 5 of
-   [15-admin-dashboard-plan](./15-admin-dashboard-plan.md#phased-delivery).
+8. What is left is [Phase 6 — hardening and release](./15-admin-dashboard-plan.md#phase-6--hardening-and-release):
+   deploy both Workers, mint the read-only Cloudflare token, and reconfirm the Analytics
+   Engine free-tier limits. (Phase 5, the analytics dashboard, is built — see
+   [15-admin-dashboard-plan](./15-admin-dashboard-plan.md#phase-5--cloudflare-analytics).)
 9. Apply the requested shadcn-svelte preset and replace the minimal shell in
    `(dashboard)/+layout.svelte` with the `dashboard-01` block.
 

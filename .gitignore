@@ -18,9 +18,21 @@ Thumbs.db
 !.env.example
 !.env.test
 
+# Wrangler worker bindings for `wrangler dev`. These hold secrets, so they are ignored;
+# the committed `.dev.vars.example` documents the keys.
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Stitch
 /.stitch
+
+# Neon CLI link state (org/project/branch IDs)
+.neon
+
+# One-shot content migration snapshot (apps/web export -> apps/admin import)
+/.migration

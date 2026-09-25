@@ -17,6 +17,8 @@
 			"!**/dist",
 			"!**/worker-configuration.d.ts",
 			"!**/src/lib/data/media.ts",
+			"!**/drizzle/meta",
+			"!**/components/ui",
 			"!**/skills-lock.json",
 			"!**/pnpm-lock.yaml"
 		]

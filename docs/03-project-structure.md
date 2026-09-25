@@ -14,7 +14,7 @@ banggai-escape/
 ├─ packages/
 │  └─ content-model/                # @banggai/content-model — shared Zod content contracts
 ├─ docs/                            # this documentation
-├─ .agents/                         # agent/MCP config (skills, mcp.json) — git-tracked
+├─ .agents/                         # agent config (installed skills) — git-tracked
 ├─ .stitch/                         # Stitch design exports — GIT-IGNORED
 ├─ .vscode/                         # editor recommendations, settings and mcp.json
 ├─ AGENTS.md                        # instructions for AI coding agents
@@ -27,7 +27,6 @@ banggai-escape/
 ├─ pnpm-lock.yaml                   # lockfile (excluded from Biome)
 ├─ skills-lock.json                 # pinned versions of installed agent skills
 ├─ .gitignore  .npmrc               # ignore rules; pnpm settings
-├─ LOGOMARK.png  COMBINATION MARK.png  # source brand artwork at the repo root
 └─ .env                             # local secrets — GIT-IGNORED
 ```
 

@@ -16,7 +16,7 @@ banggai-escape/
 ├─ docs/                            # this documentation
 ├─ .agents/                         # agent/MCP config (skills, mcp.json) — git-tracked
 ├─ .stitch/                         # Stitch design exports — GIT-IGNORED
-├─ .vscode/                         # editor recommendations and settings
+├─ .vscode/                         # editor recommendations, settings and mcp.json
 ├─ AGENTS.md                        # instructions for AI coding agents
 ├─ DESIGN.md                        # design system — source of truth
 ├─ README.md                        # quick start / scripts / deploy TL;DR
@@ -46,8 +46,10 @@ Three directories are worth calling out:
   `src/lib/data/media.ts`. If it is missing on your machine, the generated manifest
   is still committed and everything builds — you only need `.stitch/` to
   *regenerate* images.
-- **`.agents/` is tracked.** It contains `mcp.json` (a Stitch MCP proxy) and an
-  installed-skills folder, and it is excluded from Biome.
+- **`.agents/` is tracked.** It holds `skills/` — the installed agent skills, each pinned
+  to a source and hash in `skills-lock.json` — and is excluded from Biome. The MCP servers
+  are declared next door in `.vscode/mcp.json` (Neon, over HTTP); neither file holds a
+  credential, and there is no `.agents/mcp.json` any more.
 
 ## `apps/web/`
 

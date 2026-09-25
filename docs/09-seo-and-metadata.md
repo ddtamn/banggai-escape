@@ -109,7 +109,7 @@ Conventions the codebase follows, worth keeping:
   element that already has an `aria-label`.
 - **Resolve through `img(id, width)`** so the CDN serves an appropriately sized
   asset. Pick a width near the rendered size (`120`–`200` avatars, `900` cards,
-  `2000` heroes) — see [08-content-data-layer](./08-content-data-layer.md#add-or-change-an-image).
+  `2000` heroes) — see [08-content-data-layer](./08-content-data-layer.md#add-an-image-to-a-pages-decoration).
 
 ## Crawling
 

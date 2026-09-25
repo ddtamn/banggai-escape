@@ -12,15 +12,21 @@ own; see [14-admin-app](./14-admin-app.md).
 
 | URL | Route file | Data source | Load? |
 | --- | --- | --- | --- |
-| `/` | `routes/+page.svelte` | `featuredPackages`, `getDestination()`, `features`, `testimonials`, `faqs`, `posts` | — |
-| `/packages` | `routes/packages/+page.svelte` | `packages` | — |
-| `/packages/:slug` | `routes/packages/[slug]/+page.svelte` | `getPackage()` + `relatedPackages()` | Yes |
-| `/destinations` | `routes/destinations/+page.svelte` | `destinations` | — |
-| `/destinations/:slug` | `routes/destinations/[slug]/+page.svelte` | `getDestination()` + `packages` | Yes |
-| `/blog` | `routes/blog/+page.svelte` | `posts`, `blogCategories` | — |
-| `/blog/:slug` | `routes/blog/[slug]/+page.svelte` | `getPost()` + `relatedPosts()` + `tableOfContents()` | Yes |
-| `/about` | `routes/about/+page.svelte` | `features`, `stats`, `visionMission` | — |
-| `/contact` | `routes/contact/+page.svelte` | `contactChannels` | — |
+| `/` | `routes/+page.svelte` | `+page.server.ts`: `loadPublishedEntries('package' \| 'destination' \| 'article')`, plus settings | Yes |
+| `/packages` | `routes/packages/+page.svelte` | `loadPublishedEntries('package')` | Yes |
+| `/packages/:slug` | `routes/packages/[slug]/+page.svelte` | `loadPublishedEntries('package')` + `resolveSlugRedirect()` | Yes |
+| `/destinations` | `routes/destinations/+page.svelte` | `loadPublishedEntries('destination')` | Yes |
+| `/destinations/:slug` | `routes/destinations/[slug]/+page.svelte` | `loadPublishedEntries('destination' \| 'package')` + `resolveSlugRedirect()` | Yes |
+| `/blog` | `routes/blog/+page.svelte` | `loadPublishedEntries('article')` | Yes |
+| `/blog/:slug` | `routes/blog/[slug]/+page.svelte` | `loadPublishedEntries('article' \| 'package')` + `resolveSlugRedirect()` | Yes |
+| `/about` | `routes/about/+page.svelte` | Settings only — no loader of its own | — |
+| `/contact` | `routes/contact/+page.svelte` | Settings only — no loader of its own | — |
+| `/api/events` | `routes/api/events/+server.ts` | Analytics Engine — `POST` only, nothing rendered | — |
+
+`+layout.server.ts` runs `loadSiteSettings()` for every route in the table, so the chrome's
+content is never re-read per page. Everything comes from the **read layer** in
+`src/lib/server/content/` (see [08-content-data-layer](./08-content-data-layer.md)) — a page
+never queries the database itself, and no page renders content held in code.
 
 Any unmatched URL, and anything a `load` rejects with `error(status, …)`, renders the
 project's own error page — `routes/+error.svelte`, described under
@@ -30,18 +36,21 @@ project's own error page — `routes/+error.svelte`, described under
 
 Use these when cross-linking or testing.
 
-**Packages** (8) — `packages.ts`
+Counts and slugs below are the migrated set, as published: edit them in the admin, where
+`/packages`, `/destinations` and `/blog` are the live lists.
+
+**Packages** (8) — the `package` collection
 `untouched-banggai-discovery` · `banggai-ultimate-expedition` ·
 `island-hopping-coral-sanctuary` · `paisu-pok-lake-day-trip` ·
 `peleng-highlands-trek` · `luwuk-cultural-discovery` · `banggai-diving-expedition` ·
 `sunset-island-cruise`
 
-**Destinations** (9) — `destinations.ts`
+**Destinations** (9) — the `destination` collection
 `paisu-pok-lake` · `paisu-batango` · `piala-waterfall` · `poganda-beach` ·
 `pulau-dua` · `weer-molino` · `mokokawa-waterfall` · `lalong-harbor` ·
 `peleng-highlands`
 
-**Articles** (3) — `posts.ts`
+**Articles** (3) — the `article` collection
 `how-to-get-to-banggai-islands` · `10-must-visit-destinations-in-banggai` ·
 `best-time-to-visit-banggai-islands`
 

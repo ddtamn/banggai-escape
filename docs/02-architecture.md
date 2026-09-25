@@ -18,16 +18,16 @@ boundaries that keep the codebase predictable.
      │    @banggai/web     │           │          "admin"            │
      │   SvelteKit 2       │           │   SvelteKit 2 + better-auth │
      │   public marketing  │           │   Drizzle/Neon + shadcn     │
-     │                     │           │   (scaffold — in progress)  │
+     │                     │           │   (phases 0–5 built)        │
      └──────────┬──────────┘           └───────────┬─────────────────┘
                 │                                  │
       ┌─────────┼────────────┐                     ▼
       │         │            │            Neon Postgres (HTTP)
 ┌─────▼───┐ ┌───▼────────┐ ┌─▼──────────┐  + Better Auth sessions
-│ routes  │ │ lib/       │ │ static/    │
-│ pages   │ │ components/│ │ favicon,   │  ← content: no backend yet
-│ + load  │ │ data/ ◄────┼─┤ logo,      │     (typed TS modules)
-└─────────┘ └────────────┘ │ robots.txt │
+│ routes  │ │ lib/       │ │ static/    │  + Analytics Engine (SQL API)
+│ pages   │ │ components/│ │ favicon,   │  ← content read from Neon in
+│ + load  │ │ data/ ◄────┼─┤ logo,      │     .server loaders; events
+└─────────┘ └────────────┘ │ robots.txt │     written to Analytics Engine
                            └────────────┘
                 │
                 ▼
@@ -105,7 +105,8 @@ Two consequences:
 2. **Runes are mandatory in project files.** Any `.svelte` or `.svelte.ts` file
    outside `node_modules` is compiled in runes mode even without an explicit
    `<svelte:options runes />`. No experimental flags are enabled: no remote
-   functions, no async components, no `+server.ts`, no form actions.
+   functions, no async components, no form actions, and exactly one `+server.ts` —
+   `/api/events`, the analytics endpoint.
 
 ## The workspace
 
@@ -165,6 +166,10 @@ routes/+*.server.ts  ──imports──▶  lib/server/content/  ──imports�
         └──imports──▶  lib/components/  ◀──┘   (payloads, as props)
                             │
                             └──imports──▶  lib/data/media.ts   (decoration only)
+
+routes/api/events/+server.ts ──imports──▶ lib/server/analytics.ts ──▶ Analytics Engine
+        ▲
+        └──POST── lib/analytics.ts (browser) ◀── data-track, afterNavigate
 ```
 
 Rules the codebase follows:
@@ -181,6 +186,13 @@ Rules the codebase follows:
   data, and only the decoration images the design owns.
 - **No cross-app imports.** `apps/web` never reaches into `apps/admin`, and vice
   versa. Shared types belong in a `packages/*` workspace package.
+- **Analytics is a one-way edge.** The public site writes data points through
+  `/api/events`; the admin reads aggregates over Cloudflare's SQL API with its own
+  read-only token. The vocabulary and the column layout that connects them live in
+  `packages/content-model/src/analytics.ts`, because neither app may import the other.
+  Only the Worker writes: the browser posts `{ event, path }` and the server derives the
+  content kind from the path, so a caller has no dimension to lie about. It fails open
+  everywhere — a missing binding or a refused query never reaches a visitor.
 
 `$lib` (and the unused `#lib` subpath import) resolve to `apps/web/src/lib`.
 Everything outside `src/lib` is a route.
@@ -195,7 +207,8 @@ request, which resolves a better-auth session before the route renders — see
 prerendering and no SSR opt-out anywhere in the web codebase:
 
 - no `export const prerender`, `ssr`, or `csr` appears in `apps/web/src`;
-- there is no `+layout.ts` and no `+server.ts`;
+- there is no `+layout.ts`, and the only `+server.ts` is the POST-only analytics endpoint
+  at `/api/events`;
 - content is read in `.server` loaders only — `+layout.server.ts` for the site's settings
   and `+page.server.ts` for each page — so a page can never render from content that
   reached the browser in a bundle;

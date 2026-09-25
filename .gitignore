@@ -17,6 +17,9 @@ Thumbs.db
 .env.*
 !.env.example
 !.env.test
+# Committed, intentionally empty: the `wrangler types --env-file` source, in each app
+# (see apps/web/.env.types). Without it, generated Cloudflare types describe one machine.
+!.env.types
 
 # Wrangler worker bindings for `wrangler dev`. These hold secrets, so they are ignored;
 # the committed `.dev.vars.example` documents the keys.

@@ -5,9 +5,9 @@ holding two SvelteKit applications deployed to Cloudflare Workers.
 
 | App | Package | What it is |
 | --- | --- | --- |
-| [`apps/web`](../apps/web) | `@banggai/web` | The public marketing site — SvelteKit 2 + Svelte 5 + Tailwind v4, content from typed data modules |
-| [`apps/admin`](../apps/admin) | `admin` | The back-office — SvelteKit 2 + better-auth + Drizzle/Neon + shadcn-svelte. **Sign-in, guard, and the content schema are in place; no CMS UI yet** |
-| [`packages/content-model`](../packages/content-model) | `@banggai/content-model` | The Zod content contracts both apps share. `apps/web` imports types only |
+| [`apps/web`](../apps/web) | `@banggai/web` | The public marketing site — SvelteKit 2 + Svelte 5 + Tailwind v4, reading published content from Neon and recording one analytics event per navigation |
+| [`apps/admin`](../apps/admin) | `@banggai/admin` | The back-office — SvelteKit 2 + better-auth + Drizzle/Neon + shadcn-svelte. Sign-in, the route guard, and working screens for content, media, settings, and analytics |
+| [`packages/content-model`](../packages/content-model) | `@banggai/content-model` | The Zod content contracts and the analytics vocabulary both apps share. Framework-agnostic, so both apps validate with the same code |
 
 This `docs/` folder is the **deep reference**. For the short version, start with:
 
@@ -50,8 +50,8 @@ Cloudflare adapter — those are explained where they matter.
 
 Files are numbered in the order they are most useful. If you are new, read
 `01` → `04` in sequence; after that, dip into the topic you need. **Files 04–09
-describe `apps/web`**; `14` documents the current admin scaffold and `15` plans the
-admin dashboard implementation.
+describe `apps/web`**; `14` documents the admin app and `15` is the phased plan that built
+it, phase by phase, with what each phase shipped and what remains open.
 
 | # | Document | Read it when you need to… |
 | --- | --- | --- |
@@ -104,6 +104,8 @@ Terms that appear throughout these docs and in the codebase.
 | **Read layer** | `apps/web/src/lib/server/content/` — the only public-site code that touches the database. Validates payloads and resolves media ids to URLs. |
 | **Media manifest** | `src/lib/data/media.ts` — a generated map of decoration-image ids to CDN URLs, plus the `img()` builder. Content images come from the media library instead. |
 | **Edge cache** | The five-minute window a rendered page may be served from the Workers cache. One `Cache-Control` header in `hooks.server.ts`; see [08-content-data-layer](./08-content-data-layer.md). |
+| **Analytics Engine (WAE)** | Cloudflare's Workers Analytics Engine — the dataset the public Worker writes page views and clicks to, and the admin reads back over the SQL API. Counts events, never people. |
+| **The vocabulary** | `packages/content-model/src/analytics.ts` — the event names, date ranges, dataset name, and the positional column layout both apps agree on. |
 | **Stitch** | The design tool that produced the original screen exports under a git-ignored `.stitch/` folder. `DESIGN.md` is derived from it. |
 | **Adapter** | `@sveltejs/adapter-cloudflare`, which builds the app into a Cloudflare Worker plus static assets. |
 | **The wrangler trap** | A known interaction between `wrangler types` output and `svelte-check`. Fully explained in [12-troubleshooting](./12-troubleshooting.md#the-wrangler-types--svelte-check-trap). |

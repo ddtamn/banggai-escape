@@ -34,8 +34,8 @@ biome.json  # workspace lint + format config
 
 | App | Purpose | Status |
 | --- | --- | --- |
-| `apps/web` | The public site: packages, destinations, blog, about, contact | Working; reads from typed modules; no tests |
-| `apps/admin` | Content management + analytics back-office | Sign-in, the route guard, the migrated content schema, and the **media library** work; **no content CRUD UI yet** |
+| `apps/web` | The public site: packages, destinations, blog, about, contact | Working; reads published content from Neon, records analytics events; no tests |
+| `apps/admin` | Content management + analytics back-office | Sign-in, the route guard, the content screens (draft → publish), the **media library**, settings, and the **analytics dashboard** work; neither Worker is deployed yet |
 
 ## Commands
 
@@ -137,6 +137,9 @@ These are non-negotiable; they exist because each one has already caused a real 
    - To regenerate, clear the output first:
      `rm -rf apps/web/.svelte-kit/cloudflare apps/web/.svelte-kit/cloudflare-tmp && pnpm gen`
      (same for admin: clear `apps/admin/.svelte-kit/cloudflare*` first).
+   - Both apps' `gen` passes an intentionally empty `.env.types`, so regenerating never
+     bakes your local `.env` values into the committed types. **Keep it empty**, and never
+     add a secret to the generated file by hand.
    - See [docs/12-troubleshooting.md](./docs/12-troubleshooting.md#the-wrangler-types--svelte-check-trap).
 5. **Do not edit generated files by hand:**
    - `apps/web/worker-configuration.d.ts` — regenerate with `pnpm gen`
@@ -149,9 +152,10 @@ These are non-negotiable; they exist because each one has already caused a real 
    Run `pnpm fix`, never hand-format, and never add a second formatter config.
 7. **No cross-app imports.** `apps/web` must never import from `apps/admin` or vice
    versa. Shared code goes in `packages/*`, and `packages/content-model` is the only one
-   today: framework-agnostic Zod schemas and their inferred types. `apps/web` imports
-   **types only** from it, `apps/admin` imports the schemas as values. Do not put
-   SvelteKit, database, or Tailwind code in there.
+   today: framework-agnostic Zod schemas, their inferred types, and the shared analytics
+   vocabulary. `apps/web` mostly imports types, plus the analytics parsers it needs
+   (`parseAnalyticsEvent`, `analyticsDataPoint`, `parseAnalyticsRange`); `apps/admin`
+   imports the schemas as values. Do not put SvelteKit, database, or Tailwind code in there.
 8. **Do not commit secrets.** `.env` files are git-ignored; use `wrangler secret put`
    for deployments.
 9. **Do not run destructive git commands** (`push`, `reset --hard`, `rebase`) or
@@ -188,6 +192,12 @@ These are non-negotiable; they exist because each one has already caused a real 
 - **Page frame is `.shell` inside `.section`** (`mx-auto max-w-7xl px-6`).
 - **Pages are edge-cached for five minutes** (`hooks.server.ts`). A publish appears within
   that window; a query string is a different cache key when you need to see it sooner.
+- **The only write is an analytics event.** `apps/web/src/lib/analytics.ts` (browser) posts
+  `{ event, path }` to `/api/events`, and `$lib/server/analytics.ts` writes the data point
+  through the `ANALYTICS` binding. It **fails open** — never await it, never let it throw,
+  never surface it to a visitor. Names come from `@banggai/content-model`; a click is
+  reported by putting `data-track="<event>"` on the control, never by a per-component
+  handler.
 
 ### Styling rules (summary — full detail in DESIGN.md and docs/06-styling.md)
 
@@ -214,6 +224,11 @@ These are non-negotiable; they exist because each one has already caused a real 
 - **Publishing is one `db.batch([...])`.** `db.transaction()` throws on the neon-http
   driver, and a bare `begin`/`rollback` pair is not a transaction either — each `sql`
   template tag is its own HTTP request.
+- **Analytics does not go through Neon.** `src/lib/server/analytics/` queries Cloudflare's
+  SQL API with its own read-only token, and its jargon comes from
+  `@banggai/content-model` (`analytics.ts`). Every count is `SUM(_sample_interval)`, never
+  `COUNT()`; no request value may reach a query string; and a missing credential is a
+  described state, not a 500.
 - Schema changes go in `src/lib/server/db/schema.ts`, then
   `pnpm --filter @banggai/admin db:generate` (a reviewable migration) — not just `db:push`.
 

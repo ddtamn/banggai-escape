@@ -101,12 +101,13 @@ Useful for reviewing a branch. Promote it later with `wrangler versions deploy`.
 
 ## Environment and secrets
 
-Two values are required, and neither is committed:
+Two values are required for the site to serve anything, and neither is committed:
 
 | Name | Kind | What it is |
 | --- | --- | --- |
 | `DATABASE_URL` | **secret** | The Neon connection the Worker reads published content with. In production this must be the `banggai_web` role — read-only, and **not** granted the auth tables. |
 | `MEDIA_PUBLIC_URL` | var | `https://media.banggaiescape.com`, the R2 custom domain published media is served from. Declared in `wrangler.jsonc`. |
+| `ANALYTICS` | binding | The Analytics Engine dataset (`BANGGAI_SITE_EVENTS`) that page views and clicks are written to. Declared in `wrangler.jsonc`, and Cloudflare creates the dataset on the first write — so it needs no setup step, and writing to it is fail-open: a missing or exhausted binding is logged and swallowed.
 
 `banggai_web` does not exist until you make it, and its password cannot be read back
 afterwards, so it is a deliberate step rather than a side effect of deploying:
@@ -130,7 +131,7 @@ Locally, `vite dev` reads `apps/web/.env` and `pnpm preview` reads `apps/web/.de
 (wrangler never reads `.env`). Both are git-ignored. They currently point at the same
 pooled connection as the admin, which is fine on a laptop and wrong in production — the
 deployed Worker must use `banggai_web`. See
-[12-troubleshooting](./12-troubleshooting.md#databasemedia-configuration).
+[12-troubleshooting](./12-troubleshooting.md#database-and-media-configuration-appsweb).
 
 When something *else* needs a secret:
 
@@ -241,6 +242,13 @@ explicitly with `pnpm --filter @banggai/admin db:migrate` (or `db:push` for a th
 - **`MEDIA_PUBLIC_URL`** is a `vars` entry in the same file, not a secret. It points at
   the media custom domain, which is attached to the **bucket**, not to the Worker — so it
   survives deploys and needs no route on the Worker at all.
+- **The analytics dashboard has its own pair.** `CLOUDFLARE_ACCOUNT_ID` is a `vars` entry
+  (an identifier, not a credential) and `CLOUDFLARE_ANALYTICS_TOKEN` is a secret — a
+  read-only token with **Account → Account Analytics → Read**. The reads also need the
+  **public** Worker deployed and writing to the dataset, or there is nothing to count. The
+  dashboard describes the missing variables rather than failing, so a half-configured
+  deploy is visible on the page. See
+  [Analytics](./14-admin-app.md#analytics-cloudflare-workers-analytics-engine).
 - **No custom-domain or routes config** is committed for either Worker yet.
 
 ### Media objects

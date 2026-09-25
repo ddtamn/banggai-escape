@@ -22,19 +22,21 @@ This README is the quick start. The full engineering documentation lives in
 ## Repository layout
 
 This is a **pnpm workspace** with two apps and one shared package. The public marketing
-site is `apps/web` (`@banggai/web`). `apps/admin` (`admin`) is the back-office — sign-in,
-a route guard, and the content schema are in place, but there is **no CMS UI yet**, so it
-is **not yet production-ready**.
+site is `apps/web` (`@banggai/web`), and it renders published content from Neon rather than
+from TypeScript arrays. `apps/admin` (`admin`) is the back-office: sign-in, a route guard,
+and working screens for content (a draft → publish workflow with revisions), the media
+library, site settings, and an analytics dashboard. Both apps are complete in code but
+**neither Worker is deployed yet**.
 
 ```
 apps/
 ├─ web/                     # @banggai/web — the marketing site (SvelteKit + Cloudflare Workers)
-│  ├─ src/                  # app.html, routes/, lib/{components,server,content}
+│  ├─ src/                  # app.html, routes/ (pages + /api/events), lib/{components,server,content}
 │  ├─ static/               # favicon, logo assets, robots.txt
-│  ├─ wrangler.jsonc        # Worker name, compatibility date, Assets binding, MEDIA_PUBLIC_URL
+│  ├─ wrangler.jsonc        # Worker name, compatibility date, bindings, MEDIA_PUBLIC_URL
 │  └─ worker-configuration.d.ts
 └─ admin/                   # @banggai/admin — back-office (SvelteKit + better-auth + Drizzle/Neon)
-   ├─ src/lib/server/       # auth.ts, authz.ts, content/, db/ (auth schema is generated)
+   ├─ src/lib/server/       # auth.ts, authz.ts, content/, media/, analytics/, db/ (auth schema is generated)
    ├─ drizzle/              # reviewable migrations + generated snapshots
    ├─ scripts/              # provision-admin, db-roles
    ├─ wrangler.jsonc        # Worker name "admin"
@@ -54,6 +56,7 @@ DESIGN.md                   # the design system the marketing site follows
 | Language        | TypeScript (strict)                                        |
 | Adapter / host  | `@sveltejs/adapter-cloudflare` (Cloudflare Workers)        |
 | Tooling         | Vite, `svelte-check`, `wrangler`                           |
+| Analytics       | Cloudflare Workers Analytics Engine — written by the public Worker, read in the admin over Cloudflare's SQL API |
 | Lint + format   | Biome                                                      |
 | Package manager | pnpm workspaces                                            |
 
@@ -74,7 +77,9 @@ secrets for production deployments can be added there or with `wrangler secret p
 
 The admin app additionally needs a `.env` (copy [`apps/admin/.env.example`](./apps/admin/.env.example))
 with `DATABASE_URL`, `ORIGIN`, and `BETTER_AUTH_SECRET`, plus generated Worker and
-auth types before its checks pass — see [docs/14-admin-app.md](./docs/14-admin-app.md).
+auth types before its checks pass — see [docs/14-admin-app.md](./docs/14-admin-app.md). Its
+analytics dashboard additionally wants `CLOUDFLARE_ACCOUNT_ID` and
+`CLOUDFLARE_ANALYTICS_TOKEN`; without them it explains what to set instead of failing.
 
 ## Scripts
 
@@ -139,12 +144,14 @@ apps/web/
 │  │  ├─ contact/              # /contact
 │  │  ├─ blog/                 # /blog and /blog/[slug]
 │  │  ├─ destinations/         # /destinations and /destinations/[slug]
-│  │  └─ packages/             # /packages and /packages/[slug]
+│  │  ├─ packages/             # /packages and /packages/[slug]
+│  │  └─ api/events/+server.ts # POST-only analytics endpoint (same-origin, fail open)
 │  └─ lib/
 │     ├─ components/           # Header, Footer, PageHero, cards, CtaBanner, Faq, … (props in)
+│     ├─ analytics.ts          # Browser tracking: a page view per navigation, data-track clicks
 │     ├─ content.ts            # Presenters: formatPrice, durationLabel, badgeDays, TOC
 │     ├─ data/media.ts         # GENERATED decoration images — the only data left here
-│     └─ server/content/       # The read layer: entries, settings, redirects, media
+│     └─ server/               # analytics.ts (the writer) + content/ (the read layer)
 └─ static/                     # favicon, logo assets, robots.txt
 ```
 
@@ -167,6 +174,17 @@ reading from Neon. Neon is the only copy of the content.
 A dynamic route resolves its entry in a `+page.server.ts` loader, which 301s a renamed slug
 before it 404s. Read [08-content-data-layer](./docs/08-content-data-layer.md) for the whole
 picture.
+
+### Analytics
+
+The site records one `page_view` per real navigation and a click for any control carrying
+`data-track`, by POSTing `{ event, path }` to `/api/events`; the **Worker** validates it and
+writes the data point, and a failure is logged and swallowed so analytics can never break a
+page. The admin's `/analytics` reads the aggregates back through Cloudflare's SQL API —
+counts and page views, never visitors, because nothing in the pipeline identifies a person.
+The vocabulary both sides share lives in
+[`packages/content-model/src/analytics.ts`](./packages/content-model/src/analytics.ts); see
+[14-admin-app](./docs/14-admin-app.md#analytics-cloudflare-workers-analytics-engine).
 
 ### Design system
 

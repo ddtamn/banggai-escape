@@ -98,6 +98,22 @@ pnpm check
 Only when a binding changes (a new KV namespace, D1 database, R2 bucket, or secret
 needs a type). Then: clear output → `pnpm gen` → verify no `GlobalProps` → `pnpm check`.
 
+### A local value got into the committed types
+
+**Symptom:** `git diff` on `worker-configuration.d.ts` shows an `Env` entry nobody added —
+a real `DATABASE_URL`, an account id, a token — right after a regeneration.
+
+**Cause:** `wrangler types` loads `.env` and `.dev.vars` by default and folds every value it
+finds into the generated `Env` interface, so regenerating on a machine whose `.env` is
+filled in writes that machine's secrets into a file that is committed.
+
+**Fix:** both apps pass an intentionally **empty** `--env-file .env.types` to
+`wrangler types` (`pnpm gen`). `apps/web/.env.types` and `apps/admin/.env.types` are
+committed for exactly this reason, and the root `.gitignore` keeps `.env.*` ignored except
+that one file. If a value from a machine appears in the generated types, delete the adapter
+output, regenerate, and confirm it is gone — and if a real secret reached a commit, rotate
+it, because removing it from the file does not remove it from history.
+
 ---
 
 ## `svelte-check` cannot find `$app/...` or `./$types`
@@ -558,6 +574,45 @@ distro's equivalent.
 
 If no browser can be installed in your environment at all, run only the Node project
 (`--project server`) or skip browser tests; the server-side tests still run.
+
+## The analytics dashboard says it is not configured
+
+**Symptom:** `/analytics` renders "Not configured yet" and names one or both of
+`CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_ANALYTICS_TOKEN`.
+
+**Cause:** both are read through `$env/dynamic/private` on each request. The account id is a
+`vars` entry in `apps/admin/wrangler.jsonc`, so a deploy and `wrangler dev` have it but
+`vite dev` does not unless it is also in `.env`; the token exists only where you put it.
+
+**Fix:** for local work put both in `apps/admin/.env`; for a deploy run
+`pnpm --filter @banggai/admin exec wrangler secret put CLOUDFLARE_ANALYTICS_TOKEN` and leave
+the id in `wrangler.jsonc`. Mind the usual asymmetry: `pnpm dev` reads `.env`, while the
+built Worker reads `.dev.vars` — and Worker secrets in production.
+
+A **rejected** token is a different message: "Cloudflare refused the analytics token (403)",
+naming the permission it needs (`Account → Account Analytics → Read`). The token itself is
+never rendered into the page.
+
+## The analytics dashboard is empty
+
+**Symptom:** `/analytics` loads, the ranges and Refresh work, and every number is zero (or
+the page says "No events in this window").
+
+Not a bug by itself. In order of likelihood:
+
+1. **Nothing is writing.** The public Worker is not deployed, or is deployed without the
+   `ANALYTICS` binding. Under `vite dev` there are no Worker bindings at all, so a local
+   site records nothing — `recordEvent()` is a documented no-op there, by design.
+2. **The dataset does not exist yet.** Analytics Engine creates it on the first write, so a
+   fresh account has nothing to query and the dashboard rightly reports zero.
+3. **Retention.** Analytics Engine keeps three months; `90` is the longest range offered for
+   that reason.
+4. **The traffic is younger than the cache.** Published pages are served with a five-minute
+   edge cache, so a page view can be up to five minutes old.
+
+What is *not* a silent zero: a count the API returns that cannot be read is thrown rather
+than rendered as `0`, and a failed query shows the error card. A zero you can see is an
+answer.
 
 ## Everything is broken and you do not know why
 

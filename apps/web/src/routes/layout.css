@@ -10,14 +10,12 @@
 	--font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 
 	/*
-	 * Warm sand replaces pure white. `--color-white` is remapped so every
-	 * `bg-white` / `text-white` surface and label picks up the brand mark's own
-	 * background (#F7F3ED) instead of a stark #FFFFFF.
+	 * Warm sand (#F7F3ED) is the single light surface: page ground, section bands,
+	 * cards, panels and form fields all share it. `--color-white` is remapped so
+	 * every `bg-white` / `text-white` surface and label picks up the brand mark's
+	 * own background instead of a stark #FFFFFF.
 	 */
 	--color-white: #f7f3ed;
-	--color-cream: #f7f3ed;
-	--color-sand: #f1eae0;
-	--color-field: #f7f3ed;
 	--color-hairline: #e9e2d6;
 	--color-granite: #e3dacb;
 
@@ -62,7 +60,12 @@
 	/* The signature CTA: champagne gradient pill with a warm gold glow. */
 	.btn-gold {
 		@apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-xs font-bold uppercase tracking-wider text-stone-900 shadow-gold transition-all duration-200;
-		background: linear-gradient(135deg, var(--color-gold-light) 0%, var(--color-gold) 50%, var(--color-gold-deep) 100%);
+		background: linear-gradient(
+			135deg,
+			var(--color-gold-light) 0%,
+			var(--color-gold) 50%,
+			var(--color-gold-deep) 100%
+		);
 	}
 
 	.btn-gold:hover {
@@ -119,7 +122,7 @@
 	/* ---------- Forms ---------- */
 
 	.field {
-		@apply block w-full rounded-xl border border-granite bg-field px-4 py-3 text-sm text-stone-900 transition-all duration-200 placeholder:text-stone-400 focus:border-gold-deep focus:bg-white focus:ring-0 focus:outline-none;
+		@apply block w-full rounded-xl border border-granite bg-white px-4 py-3 text-sm text-stone-900 transition-all duration-200 placeholder:text-stone-400 focus:border-gold-deep focus:ring-0 focus:outline-none;
 	}
 
 	.field:focus {

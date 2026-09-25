@@ -1,4 +1,4 @@
-import type { ArticleSource, Block as ArticleBlock } from '@banggai/content-model';
+import type { Block as ArticleBlock, ArticleSource } from '@banggai/content-model';
 import { img, media } from './media';
 
 /**

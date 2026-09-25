@@ -29,8 +29,7 @@ export type Package = {
 };
 
 /** Formats a number as an Indonesian rupiah amount: 2850000 -> "IDR 2.850.000". */
-export const formatPrice = (price: number): string =>
-	`IDR ${price.toLocaleString('id-ID')}`;
+export const formatPrice = (price: number): string => `IDR ${price.toLocaleString('id-ID')}`;
 
 export const durationLabel = (pkg: Package): string =>
 	pkg.days === 1
@@ -60,45 +59,45 @@ export const packages: Package[] = [
 		highlights: [
 			{
 				title: 'Danau Paisu Pok',
-				text: 'Swim and paddle across the world-famous glass-like lake surrounded by lush green canopy.'
+				text: 'Swim and paddle across the world-famous glass-like lake surrounded by lush green canopy.',
 			},
 			{
 				title: 'Island Hopping Expedition',
-				text: 'Discover pristine white-sand sanctuaries and hidden coastal gems.'
+				text: 'Discover pristine white-sand sanctuaries and hidden coastal gems.',
 			},
 			{
 				title: 'Underwater Exploration',
-				text: 'Snorkel through vibrant coral gardens and calm, crystal-clear lagoons.'
+				text: 'Snorkel through vibrant coral gardens and calm, crystal-clear lagoons.',
 			},
 			{
 				title: 'Tailored Local Care',
-				text: 'Enjoy private boat transfers, fresh seafood, and seamless guidance from our native team.'
-			}
+				text: 'Enjoy private boat transfers, fresh seafood, and seamless guidance from our native team.',
+			},
 		],
 		included: [
 			'2 Nights accommodation (Boutique Lodge / Waterfront Resort)',
 			'Private land and sea transfers (Speedboat & ground transport)',
 			'All scheduled meals, daily refreshments, and mineral water',
 			'High-quality snorkeling gear and safety equipment',
-			'All entrance fees, conservation permits, and dedicated local guide service'
+			'All entrance fees, conservation permits, and dedicated local guide service',
 		],
 		itinerary: [
 			{
 				label: 'Day 1',
 				title: 'Arrival & Coastal Welcome',
-				text: 'Meet and greet at Luwuk or Banggai, private transfer to accommodation, sunset leisure and welcome dinner.'
+				text: 'Meet and greet at Luwuk or Banggai, private transfer to accommodation, sunset leisure and welcome dinner.',
 			},
 			{
 				label: 'Day 2',
 				title: 'The Wonders of Paisu Pok & Lagoon Hopping',
-				text: 'Morning canoe ride across mirror lake Paisu Pok, cliff-jumping into crystalline pools, afternoon snorkeling along untouched offshore barrier reefs, and a fresh local BBQ lunch.'
+				text: 'Morning canoe ride across mirror lake Paisu Pok, cliff-jumping into crystalline pools, afternoon snorkeling along untouched offshore barrier reefs, and a fresh local BBQ lunch.',
 			},
 			{
 				label: 'Day 3',
 				title: 'Farewell Banggai',
-				text: 'Scenic breakfast at the lodge, souvenir shopping for authentic Banggai handicrafts, and departure transfer back to Luwuk Airport or Harbor.'
-			}
-		]
+				text: 'Scenic breakfast at the lodge, souvenir shopping for authentic Banggai handicrafts, and departure transfer back to Luwuk Airport or Harbor.',
+			},
+		],
 	},
 	{
 		slug: 'banggai-ultimate-expedition',
@@ -117,55 +116,55 @@ export const packages: Package[] = [
 		highlights: [
 			{
 				title: 'Cross-Island Loop',
-				text: 'Travel between Banggai Kepulauan and Banggai Laut by scenic ferry and private speedboat.'
+				text: 'Travel between Banggai Kepulauan and Banggai Laut by scenic ferry and private speedboat.',
 			},
 			{
 				title: 'Sea Nomad Encounters',
-				text: 'Spend an afternoon with the Bajo communities who still live and work on the water.'
+				text: 'Spend an afternoon with the Bajo communities who still live and work on the water.',
 			},
 			{
 				title: 'Hidden Lagoon Waterfalls',
-				text: 'Trek to jungle cascades that feed straight into emerald, spring-fed pools.'
+				text: 'Trek to jungle cascades that feed straight into emerald, spring-fed pools.',
 			},
 			{
 				title: 'Reef Dawn Dives',
-				text: 'Two guided snorkel sessions on barrier reefs that see almost no other visitors.'
-			}
+				text: 'Two guided snorkel sessions on barrier reefs that see almost no other visitors.',
+			},
 		],
 		included: [
 			'4 Nights accommodation across three island bases',
 			'Ferry tickets plus private speedboat and ground transfers',
 			'All meals, daily refreshments, and mineral water',
 			'Full snorkeling kit, safety equipment, and life jackets',
-			'Entrance fees, conservation permits, and a dedicated local guide'
+			'Entrance fees, conservation permits, and a dedicated local guide',
 		],
 		itinerary: [
 			{
 				label: 'Day 1',
 				title: 'Fly In, Slow Down',
-				text: 'Airport pickup in Luwuk, crossing briefing over lunch, and an afternoon ferry to Salakan.'
+				text: 'Airport pickup in Luwuk, crossing briefing over lunch, and an afternoon ferry to Salakan.',
 			},
 			{
 				label: 'Day 2',
 				title: 'Paisu Pok & the Mirror Lake',
-				text: 'Early canoe session before the day-trippers arrive, then the boardwalk viewpoints and a lakeside picnic.'
+				text: 'Early canoe session before the day-trippers arrive, then the boardwalk viewpoints and a lakeside picnic.',
 			},
 			{
 				label: 'Day 3',
 				title: 'Lagoon Waterfalls',
-				text: 'Jungle walk to Mokokawa and Piala falls with a swim stop in the spring-fed pool beneath.'
+				text: 'Jungle walk to Mokokawa and Piala falls with a swim stop in the spring-fed pool beneath.',
 			},
 			{
 				label: 'Day 4',
 				title: 'Sea Nomad Settlements',
-				text: 'Speedboat to a Bajo village, reef snorkeling, and a sunset return across the strait.'
+				text: 'Speedboat to a Bajo village, reef snorkeling, and a sunset return across the strait.',
 			},
 			{
 				label: 'Day 5',
 				title: 'Farewell Harbor',
-				text: 'Craft market stop, farewell lunch in Luwuk, and airport transfer.'
-			}
-		]
+				text: 'Craft market stop, farewell lunch in Luwuk, and airport transfer.',
+			},
+		],
 	},
 	{
 		slug: 'island-hopping-coral-sanctuary',
@@ -184,50 +183,50 @@ export const packages: Package[] = [
 		highlights: [
 			{
 				title: 'Coral Garden Snorkeling',
-				text: 'Three guided sessions over barrier reefs with healthy hard and soft coral cover.'
+				text: 'Three guided sessions over barrier reefs with healthy hard and soft coral cover.',
 			},
 			{
 				title: 'Powder-Sand Sandbars',
-				text: 'Anchor at sandbars that only appear at low tide, with a horizon of nothing but blue.'
+				text: 'Anchor at sandbars that only appear at low tide, with a horizon of nothing but blue.',
 			},
 			{
 				title: 'Sunrise on the Water',
-				text: 'Leave before dawn to catch the mirror-calm hour on the lagoon.'
+				text: 'Leave before dawn to catch the mirror-calm hour on the lagoon.',
 			},
 			{
 				title: 'Seafood Beach Dinners',
-				text: 'Grilled catch-of-the-day served on the sand as the boats are hauled up.'
-			}
+				text: 'Grilled catch-of-the-day served on the sand as the boats are hauled up.',
+			},
 		],
 		included: [
 			'3 Nights waterfront accommodation',
 			'Private boat charters for all island hops',
 			'All meals and refreshments, including two beach dinners',
 			'Snorkeling gear and certified safety equipment',
-			'Marine park fees and local guide service'
+			'Marine park fees and local guide service',
 		],
 		itinerary: [
 			{
 				label: 'Day 1',
 				title: 'Arrival & Reef Briefing',
-				text: 'Transfer to the resort, snorkel briefing, and a shallow first swim to get comfortable in the water.'
+				text: 'Transfer to the resort, snorkel briefing, and a shallow first swim to get comfortable in the water.',
 			},
 			{
 				label: 'Day 2',
 				title: 'Outer Reef Circuit',
-				text: 'Full day of boat hops across three reef sites with a sandbar lunch and an afternoon lagoon drift.'
+				text: 'Full day of boat hops across three reef sites with a sandbar lunch and an afternoon lagoon drift.',
 			},
 			{
 				label: 'Day 3',
 				title: 'Pulau Dua & Weer Molino',
-				text: 'Sunrise departure, turtle-grass shallows, and an afternoon exploring the twin-island channel.'
+				text: 'Sunrise departure, turtle-grass shallows, and an afternoon exploring the twin-island channel.',
 			},
 			{
 				label: 'Day 4',
 				title: 'Slow Morning, Smooth Exit',
-				text: 'Optional dawn swim, late breakfast, and the return transfer to Luwuk.'
-			}
-		]
+				text: 'Optional dawn swim, late breakfast, and the return transfer to Luwuk.',
+			},
+		],
 	},
 	{
 		slug: 'paisu-pok-lake-day-trip',
@@ -246,41 +245,41 @@ export const packages: Package[] = [
 		highlights: [
 			{
 				title: 'Early Lake Arrival',
-				text: 'Reach the boardwalk before the day-trippers for the crispest reflections of the day.'
+				text: 'Reach the boardwalk before the day-trippers for the crispest reflections of the day.',
 			},
 			{
 				title: 'Traditional Canoe',
-				text: 'Paddle a wooden canoe across glass-clear water with a local boatman.'
+				text: 'Paddle a wooden canoe across glass-clear water with a local boatman.',
 			},
 			{
 				title: 'Spring-Fed Swim',
-				text: 'Swim in cool water fed directly by mountain springs.'
-			}
+				text: 'Swim in cool water fed directly by mountain springs.',
+			},
 		],
 		included: [
 			'Private air-conditioned vehicle and driver',
 			'Wooden canoe hire with a local boatman',
 			'Lunch box and mineral water',
 			'Entry fees and conservation permits',
-			'Accompanying local guide'
+			'Accompanying local guide',
 		],
 		itinerary: [
 			{
 				label: 'Morning',
 				title: 'Pickup & Drive to the Lake',
-				text: 'Hotel pickup in Luwuk or Salakan and the scenic drive across Peling Island to Luk Panenteng.'
+				text: 'Hotel pickup in Luwuk or Salakan and the scenic drive across Peling Island to Luk Panenteng.',
 			},
 			{
 				label: 'Midday',
 				title: 'Canoe & Boardwalk',
-				text: 'Canoe session on the lake, boardwalk circuit, and a picnic lunch at the viewpoint.'
+				text: 'Canoe session on the lake, boardwalk circuit, and a picnic lunch at the viewpoint.',
 			},
 			{
 				label: 'Afternoon',
 				title: 'Springs & Return',
-				text: 'Final swim in the spring-fed pool before the return transfer.'
-			}
-		]
+				text: 'Final swim in the spring-fed pool before the return transfer.',
+			},
+		],
 	},
 	{
 		slug: 'peleng-highlands-trek',
@@ -299,50 +298,50 @@ export const packages: Package[] = [
 		highlights: [
 			{
 				title: 'Ridge Panorama',
-				text: 'Sunrise from the high saddle looking out across the strait to the outer islands.'
+				text: 'Sunrise from the high saddle looking out across the strait to the outer islands.',
 			},
 			{
 				title: 'Village Hospitality',
-				text: 'Two nights with highland families, sharing meals and stories.'
+				text: 'Two nights with highland families, sharing meals and stories.',
 			},
 			{
 				title: 'Endemic Birdlife',
-				text: 'Early walks with a local spotter for hornbills and kingfishers.'
+				text: 'Early walks with a local spotter for hornbills and kingfishers.',
 			},
 			{
 				title: 'Coffee & Clove Groves',
-				text: 'Walk through working smallholder groves on the descent.'
-			}
+				text: 'Walk through working smallholder groves on the descent.',
+			},
 		],
 		included: [
 			'3 Nights guesthouse and homestay accommodation',
 			'Local trekking guide and porter team',
 			'All meals during the trek and drinking water',
 			'Ground transfers from Salakan',
-			'Park fees and village contributions'
+			'Park fees and village contributions',
 		],
 		itinerary: [
 			{
 				label: 'Day 1',
 				title: 'Salakan to the Foothills',
-				text: 'Transfer to the trailhead, an easy introductory walk, and the first night at a ridge guesthouse.'
+				text: 'Transfer to the trailhead, an easy introductory walk, and the first night at a ridge guesthouse.',
 			},
 			{
 				label: 'Day 2',
 				title: 'Into the Highlands',
-				text: 'Five to six hours of walking through forest and grove, arriving at a highland village by late afternoon.'
+				text: 'Five to six hours of walking through forest and grove, arriving at a highland village by late afternoon.',
 			},
 			{
 				label: 'Day 3',
 				title: 'Summit Saddle & Descent',
-				text: 'Pre-dawn start for the panorama, then the descent to a second village.'
+				text: 'Pre-dawn start for the panorama, then the descent to a second village.',
 			},
 			{
 				label: 'Day 4',
 				title: 'Return to the Coast',
-				text: 'Morning bird walk, final descent, and transfer back to Salakan.'
-			}
-		]
+				text: 'Morning bird walk, final descent, and transfer back to Salakan.',
+			},
+		],
 	},
 	{
 		slug: 'luwuk-cultural-discovery',
@@ -361,36 +360,36 @@ export const packages: Package[] = [
 		highlights: [
 			{
 				title: 'Market Mornings',
-				text: 'Walk the produce and fish market with a guide who knows every stall.'
+				text: 'Walk the produce and fish market with a guide who knows every stall.',
 			},
 			{
 				title: 'Weaving Workshop',
-				text: 'Hands-on session with weavers keeping traditional Banggai textiles alive.'
+				text: 'Hands-on session with weavers keeping traditional Banggai textiles alive.',
 			},
 			{
 				title: 'Coastal Sunset Point',
-				text: 'End the day at the headland with the best view over the bay.'
-			}
+				text: 'End the day at the headland with the best view over the bay.',
+			},
 		],
 		included: [
 			'1 Night city hotel accommodation',
 			'Air-conditioned vehicle and driver',
 			'All meals including one local dinner',
 			'Workshop fees and entrance charges',
-			'English-speaking local guide'
+			'English-speaking local guide',
 		],
 		itinerary: [
 			{
 				label: 'Day 1',
 				title: 'Markets & Workshops',
-				text: 'Morning market walk, weaving workshop, and an afternoon at the coastal viewpoints.'
+				text: 'Morning market walk, weaving workshop, and an afternoon at the coastal viewpoints.',
 			},
 			{
 				label: 'Day 2',
 				title: 'Waterfalls & Farewell',
-				text: 'Half-day trip to the nearest cascade, lunch, and the airport or harbor transfer.'
-			}
-		]
+				text: 'Half-day trip to the nearest cascade, lunch, and the airport or harbor transfer.',
+			},
+		],
 	},
 	{
 		slug: 'banggai-diving-expedition',
@@ -409,55 +408,55 @@ export const packages: Package[] = [
 		highlights: [
 			{
 				title: 'Wall & Drift Sites',
-				text: 'Current-swept walls covered in soft coral and schooling fish.'
+				text: 'Current-swept walls covered in soft coral and schooling fish.',
 			},
 			{
 				title: 'Muck Diving',
-				text: 'Black-sand sites for critter hunters, with a spotter on every dive.'
+				text: 'Black-sand sites for critter hunters, with a spotter on every dive.',
 			},
 			{
 				title: 'Two Nights Afloat',
-				text: 'Stay out on the outer islands instead of commuting from the mainland.'
+				text: 'Stay out on the outer islands instead of commuting from the mainland.',
 			},
 			{
 				title: 'Max 8 Divers',
-				text: 'Small groups, one guide per four divers, no site sharing.'
-			}
+				text: 'Small groups, one guide per four divers, no site sharing.',
+			},
 		],
 		included: [
 			'2 Nights liveaboard and 2 Nights resort accommodation',
 			'Up to 12 guided dives with tanks and weights',
 			'All meals, drinking water, and refreshments',
 			'Dedicated dive guide and safety support',
-			'Marine park permits and dive site fees'
+			'Marine park permits and dive site fees',
 		],
 		itinerary: [
 			{
 				label: 'Day 1',
 				title: 'Arrival & Check Dive',
-				text: 'Equipment fitting, a shallow check dive in sheltered water, and an evening briefing on the site plan.'
+				text: 'Equipment fitting, a shallow check dive in sheltered water, and an evening briefing on the site plan.',
 			},
 			{
 				label: 'Day 2',
 				title: 'Board the Liveaboard',
-				text: 'Two dives en route to the outer islands and a night crossing at anchor.'
+				text: 'Two dives en route to the outer islands and a night crossing at anchor.',
 			},
 			{
 				label: 'Day 3',
 				title: 'Walls & Drifts',
-				text: 'Three dives on the outer wall systems, including one at dusk.'
+				text: 'Three dives on the outer wall systems, including one at dusk.',
 			},
 			{
 				label: 'Day 4',
 				title: 'Muck & Macro',
-				text: 'Two black-sand sites in the morning, then the return crossing and a resort night.'
+				text: 'Two black-sand sites in the morning, then the return crossing and a resort night.',
 			},
 			{
 				label: 'Day 5',
 				title: 'Surface Interval',
-				text: 'No-fly interval spend at the lake and market, then the airport transfer.'
-			}
-		]
+				text: 'No-fly interval spend at the lake and market, then the airport transfer.',
+			},
+		],
 	},
 	{
 		slug: 'sunset-island-cruise',
@@ -476,42 +475,42 @@ export const packages: Package[] = [
 		highlights: [
 			{
 				title: 'Karst Island Hop',
-				text: 'Cruise the channel between the limestone islets offshore from Salakan.'
+				text: 'Cruise the channel between the limestone islets offshore from Salakan.',
 			},
 			{
 				title: 'Golden Hour Anchor',
-				text: 'Drop anchor at the best western-facing bay for sunset.'
+				text: 'Drop anchor at the best western-facing bay for sunset.',
 			},
 			{
 				title: 'Onboard Refreshments',
-				text: 'Fresh fruit, local snacks, and cold drinks served as you drift.'
-			}
+				text: 'Fresh fruit, local snacks, and cold drinks served as you drift.',
+			},
 		],
 		included: [
 			'Private boat and crew for the afternoon',
 			'Snorkeling stop with gear',
 			'Refreshments and light snacks on board',
 			'Life jackets and safety equipment',
-			'Local guide for the cruise'
+			'Local guide for the cruise',
 		],
 		itinerary: [
 			{
 				label: 'Afternoon',
 				title: 'Set Sail',
-				text: 'Board at Salakan and cruise out through the islet channel with a snorkel stop along the way.'
+				text: 'Board at Salakan and cruise out through the islet channel with a snorkel stop along the way.',
 			},
 			{
 				label: 'Golden Hour',
 				title: 'Sunset Anchor',
-				text: 'Anchor in the western bay for sunset with refreshments on deck.'
+				text: 'Anchor in the western bay for sunset with refreshments on deck.',
 			},
 			{
 				label: 'Evening',
 				title: 'Return to Salakan',
-				text: 'Cruise back after dusk and transfer to your accommodation.'
-			}
-		]
-	}
+				text: 'Cruise back after dusk and transfer to your accommodation.',
+			},
+		],
+	},
 ];
 
 export const getPackage = (slug: string): Package | undefined =>

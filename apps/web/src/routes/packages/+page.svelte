@@ -1,26 +1,26 @@
 <script lang="ts">
-	import CtaBanner from '$lib/components/CtaBanner.svelte';
-	import PackageCard from '$lib/components/PackageCard.svelte';
-	import PageHero from '$lib/components/PageHero.svelte';
-	import { backgrounds, img } from '$lib/data/media';
-	import { ctaBackground } from '$lib/data/content';
-	import { packages, type TripType } from '$lib/data/packages';
-	import { site } from '$lib/data/site';
+import CtaBanner from '$lib/components/CtaBanner.svelte';
+import PackageCard from '$lib/components/PackageCard.svelte';
+import PageHero from '$lib/components/PageHero.svelte';
+import { ctaBackground } from '$lib/data/content';
+import { img, media } from '$lib/data/media';
+import { packages, type TripType } from '$lib/data/packages';
+import { site } from '$lib/data/site';
 
-	type Filter = 'All' | TripType;
+type Filter = 'All' | TripType;
 
-	const filters: Filter[] = ['All', 'Open Trip', 'Private Trip'];
+const filters: Filter[] = ['All', 'Open Trip', 'Private Trip'];
 
-	let filter = $state<Filter>('All');
-	let query = $state('');
+let filter = $state<Filter>('All');
+let query = $state('');
 
-	const visible = $derived(
-		packages.filter((pkg) => {
-			const matchesType = filter === 'All' || pkg.tripType === filter;
-			const haystack = `${pkg.title} ${pkg.region} ${pkg.subtitle}`.toLowerCase();
-			return matchesType && haystack.includes(query.trim().toLowerCase());
-		})
-	);
+const visible = $derived(
+	packages.filter((pkg) => {
+		const matchesType = filter === 'All' || pkg.tripType === filter;
+		const haystack = `${pkg.title} ${pkg.region} ${pkg.subtitle}`.toLowerCase();
+		return matchesType && haystack.includes(query.trim().toLowerCase());
+	}),
+);
 </script>
 
 <svelte:head>
@@ -31,10 +31,17 @@
 	/>
 </svelte:head>
 
+<!--
+	The design's `packages/hero-bg` export is a 512×279 thumbnail, so it turns to mush once
+	stretched full-bleed. Use the full-quality island shot from the same asset set instead.
+-->
 <PageHero
 	title={'Find Your Perfect\nBanggai Escape'}
 	subtitle="Choose from our all-inclusive, fully customizable tour packages designed by local experts to showcase the very best of Central Sulawesi's hidden gems."
-	image={img(backgrounds.packages['hero-bg'], 2000)}
+	image={img(
+		media['package-details-untouched-banggai-discovery']['island-hopping-and-coral-sanctuary'],
+		2000
+	)}
 />
 
 <main class="section">

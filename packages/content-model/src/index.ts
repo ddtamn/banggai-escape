@@ -12,6 +12,7 @@
  *
  * Shapes and rationale: docs/15-admin-dashboard-plan.md.
  */
+export * from './analytics';
 export * from './content';
 export * from './references';
 export * from './settings';

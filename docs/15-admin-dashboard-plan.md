@@ -54,7 +54,7 @@ every record against the content-model schemas, seeds `content_entries` with a p
 so it can be re-run safely. It prints a reconciliation table — counts per kind, slugs,
 featured flags, unresolved media — which is the review artifact. `tsx` is added as a
 devDependency in each app (`pnpm --filter web migrate:export`,
-`pnpm --filter admin migrate:import`), and both scripts are deleted after cutover, so no
+`pnpm --filter @banggai/admin migrate:import`), and both scripts are deleted after cutover, so no
 permanent cross-app import is created.
 
 **Draft preview — in-admin and fidelity-limited.** The admin renders drafts with its own
@@ -415,7 +415,7 @@ pure types belong in the workspace package, not either app's source tree.
 
 **Done so far:** Worker types generated and committed
 (`wrangler types --env-file .env.types`, so the file no longer varies with a developer's
-local `.env`); `pnpm --filter admin check` and `build` both pass, and the
+local `.env`); `pnpm --filter @banggai/admin check` and `build` both pass, and the
 `wrangler types --check` gate was removed from both scripts; Better Auth's schema is
 generated and its migration is applied; the Neon project is linked (`.neon`,
 git-ignored); `(auth)/login`, the `(dashboard)` guard, the shell, and a POST-only
@@ -424,7 +424,7 @@ table are removed; `src/lib/server/authz.spec.ts` covers the allowlist and redir
 sanitising.
 
 The administrator is provisioned out of band and public sign-up is disabled
-(`pnpm --filter admin provision`; see
+(`pnpm --filter @banggai/admin provision`; see
 [14 — The Admin App](./14-admin-app.md#provisioning-the-administrator-out-of-band)).
 The whole flow — guard redirect, rejected password, successful sign-in, sign-out, and
 the guard again — was verified in Chromium against the dev server, which is also the
@@ -435,7 +435,7 @@ Still open in this phase: applying the preset, and replacing the minimal shell w
 
 > **The `dev` branch is in place.** The project's default branch is `Production`, and the
 > auth migration is applied there. Schema and content work happens on `dev`
-> (`neon checkout dev --create`, then `pnpm --filter admin db:migrate`), so the content
+> (`neon checkout dev --create`, then `pnpm --filter @banggai/admin db:migrate`), so the content
 > migration is rehearsed somewhere disposable. Point local `.env` at it with
 > `neon env pull --file` and keep the values unquoted.
 
@@ -457,7 +457,7 @@ and the responsive shell passes type/a11y checks.
 **Done:** all of it, against the `dev` branch, with `Production` untouched.
 
 *Branch and schema.* `dev` exists (`neon checkout dev --create`) and local
-`apps/admin/.env` points at it, so `pnpm --filter admin db:migrate` rehearses against
+`apps/admin/.env` points at it, so `pnpm --filter @banggai/admin db:migrate` rehearses against
 disposable data while `Production` keeps only the auth migration. Three migrations are
 applied there: `0001` adds `content_entries`, `content_revisions`, `site_settings`,
 `media_assets`, `slug_redirects`, `administrators`, and the `content_kind` enum; `0002`
@@ -481,13 +481,14 @@ through `src/lib/server/content/validate.ts`.
 git-ignored `.migration/`; `apps/admin/scripts/import-content.ts` re-validates it, seeds
 the content tables, and prints the reconciliation report. Verified against the branch:
 **20 content entries** (8 packages, 9 destinations, 3 articles), 20 published revisions,
-13 settings, 28 distinct media assets. Every payload round-trips structurally identical,
+13 settings, 29 media rows across 28 distinct asset ids (the same image at two widths is
+one asset and two URLs). Every payload round-trips structurally identical,
 `sortOrder`/`featured` match the modules, and nested fields survive (itinerary days,
 gallery images, and all four article block kinds). The import is idempotent on
 `(kind, slug)` and on each media URL; `--replace` appends a revision rather than
 rewriting one.
 
-*Roles and access.* `pnpm --filter admin db:roles` creates `banggai_admin` (write) and
+*Roles and access.* `pnpm --filter @banggai/admin db:roles` creates `banggai_admin` (write) and
 `banggai_web` (read-only, and **not** on the auth tables), converges rather than
 accumulates, and verifies itself by reconnecting as each role. Administrator
 membership moved from `ADMIN_EMAILS` to the `administrators` table; the guard fails
@@ -627,7 +628,7 @@ no analytics credential or personal data is exposed.
 | `DATABASE_URL` | admin | secret | Neon connection with CMS write privileges. |
 | `DATABASE_URL` | web | secret | Separate Neon connection restricted to published-content reads. |
 | `ORIGIN` | admin | **config, not a secret** | Exact deployed admin origin; Better Auth uses it as `baseURL` for cookies and redirects. |
-| ~~`ADMIN_EMAILS`~~ | admin | — | **Removed in Phase 1.** Membership is now a row in the `administrators` table, granted by `pnpm --filter admin provision`; revoking it is deleting that row. |
+| ~~`ADMIN_EMAILS`~~ | admin | — | **Removed in Phase 1.** Membership is now a row in the `administrators` table, granted by `pnpm --filter @banggai/admin provision`; revoking it is deleting that row. |
 | `ADMIN_DB_PASSWORD`, `WEB_DB_PASSWORD` | admin | secret | Passwords for the two database roles, read only by `db:roles`. Not read by either Worker. |
 | `BETTER_AUTH_SECRET` | admin | secret | High-entropy Better Auth signing secret. |
 | `PUBLIC_SITE_ORIGIN` | admin | config | Safe public-site link/preview URL. |
@@ -644,12 +645,13 @@ bucket/custom domain and least-privilege API token in Cloudflare before staging.
 
 ## Verification and definition of done
 
-- **Admin types/a11y:** `pnpm --filter admin check` with generated types current;
+- **Admin types/a11y:** `pnpm --filter @banggai/admin check` with generated types current;
   resolve all new Svelte warnings. Be mindful of the documented Wrangler generation
   trap.
-- **Admin tests:** `pnpm --filter admin test` for validators, publish state changes,
-  authorization, media validation/reference rules, and analytics query parsing. Add
-  browser tests for sign-in, protected routes, and core editor workflows.
+- **Admin tests:** `pnpm --filter @banggai/admin test` for validators, publish state changes,
+  authorization, media validation/reference rules, and analytics query parsing. The browser
+  tests exist as `pnpm --filter @banggai/admin test:e2e` (sign-in, guarded routes, the shell,
+  the settings screen, the media library); analytics query parsing lands with Phase 5.
 - **Web checks:** `pnpm check`, `npx biome check apps/web`, and `pnpm build` for
   public-site data/routing/CSS changes. Root checks target `apps/web` only.
 - **Admin style:** run Biome on changed admin files without reformatting the

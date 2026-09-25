@@ -252,7 +252,7 @@ optional-chain `platform` — `apps/admin`'s media code reads
 
 ---
 
-## `pnpm --filter admin preview` 500s with `DATABASE_URL is not set`
+## `pnpm --filter @banggai/admin preview` 500s with `DATABASE_URL is not set`
 
 **Symptom:** the built Worker starts and routes, but every page — `/login` included —
 comes back `500`, and the worker log shows
@@ -286,14 +286,48 @@ Production has no `.dev.vars` at all — the same values are Worker secrets set 
 
 ---
 
+## Promoted media 404s from the media domain
+
+**Symptom:** "Copy to R2" (or "Copy all into the bucket") reports success, the media library
+shows every asset as uploaded, and every URL on `media.banggaiescape.com` returns
+Cloudflare's `Not Found` page.
+
+**Cause:** `vite dev` and `wrangler dev` both bind a **simulated** R2 bucket, kept under
+`.wrangler/state/v3/r2/`. The action wrote the bytes there and repointed `media_assets` at
+keys only that process can read — so the database now claims files the deployed site cannot
+serve. The action is doing exactly what it says; the environment is what is a lie. (The page
+does warn: a promotion card that says *"This environment has no public media host"* means the
+rows it writes will not be reachable in production.)
+
+**Fix:** run the migration where the bucket is real — from the deployed admin. To repair a
+run that already happened, push the objects at the same keys, since the rows already point at
+them:
+
+```sh
+# 1. Read the bytes back through the dev server's own route (they are in the simulation)
+curl -s "http://127.0.0.1:5173/media/<key>" -o /tmp/<key>
+
+# 2. Put them in the real bucket, under the same key
+pnpm --filter @banggai/admin exec wrangler r2 object put \
+  "banggaiescape-media/<key>" --file /tmp/<key> --remote --content-type image/jpeg
+```
+
+Then confirm the object answers on the custom domain. A freshly written object can 404 for a
+few seconds while the custom domain's negative cache expires; re-request before concluding it
+is missing.
+
+---
+
 ## A filter command fails with "no projects matched"
 
-**Cause:** you filtered on a package that has no `package.json` — most likely
-`@banggai/admin`. The admin app exists, but its package is named **`admin`**, with no
-scope.
+**Cause:** you filtered on a name that is not the one in `package.json` — a typo, or a
+folder name used as if it were the package name (`pnpm --filter admin` and
+`pnpm --filter apps/admin` both fail; the name is what `--filter` matches, and the folder
+is not it).
 
-**Fix:** filter on `@banggai/web` for the site, or on `admin` for the back-office
-(`pnpm --filter admin check`). See [14-admin-app](./14-admin-app.md).
+**Fix:** the three names are `@banggai/web`, `@banggai/admin`, and `@banggai/content-model`
+(`pnpm --filter @banggai/admin check`). `pnpm ls -r --depth -1` lists them. See
+[14-admin-app](./14-admin-app.md).
 
 ---
 
@@ -337,7 +371,7 @@ workspace, the unformatted scaffold fails the repo-wide check.
 **Fix:**
 
 ```sh
-pnpm --filter admin exec biome check --write apps/admin   # or, from the root:
+pnpm --filter @banggai/admin exec biome check --write apps/admin   # or, from the root:
 npx biome check --write apps/admin
 ```
 
@@ -361,17 +395,17 @@ missing scaffold step:
 
 | Missing | Produce it with |
 | --- | --- |
-| `apps/admin/worker-configuration.d.ts` | `pnpm --filter admin gen` (clear `.svelte-kit/cloudflare` first) |
-| `.svelte-kit/` types | `pnpm --filter admin exec svelte-kit sync` (or just run `check`, which syncs) |
-| `src/lib/server/db/auth.schema.ts` tables | `pnpm --filter admin auth:schema` (regenerate after changing `auth.ts`) |
+| `apps/admin/worker-configuration.d.ts` | `pnpm --filter @banggai/admin gen` (clear `.svelte-kit/cloudflare` first) |
+| `.svelte-kit/` types | `pnpm --filter @banggai/admin exec svelte-kit sync` (or just run `check`, which syncs) |
+| `src/lib/server/db/auth.schema.ts` tables | `pnpm --filter @banggai/admin auth:schema` (regenerate after changing `auth.ts`) |
 
-**Fix:** generate whichever file is actually absent, then `pnpm --filter admin check`.
+**Fix:** generate whichever file is actually absent, then `pnpm --filter @banggai/admin check`.
 Also confirm `apps/admin/.env` exists (copy `.env.example`) — `DATABASE_URL` is read on
 the first database call and throws then.
 
 > **Signed in, but told you are not an authorised administrator?** That is the guard
 > working, not a bug. Membership is a row in the `administrators` table;
-> `pnpm --filter admin provision -- <email> <password>` grants it. A user who is not
+> `pnpm --filter @banggai/admin provision -- <email> <password>` grants it. A user who is not
 > listed is refused, and a database that cannot be reached denies everyone **by design**
 > — see [14-admin-app](./14-admin-app.md#authorization-the-administrators-table).
 
@@ -410,14 +444,14 @@ the extension host and `tsserver` each holding hundreds of MB, against a build t
 roughly 750 MB. Close the window (or the workspace's language servers) and the build fits.
 No configuration change makes a 750 MB build fit in 200 MB of headroom.
 
-**Do not read this as a passing build.** `pnpm check`, `pnpm --filter admin check`,
-`pnpm --filter admin test` and `pnpm --filter admin dev` all work in the same environment;
+**Do not read this as a passing build.** `pnpm check`, `pnpm --filter @banggai/admin check`,
+`pnpm --filter @banggai/admin test` and `pnpm --filter @banggai/admin dev` all work in the same environment;
 only the bundling step needs that much memory. If you cannot free it, say the build was not
 run rather than reporting a green check you did not see.
 
 ## Playwright is not installed (admin browser tests)
 
-**Symptom:** `pnpm --filter admin test` fails to launch a browser for the `client`
+**Symptom:** `pnpm --filter @banggai/admin test` fails to launch a browser for the `client`
 Vitest project.
 
 **Cause:** Playwright's browser binaries are downloaded separately from the npm
@@ -426,12 +460,12 @@ package, and they are not present in a fresh install (or in a headless CI/sandbo
 **Fix:**
 
 ```sh
-pnpm --filter admin exec playwright install chromium
+pnpm --filter @banggai/admin exec playwright install chromium
 ```
 
 On Linux the browser also needs system libraries. If it exits with
 `error while loading shared libraries: libatk-1.0.so.0`, install them with
-`pnpm --filter admin exec playwright install --with-deps chromium` (needs root) or your
+`pnpm --filter @banggai/admin exec playwright install --with-deps chromium` (needs root) or your
 distro's equivalent.
 
 If no browser can be installed in your environment at all, run only the Node project
@@ -447,7 +481,7 @@ rm -rf node_modules apps/web/node_modules apps/admin/node_modules \
        apps/admin/.svelte-kit apps/admin/.wrangler
 pnpm install
 pnpm check                       # the site
-pnpm --filter admin check        # only after generating admin's types/schema
+pnpm --filter @banggai/admin check        # only after generating admin's types/schema
 ```
 
 `.svelte-kit` and `.wrangler` are generated and git-ignored, so deleting them is

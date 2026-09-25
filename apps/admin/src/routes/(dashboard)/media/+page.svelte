@@ -80,6 +80,38 @@ const notice = $derived(form?.message ? { text: form.message, bad: page.status >
 	</p>
 </section>
 
+{#if data.counts.legacy > 0}
+	<section class="mt-6 rounded-lg border border-border bg-card p-5">
+		<h2 class="text-sm font-semibold text-foreground">
+			{data.counts.legacy} image{data.counts.legacy === 1 ? '' : 's'} still load from the old host
+		</h2>
+		<p class="mt-1 max-w-3xl text-sm text-muted-foreground">
+			Those files live on a design-tool CDN this project does not control and cannot keep
+			paying for forever. Copying them into the bucket makes the site self-contained and lets
+			that host be retired. Image ids do not change, so nothing that points at them is
+			affected — only the URL they resolve to. Each file's type is verified from its bytes as
+			it arrives.
+		</p>
+		{#if data.simulatedBucket}
+			<p class="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+				<strong class="font-medium text-foreground">This environment has no public media host.</strong>
+				It binds a local R2 simulation, so a copy here lands in storage only this process can
+				see and the deployed site would be unable to serve it. Fine for trying the action; run
+				the real migration from the deployed admin.
+			</p>
+		{/if}
+
+		<form method="post" action="?/promote" class="mt-3">
+			<button
+				type="submit"
+				class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+			>
+				Copy all into the bucket
+			</button>
+		</form>
+	</section>
+{/if}
+
 <div class="mt-6 flex flex-wrap items-center gap-2">
 	{#each tabs as tab (tab.key)}
 		<a
@@ -176,6 +208,18 @@ const notice = $derived(form?.message ? { text: form.message, bad: page.status >
 					</form>
 
 					<div class="flex flex-wrap gap-2 border-t border-border pt-3">
+						{#if !asset.objectKey}
+							<form method="post" action="?/promote">
+								<input type="hidden" name="id" value={asset.id} />
+								<button
+									type="submit"
+									class="rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+								>
+									Copy to R2
+								</button>
+							</form>
+						{/if}
+
 						<form method="post" action={asset.archivedAt ? '?/restore' : '?/archive'}>
 							<input type="hidden" name="id" value={asset.id} />
 							<button

@@ -5,7 +5,9 @@
  * an anonymous visitor and 403s a signed-in non-administrator before this file runs. The
  * guards here are about *input*, not identity.
  */
+
 import { fail } from '@sveltejs/kit';
+import { dev } from '$app/environment';
 import { publicMediaUrl } from '$lib/server/media/keys';
 import {
 	countMedia,
@@ -17,6 +19,7 @@ import {
 	setAltText,
 	setArchived,
 } from '$lib/server/media/library';
+import { countLegacy, promoteLegacyAssets } from '$lib/server/media/promote';
 import { storeUpload } from '$lib/server/media/upload';
 import { formatBytes, MAX_UPLOAD_BYTES } from '$lib/server/media/validate';
 import type { Actions, PageServerLoad } from './$types';
@@ -28,7 +31,6 @@ export const load: PageServerLoad = async (event) => {
 		? (event.url.searchParams.get('filter') as MediaFilter)
 		: 'all';
 	const search = event.url.searchParams.get('q')?.trim() ?? '';
-
 	const [assets, counts] = await Promise.all([listMedia({ filter, search }), countMedia()]);
 
 	// Resolved on the server: the public base URL is a Worker variable, and the fallback
@@ -41,6 +43,15 @@ export const load: PageServerLoad = async (event) => {
 		counts,
 		maxBytes: formatBytes(MAX_UPLOAD_BYTES),
 		assets: assets.map((asset) => ({ ...asset, url: publicMediaUrl(asset, mediaBase) })),
+		/**
+		 * Whether `R2_MEDIA` is a local simulation rather than the bucket the deployed site reads.
+		 *
+		 * `vite dev` and `wrangler dev` both bind a simulated bucket, and neither has a public
+		 * media base URL. Promoting here writes rows that claim bytes the deployed site cannot
+		 * serve — which is how a "successful" migration ends up 404ing every image in production.
+		 * The flag is not security: it is what lets the page stop reporting that success.
+		 */
+		simulatedBucket: dev || !mediaBase,
 	};
 };
 
@@ -100,6 +111,51 @@ export const actions: Actions = {
 		await setArchived(id, false);
 
 		return { message: 'Back in the library.' };
+	},
+
+	/**
+	 * Copy artwork off the legacy host and into the bucket.
+	 *
+	 * With an `id`, one image; without, everything still external. The row ids do not change,
+	 * so every payload that references these images keeps working — only the URL they resolve
+	 * to does.
+	 */
+	promote: async (event) => {
+		const bucket = event.platform?.env.R2_MEDIA;
+
+		if (!bucket) {
+			return fail(503, {
+				message:
+					'The media bucket is not bound in this environment, so there is nowhere to copy to.',
+			});
+		}
+
+		const form = await event.request.formData();
+		const id = form.get('id')?.toString() ?? null;
+
+		const report = await promoteLegacyAssets({ bucket, ids: id ? [id] : undefined });
+
+		const copied = report.outcomes.filter((outcome) => outcome.ok).length;
+		const failed = report.outcomes.filter((outcome) => !outcome.ok);
+
+		if (copied === 0 && failed.length > 0) {
+			return fail(502, {
+				message: `Nothing was copied. ${failed[0].name}: ${failed[0].detail}`,
+			});
+		}
+
+		const left = await countLegacy();
+
+		return {
+			message: `Copied ${copied} ${copied === 1 ? 'image' : 'images'} into the bucket.${
+				failed.length > 0
+					? ` ${failed.length} could not be copied: ${failed
+							.slice(0, 3)
+							.map((outcome) => `${outcome.name} (${outcome.detail})`)
+							.join(', ')}`
+					: ''
+			} ${left === 0 ? 'Nothing is left on the legacy host.' : `${left} still on the legacy host.`}`,
+		};
 	},
 
 	delete: async (event) => {

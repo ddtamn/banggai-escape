@@ -131,8 +131,9 @@ Six modules. The full API is in [08-content-data-layer](./08-content-data-layer.
 ## `apps/admin/`
 
 A second SvelteKit app — the back-office. It signs in, guards every route behind the
-`administrators` table, and owns the content schema, but has **no CRUD UI yet**, so it is
-not a usable product. Full detail in [14-admin-app](./14-admin-app.md); the shape is:
+`administrators` table, and owns the content: packages, destinations and articles with a
+publish workflow and revision history, the site's shared settings, and the media library.
+It is **not deployed yet**. Full detail in [14-admin-app](./14-admin-app.md); the shape is:
 
 ```
 apps/admin/
@@ -142,15 +143,22 @@ apps/admin/
 │  ├─ lib/
 │  │  ├─ utils.ts                  # cn() re-export + shadcn type helpers
 │  │  ├─ assets/favicon.svg
-│  │  └─ server/                   # auth.ts, authz.ts (administrators table), content/, db/
+│  │  ├─ navigation.ts             # the one list of sections (sidebar + header)
+│  │  ├─ components/               # shell (sidebar/header/toggle), login form, content/
+│  │  ├─ content/forms.ts          # field specs for content kinds *and* settings
+│  │  └─ server/
 │  │     ├─ authz.ts · authz.spec.ts
-│  │     ├─ content/validate.ts · validate.spec.ts
+│  │     ├─ content/               # service.ts (entries/revisions), validate.ts
+│  │     ├─ media/                 # upload, keys, references, promote, options
+│  │     ├─ settings/service.ts    # listSettings / getSetting / saveSetting
 │  │     └─ db/                    # schema.ts, auth.schema.ts (generated), lazy client
 │  └─ routes/
 │     ├─ +layout.svelte · +page.server.ts · layout.css  # shadcn neutral theme, Geist
 │     ├─ (auth)/login/             # public sign-in form + action
-│     └─ (dashboard)/              # guard layout, shell, overview, logout endpoint
-├─ components.json                 # shadcn-svelte config (no components added yet)
+│     ├─ media/[key]/+server.ts    # serves an object from R2
+│     └─ (dashboard)/              # guard layout, shell, content/, media/, settings/, logout
+├─ e2e/ · playwright.config.ts     # browser checks (pnpm --filter @banggai/admin test:e2e)
+├─ components.json                 # shadcn-svelte config (iconLibrary: lucide)
 ├─ drizzle.config.ts               # needs DATABASE_URL
 ├─ drizzle/                        # reviewable migrations + generated snapshots
 ├─ scripts/                        # provision-admin, import-content, db-roles (one-shot tools)
@@ -159,8 +167,8 @@ apps/admin/
 ```
 
 Its two generated files — `src/lib/server/db/auth.schema.ts`
-(`pnpm --filter admin auth:schema`) and `worker-configuration.d.ts`
-(`pnpm --filter admin gen`) — are both present and committed, as are the
+(`pnpm --filter @banggai/admin auth:schema`) and `worker-configuration.d.ts`
+(`pnpm --filter @banggai/admin gen`) — are both present and committed, as are the
 `drizzle/*.sql` migrations and their `drizzle/meta/**` snapshots.
 
 ## Where new code goes
@@ -176,10 +184,10 @@ Paths in this table are relative to the app you are working in.
 | A design token or shared class (`web`) | `apps/web/src/routes/layout.css` (`@theme` / `@layer components`) | Update `DESIGN.md` if it changes the system |
 | A theme token (`admin`) | `apps/admin/src/routes/layout.css` (shadcn tokens) | Decide the brand-theming question first — see [14-admin-app](./14-admin-app.md#design-system-not-the-banggai-brand-system) |
 | Content for an existing collection (`web`) | The matching `apps/web/src/lib/data/*.ts` file | Run `pnpm --filter @banggai/web check` |
-| A database table (`admin`) | `apps/admin/src/lib/server/db/schema.ts` | `pnpm --filter admin db:generate`, review the SQL, then `db:migrate` |
+| A database table (`admin`) | `apps/admin/src/lib/server/db/schema.ts` | `pnpm --filter @banggai/admin db:generate`, review the SQL, then `db:migrate` |
 | A content field both apps need | `packages/content-model/src/` | Types in `apps/web` and validation in `apps/admin` follow automatically |
 | A new image (`web`) | `.stitch/gen-media.mjs` (if regenerating) or add the URL by hand to `media.ts` | Prefer `img()` over pasting raw URLs in components |
-| Tests | `apps/admin/src/**/*.{test,spec}.ts` (admin only) | `pnpm --filter admin test` — see [14-admin-app](./14-admin-app.md#testing) |
+| Tests | `apps/admin/src/**/*.{test,spec}.ts` (admin only) | `pnpm --filter @banggai/admin test` — see [14-admin-app](./14-admin-app.md#testing) |
 
 ## `worker-configuration.d.ts` — handle with care
 
@@ -208,15 +216,15 @@ pnpm gen
 | --- | --- | --- |
 | `apps/web/worker-configuration.d.ts` | `pnpm gen` (`wrangler types`) | **Yes** — commit the build-independent shape |
 | `apps/web/src/lib/data/media.ts` | `.stitch/gen-media.mjs` | **Yes** — commit it |
-| `apps/admin/worker-configuration.d.ts` | `pnpm --filter admin gen` (`wrangler types --env-file .env.types`) | **Yes** — commit the build-independent shape |
-| `apps/admin/src/lib/server/db/auth.schema.ts` | `pnpm --filter admin auth:schema` | **Yes** — generated from `auth.ts` |
+| `apps/admin/worker-configuration.d.ts` | `pnpm --filter @banggai/admin gen` (`wrangler types --env-file .env.types`) | **Yes** — commit the build-independent shape |
+| `apps/admin/src/lib/server/db/auth.schema.ts` | `pnpm --filter @banggai/admin auth:schema` | **Yes** — generated from `auth.ts` |
 | `apps/web/.svelte-kit/` | `svelte-kit sync` / `vite build` | No |
 | `apps/admin/.svelte-kit/` | `svelte-kit sync` / `vite build` | No (admin has its own `.gitignore`) |
 | `apps/*/.wrangler/` | `wrangler dev` / `deploy` | No |
 | `node_modules/`, `build/`, `.output/` | tooling | No |
 | `.stitch/` | design exports | No |
 | `.env`, `.env.*` (except `.env.example`, `.env.test`, `.env.types`) | you | No — `apps/admin/.env` exists locally. `.dev.vars*` is git-ignored too |
-| `apps/admin/drizzle/**` | `pnpm --filter admin db:generate` | **Yes** — review the SQL before applying it |
+| `apps/admin/drizzle/**` | `pnpm --filter @banggai/admin db:generate` | **Yes** — review the SQL before applying it |
 | `.migration/` | `pnpm --filter web migrate:export` | No — a one-shot snapshot, per developer |
 
 Biome additionally excludes `worker-configuration.d.ts`, `src/lib/data/media.ts`,

@@ -42,6 +42,7 @@
 		"cn": "^0.4.0",
 		"drizzle-kit": "^0.31.10",
 		"drizzle-orm": "^0.45.2",
+		"layerchart": "^2.5.0",
 		"mode-watcher": "^1.1.0",
 		"playwright": "^1.60.0",
 		"shadcn-svelte": "^1.7.0",

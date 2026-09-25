@@ -19,12 +19,17 @@
 			"bucket_name": "banggaiescape-media"
 		}
 	],
-	// Where a published media object is read from. A var rather than a constant so
-	// `wrangler dev` can leave it empty and fall back to this Worker's own
-	// `/media/<key>` route — a local upload is written to the local R2 simulation, so it
-	// does not exist on the production host. See MEDIA_PUBLIC_URL in docs/14.
 	"vars": {
-		"MEDIA_PUBLIC_URL": "https://media.banggaiescape.com"
+		// Where a published media object is read from. A var rather than a constant so
+		// `wrangler dev` can leave it empty and fall back to this Worker's own
+		// `/media/<key>` route — a local upload is written to the local R2 simulation, so it
+		// does not exist on the production host. See MEDIA_PUBLIC_URL in docs/14.
+		"MEDIA_PUBLIC_URL": "https://media.banggaiescape.com",
+		// Which account's Analytics Engine dataset the analytics dashboard reads. An
+		// identifier, not a credential, so it belongs here rather than in a secret — but it
+		// does change between accounts, which is why it is not a constant in the code. The
+		// token that goes with it is a secret: see CLOUDFLARE_ANALYTICS_TOKEN in docs/14.
+		"CLOUDFLARE_ACCOUNT_ID": "91a7dd704831e7143ccf6525c5c04b92"
 	},
 	"workers_dev": true,
 	"preview_urls": true

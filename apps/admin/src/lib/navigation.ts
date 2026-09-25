@@ -10,6 +10,7 @@
  * params argument without it.
  */
 
+import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
 import FileTextIcon from '@lucide/svelte/icons/file-text';
 import ImageIcon from '@lucide/svelte/icons/image';
 import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
@@ -40,6 +41,7 @@ export const sections: readonly Section[] = [
 	},
 	{ title: 'Media', url: resolve('/media'), icon: ImageIcon },
 	{ title: 'Settings', url: resolve('/settings'), icon: SettingsIcon },
+	{ title: 'Analytics', url: resolve('/analytics'), icon: ChartColumnIcon },
 ];
 
 /**

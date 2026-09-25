@@ -1,21 +1,21 @@
 <script lang="ts">
-	import CtaBanner from '$lib/components/CtaBanner.svelte';
-	import DestinationCard from '$lib/components/DestinationCard.svelte';
-	import PageHero from '$lib/components/PageHero.svelte';
-	import { backgrounds, img } from '$lib/data/media';
-	import { ctaBackground } from '$lib/data/content';
-	import { destinations } from '$lib/data/destinations';
-	import { site } from '$lib/data/site';
+import CtaBanner from '$lib/components/CtaBanner.svelte';
+import DestinationCard from '$lib/components/DestinationCard.svelte';
+import PageHero from '$lib/components/PageHero.svelte';
+import { ctaBackground } from '$lib/data/content';
+import { destinations } from '$lib/data/destinations';
+import { backgrounds, img } from '$lib/data/media';
+import { site } from '$lib/data/site';
 
-	let query = $state('');
+let query = $state('');
 
-	const visible = $derived(
-		destinations.filter((destination) =>
-			`${destination.name} ${destination.region} ${destination.tagline}`
-				.toLowerCase()
-				.includes(query.trim().toLowerCase())
-		)
-	);
+const visible = $derived(
+	destinations.filter((destination) =>
+		`${destination.name} ${destination.region} ${destination.tagline}`
+			.toLowerCase()
+			.includes(query.trim().toLowerCase()),
+	),
+);
 </script>
 
 <svelte:head>
@@ -42,7 +42,7 @@
 				<label class="sr-only" for="destination-search">Search destinations</label>
 				<input
 					id="destination-search"
-					class="w-full rounded-full border-none bg-stone-100 py-2.5 pr-4 pl-10 text-sm text-stone-700 transition outline-none placeholder:text-stone-400 focus:ring-2 focus:ring-forest-mid"
+					class="w-full rounded-full border border-granite bg-white py-2.5 pr-4 pl-10 text-sm text-stone-700 transition outline-none placeholder:text-stone-400 focus:ring-2 focus:ring-forest-mid"
 					type="search"
 					placeholder="Search destinations"
 					bind:value={query}

@@ -1,34 +1,31 @@
 <script lang="ts">
-	import CtaBanner from '$lib/components/CtaBanner.svelte';
-	import PackageCard from '$lib/components/PackageCard.svelte';
-	import SectionHeader from '$lib/components/SectionHeader.svelte';
-	import { img, media } from '$lib/data/media';
-	import { ctaBackground } from '$lib/data/content';
-	import { packages } from '$lib/data/packages';
-	import { site } from '$lib/data/site';
+import CtaBanner from '$lib/components/CtaBanner.svelte';
+import PackageCard from '$lib/components/PackageCard.svelte';
+import SectionHeader from '$lib/components/SectionHeader.svelte';
+import { ctaBackground } from '$lib/data/content';
+import { img, media } from '$lib/data/media';
+import { packages } from '$lib/data/packages';
+import { site } from '$lib/data/site';
 
-	let { data } = $props();
+let { data } = $props();
 
-	const destination = $derived(data.destination);
+const destination = $derived(data.destination);
 
-	/** A representative mosaic drawn from the destination photography set. */
-	const mosaic = $derived(
-		[
-			...destination.gallery,
-			...Object.values(media.destinations).map((id) => img(id, 1200))
-		]
-			.filter((src, index, all) => all.indexOf(src) === index)
-			.slice(0, 6)
-	);
+/** A representative mosaic drawn from the destination photography set. */
+const mosaic = $derived(
+	[...destination.gallery, ...Object.values(media.destinations).map((id) => img(id, 1200))]
+		.filter((src, index, all) => all.indexOf(src) === index)
+		.slice(0, 6),
+);
 
-	const quickInfo = $derived([
-		{ label: 'BEST TIME', value: destination.quickInfo.bestTime },
-		{ label: 'IDEAL DURATION', value: destination.quickInfo.duration },
-		{ label: 'HIGHLIGHTS', value: destination.quickInfo.highlights },
-		{ label: 'ACCESSIBILITY', value: destination.quickInfo.accessibility }
-	]);
+const quickInfo = $derived([
+	{ label: 'BEST TIME', value: destination.quickInfo.bestTime },
+	{ label: 'IDEAL DURATION', value: destination.quickInfo.duration },
+	{ label: 'HIGHLIGHTS', value: destination.quickInfo.highlights },
+	{ label: 'ACCESSIBILITY', value: destination.quickInfo.accessibility },
+]);
 
-	const related = $derived(packages.slice(0, 3));
+const related = $derived(packages.slice(0, 3));
 </script>
 
 <svelte:head>
@@ -47,7 +44,7 @@
 	/>
 	<div class="absolute inset-0 bg-forest-deep/60"></div>
 
-	<div class="relative z-10 mx-auto flex max-w-4xl flex-col items-center px-4 text-center">
+	<div class="relative z-10 mx-auto flex max-w-4xl flex-col items-center px-6 text-center">
 		<nav class="mb-4 flex items-center gap-2 text-xs font-medium text-white/70" aria-label="Breadcrumb">
 			<a class="transition hover:text-white" href="/">Home</a>
 			<span aria-hidden="true">/</span>
@@ -70,11 +67,11 @@
 	</div>
 </section>
 
-<main class="mx-auto max-w-5xl space-y-16 px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
+<main class="mx-auto max-w-7xl space-y-16 px-6 py-14 sm:py-16">
 	<!-- Overview -->
 	<section>
 		<h2 class="mb-4 text-xl font-bold text-forest-deep sm:text-2xl">Overview</h2>
-		<div class="space-y-4 text-sm leading-relaxed text-stone-600 sm:text-base">
+		<div class="max-w-3xl space-y-4 text-sm leading-relaxed text-stone-600 sm:text-base">
 			{#each destination.overview as paragraph, index (index)}
 				<p>{paragraph}</p>
 			{/each}
@@ -87,7 +84,7 @@
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 			{#each quickInfo as info (info.label)}
 				<div
-					class="flex flex-col justify-between rounded-2xl border border-stone-200/80 bg-sand p-5 shadow-xs"
+					class="flex flex-col justify-between rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs"
 				>
 					<span class="mb-2 text-[11px] font-bold tracking-wider text-stone-400 uppercase">
 						{info.label}

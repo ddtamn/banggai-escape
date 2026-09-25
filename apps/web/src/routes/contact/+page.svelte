@@ -1,15 +1,15 @@
 <script lang="ts">
-	import CtaBanner from '$lib/components/CtaBanner.svelte';
-	import { contactChannels, ctaBackground } from '$lib/data/content';
-	import { img, media } from '$lib/data/media';
-	import { site } from '$lib/data/site';
+import CtaBanner from '$lib/components/CtaBanner.svelte';
+import { contactChannels, ctaBackground } from '$lib/data/content';
+import { img, media } from '$lib/data/media';
+import { site } from '$lib/data/site';
 
-	let submitted = $state(false);
+let submitted = $state(false);
 
-	function handleSubmit(event: SubmitEvent) {
-		event.preventDefault();
-		submitted = true;
-	}
+function handleSubmit(event: SubmitEvent) {
+	event.preventDefault();
+	submitted = true;
+}
 </script>
 
 <svelte:head>
@@ -22,10 +22,10 @@
 
 <main>
 	<!-- Top: image + form -->
-	<section class="mx-auto max-w-7xl px-4 pt-12 pb-20 sm:px-6 lg:px-8">
+	<section class="mx-auto max-w-7xl px-6 pt-12 pb-20">
 		<div class="grid grid-cols-1 items-start gap-12 lg:grid-cols-12">
 			<div class="relative lg:col-span-6">
-				<div class="relative h-[480px] w-full overflow-hidden rounded-3xl bg-stone-100 shadow-2xl sm:h-[640px]">
+				<div class="relative h-[480px] w-full overflow-hidden rounded-3xl bg-white shadow-2xl sm:h-[640px]">
 					<img
 						class="size-full object-cover object-center"
 						src={img(media.contact['paisu-pok-lake-with-canoe-floating-on-clear-water'], 1400)}
@@ -41,13 +41,13 @@
 					Let's Get In Touch.
 				</h1>
 
-				<p class="mb-8 text-sm leading-relaxed text-gray-600 sm:text-base">
+				<p class="mb-8 text-sm leading-relaxed text-stone-600 sm:text-base">
 					Plan your bespoke island journey or write directly to
 					<a class="font-semibold text-forest-deep underline" href="mailto:{site.email}">{site.email}</a
 					>.
 				</p>
 
-				<div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
+				<div class="rounded-3xl border border-stone-100 bg-white p-6 shadow-sm sm:p-8">
 					{#if submitted}
 						<div class="py-10 text-center">
 							<div
@@ -56,7 +56,7 @@
 								<i class="fa-solid fa-check"></i>
 							</div>
 							<h2 class="mb-2 text-lg font-bold text-forest-deep">Thank you — message received.</h2>
-							<p class="mx-auto max-w-sm text-sm leading-relaxed text-gray-500">
+							<p class="mx-auto max-w-sm text-sm leading-relaxed text-stone-500">
 								One of our island specialists will reply within 2–4 hours during operational
 								hours. For anything urgent, call us on
 								<a class="font-semibold text-forest-deep" href={site.phoneHref}>{site.phone}</a>.
@@ -127,12 +127,12 @@
 	</section>
 
 	<!-- Concierge & support -->
-	<section class="mx-auto max-w-7xl border-t border-gray-100 px-4 py-16 sm:px-6 lg:px-8">
+	<section class="mx-auto max-w-7xl border-t border-stone-100 px-6 py-16">
 		<div class="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-end">
 			<div>
 				<h2 class="text-2xl font-extrabold text-forest-deep md:text-3xl">We'd Love to Hear From You.</h2>
 			</div>
-			<p class="max-w-sm text-sm leading-relaxed text-gray-500 md:text-right">
+			<p class="max-w-sm text-sm leading-relaxed text-stone-500 md:text-right">
 				Our local island specialists are on hand to tailor custom itineraries, boat transfers, and
 				guided expeditions.
 			</p>
@@ -141,26 +141,26 @@
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
 			{#each contactChannels as channel (channel.title)}
 				<a
-					class="flex flex-col justify-between rounded-2xl border border-gray-200/80 bg-field p-7 transition-all duration-200 hover:bg-white hover:shadow-lg"
+					class="flex flex-col justify-between rounded-2xl border border-stone-200/80 bg-white p-7 transition-all duration-200 hover:shadow-lg"
 					href={channel.href}
 				>
 					<div>
 						<div
-							class="mb-5 flex size-11 items-center justify-center rounded-xl border border-gray-100 bg-white text-forest-deep"
+							class="mb-5 flex size-11 items-center justify-center rounded-xl border border-stone-100 bg-white text-forest-deep"
 						>
 							<i class="{channel.icon} text-sm"></i>
 						</div>
 						<h3 class="mb-2 text-base font-bold text-forest-deep">{channel.title}</h3>
-						<p class="mb-5 text-xs leading-relaxed text-gray-500">{channel.text}</p>
+						<p class="mb-5 text-xs leading-relaxed text-stone-500">{channel.text}</p>
 					</div>
 					<div class="flex items-end justify-between gap-3">
 						<div class="text-sm font-semibold text-forest-deep">
 							{channel.value}
 							{#if channel.extra}
-								<span class="block text-xs font-normal text-gray-500">{channel.extra}</span>
+								<span class="block text-xs font-normal text-stone-500">{channel.extra}</span>
 							{/if}
 						</div>
-						<i class="fa-solid fa-arrow-right text-xs text-gray-400"></i>
+						<i class="fa-solid fa-arrow-right text-xs text-stone-400"></i>
 					</div>
 				</a>
 			{/each}

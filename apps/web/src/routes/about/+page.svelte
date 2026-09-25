@@ -1,8 +1,8 @@
 <script lang="ts">
-	import CtaBanner from '$lib/components/CtaBanner.svelte';
-	import { ctaBackground, features, stats, visionMission } from '$lib/data/content';
-	import { img, media } from '$lib/data/media';
-	import { site } from '$lib/data/site';
+import CtaBanner from '$lib/components/CtaBanner.svelte';
+import { ctaBackground, features, stats, visionMission } from '$lib/data/content';
+import { img, media } from '$lib/data/media';
+import { site } from '$lib/data/site';
 </script>
 
 <svelte:head>
@@ -14,7 +14,7 @@
 </svelte:head>
 
 <!-- Hero -->
-<section class="relative flex min-h-[460px] items-center justify-center overflow-hidden bg-gray-900 sm:min-h-[520px]">
+<section class="relative flex min-h-[460px] items-center justify-center overflow-hidden bg-forest-deep sm:min-h-[520px]">
 	<img
 		class="absolute inset-0 size-full object-cover object-center brightness-[0.70]"
 		src={img(media['about-us']['travelers-joyfully-cheering-outdoors-in-nature'], 2000)}
@@ -24,22 +24,22 @@
 	/>
 	<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-black/50"></div>
 
-	<div class="relative z-10 mx-auto max-w-4xl space-y-4 px-4 text-center text-white">
+	<div class="relative z-10 mx-auto max-w-4xl space-y-4 px-6 text-center text-white">
 		<h1 class="text-3xl font-extrabold tracking-tight drop-shadow-md sm:text-4xl md:text-5xl lg:text-6xl">
 			About Us
 		</h1>
-		<p class="mx-auto max-w-2xl text-sm leading-relaxed font-normal text-gray-200 drop-shadow sm:text-base">
+		<p class="mx-auto max-w-2xl text-sm leading-relaxed font-normal text-stone-200 drop-shadow sm:text-base">
 			Born from a deep passion for sharing the untouched magic and legendary warmth of Banggai.
 		</p>
 	</div>
 </section>
 
 <!-- Our story + stats -->
-<section class="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-24 lg:px-8">
+<section class="mx-auto max-w-7xl px-6 py-16 md:py-24">
 	<div class="max-w-4xl">
 		<div class="mb-6 flex items-center space-x-2.5">
 			<span class="inline-block h-[3px] w-7 rounded-full bg-gold-deep"></span>
-			<span class="text-xs font-bold tracking-[0.2em] text-gray-600 uppercase">OUR STORY</span>
+			<span class="text-xs font-bold tracking-[0.2em] text-stone-600 uppercase">OUR STORY</span>
 		</div>
 
 		<h2 class="mb-8 text-2xl leading-snug font-extrabold text-forest-deep sm:text-3xl sm:leading-tight md:text-[34px]">
@@ -48,7 +48,7 @@
 			culture, and breathtaking marine life, navigating them requires genuine local knowledge.
 		</h2>
 
-		<p class="mb-14 text-base leading-relaxed text-gray-600 md:text-lg">
+		<p class="mb-14 text-base leading-relaxed text-stone-600 md:text-lg">
 			Founded by locals and hospitality enthusiasts, we bridge the gap between curious global
 			travelers and authentic island experiences. We take care of every detail—from seamless island
 			transfers to tailored daily itineraries—allowing you to immerse yourself fully in the magic of
@@ -57,7 +57,7 @@
 	</div>
 
 	<div
-		class="grid grid-cols-1 gap-8 divide-y divide-gray-200 rounded-2xl border border-gray-100 bg-sand p-6 shadow-sm sm:grid-cols-2 sm:divide-y-0 sm:divide-x sm:p-8 lg:grid-cols-4 lg:p-10"
+		class="grid grid-cols-1 gap-8 divide-y divide-stone-200 rounded-2xl border border-stone-100 bg-white p-6 shadow-sm sm:grid-cols-2 sm:divide-y-0 sm:divide-x sm:p-8 lg:grid-cols-4 lg:p-10"
 	>
 		{#each stats as stat, index (stat.label)}
 			<div
@@ -68,7 +68,7 @@
 				<span class="text-4xl font-black tracking-tight text-forest-deep md:text-5xl">
 					{stat.value}
 				</span>
-				<p class="mt-2 text-xs leading-snug text-gray-500 md:text-sm">{stat.label}</p>
+				<p class="mt-2 text-xs leading-snug text-stone-500 md:text-sm">{stat.label}</p>
 			</div>
 		{/each}
 	</div>
@@ -76,35 +76,35 @@
 
 <!-- Vision & mission -->
 <section class="bg-white py-12 md:py-20">
-	<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+	<div class="mx-auto max-w-7xl px-6">
 		<div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-12">
 			<div>
 				<div class="mb-8 flex items-center space-x-2.5">
 					<span class="inline-block h-[3px] w-7 rounded-full bg-gold-deep"></span>
-					<span class="text-xs font-bold tracking-[0.2em] text-gray-600 uppercase">
+					<span class="text-xs font-bold tracking-[0.2em] text-stone-600 uppercase">
 						VISION &amp; MISSION
 					</span>
 				</div>
 
 				<div class="space-y-6">
 					{#each visionMission as item (item.title)}
-						<div class="rounded-2xl border border-gray-100 bg-sand p-6 shadow-sm sm:p-7">
+						<div class="rounded-2xl border border-stone-100 bg-white p-6 shadow-sm sm:p-7">
 							<div class="mb-4 flex items-center gap-3">
 								<span
-									class="flex size-10 items-center justify-center rounded-xl border border-gray-100 bg-white text-forest-deep"
+									class="flex size-10 items-center justify-center rounded-xl border border-stone-100 bg-white text-forest-deep"
 								>
 									<i class="{item.icon} text-xs"></i>
 								</span>
 								<h3 class="text-lg font-bold text-forest-deep">{item.title}</h3>
 							</div>
-							<p class="text-sm leading-relaxed text-gray-500">{item.text}</p>
+							<p class="text-sm leading-relaxed text-stone-500">{item.text}</p>
 						</div>
 					{/each}
 				</div>
 			</div>
 
 			<div class="relative">
-				<div class="overflow-hidden rounded-3xl border border-gray-100 shadow-lg">
+				<div class="overflow-hidden rounded-3xl border border-stone-100 shadow-lg">
 					<img
 						class="h-[400px] w-full object-cover object-center transition duration-500 hover:scale-105 sm:h-[460px]"
 						src={img(
@@ -125,8 +125,8 @@
 </section>
 
 <!-- Why choose us -->
-<section class="bg-sand py-16 md:py-24">
-	<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+<section class="border-t border-stone-100 bg-white py-16 md:py-24">
+	<div class="mx-auto max-w-7xl px-6">
 		<div class="mx-auto mb-14 max-w-3xl text-center">
 			<h2 class="text-2xl font-extrabold text-forest-deep md:text-3xl">
 				The Reason Travelers<br />Choose Banggai Escape
@@ -136,16 +136,16 @@
 		<div class="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
 			{#each features as feature (feature.title)}
 				<div
-					class="flex flex-col justify-between rounded-2xl border border-gray-100 bg-white p-7 shadow-sm transition hover:shadow-md"
+					class="flex flex-col justify-between rounded-2xl border border-stone-100 bg-white p-7 shadow-sm transition hover:shadow-md"
 				>
 					<div>
 						<div
-							class="mb-5 flex size-12 items-center justify-center rounded-xl border border-gray-100 bg-gray-50 text-gray-700"
+							class="mb-5 flex size-12 items-center justify-center rounded-xl border border-stone-100 bg-white text-stone-700"
 						>
 							<i class="{feature.icon} text-base"></i>
 						</div>
 						<h3 class="mb-2.5 text-lg font-bold text-forest-deep">{feature.title}</h3>
-						<p class="text-sm leading-relaxed text-gray-500">{feature.text}</p>
+						<p class="text-sm leading-relaxed text-stone-500">{feature.text}</p>
 					</div>
 				</div>
 			{/each}

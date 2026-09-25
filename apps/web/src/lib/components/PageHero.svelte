@@ -1,32 +1,32 @@
 <script lang="ts">
-	type Crumb = { label: string; href?: string };
+type Crumb = { label: string; href?: string };
 
-	type Props = {
-		title: string;
-		subtitle?: string;
-		image: string;
-		crumbs?: Crumb[];
-		/** Extra classes controlling the band's height. */
-		height?: string;
-		align?: 'center' | 'left';
-	};
+type Props = {
+	title: string;
+	subtitle?: string;
+	image: string;
+	crumbs?: Crumb[];
+	/** Extra classes controlling the band's height. */
+	height?: string;
+	align?: 'center' | 'left';
+};
 
-	let {
-		title,
-		subtitle,
-		image,
-		crumbs = [],
-		height = 'py-24 md:py-32',
-		align = 'center'
-	}: Props = $props();
+let {
+	title,
+	subtitle,
+	image,
+	crumbs = [],
+	height = 'py-24 md:py-32',
+	align = 'center',
+}: Props = $props();
 
-	const style = $derived(
-		`background-image: linear-gradient(rgba(12, 37, 28, 0.45), rgba(12, 37, 28, 0.55)), url('${image}'); background-size: cover; background-position: center;`
-	);
+const style = $derived(
+	`background-image: linear-gradient(rgba(12, 37, 28, 0.45), rgba(12, 37, 28, 0.55)), url('${image}'); background-size: cover; background-position: center;`,
+);
 </script>
 
 <section
-	class="relative flex items-center px-4 text-white {height} {align === 'center'
+	class="relative flex items-center px-6 text-white {height} {align === 'center'
 		? 'justify-center text-center'
 		: ''}"
 	{style}

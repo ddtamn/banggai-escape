@@ -246,18 +246,54 @@ in preview. If the page renders unstyled, the build is stale or the CSS bundle w
 not regenerated — rebuild.
 
 Remember the runtime difference: `platform.env`, `ctx`, and `caches` exist in
-`wrangler dev`/production but are `undefined` in `pnpm dev` (Node). Nothing in `src`
-uses them today, but if you add code that does, always optional-chain `platform`.
+`wrangler dev`/production but are `undefined` in `pnpm dev` (Node). Always
+optional-chain `platform` — `apps/admin`'s media code reads
+`platform?.env.MEDIA_PUBLIC_URL` and `platform?.env.R2_MEDIA`.
+
+---
+
+## `pnpm --filter admin preview` 500s with `DATABASE_URL is not set`
+
+**Symptom:** the built Worker starts and routes, but every page — `/login` included —
+comes back `500`, and the worker log shows
+
+```
+Error: DATABASE_URL is not set
+```
+
+**Cause:** `preview` runs `.svelte-kit/cloudflare/_worker.js` under `wrangler dev`, and a
+Worker's `env` comes from **`.dev.vars`**, not from `.env`. A checkout whose values live
+only in `apps/admin/.env` therefore hands the Worker an `env` with no `DATABASE_URL`, and
+`db/index.ts` throws on the first database call — which `hooks.server.ts` makes on every
+request, so nothing renders at all.
+
+`pnpm dev` is unaffected, because SvelteKit's dev server fills `$env/dynamic/private` from
+`.env`. That asymmetry is the whole trap: dev works, so nothing looks wrong until the
+first preview.
+
+**Fix:** put the app's runtime variables in `apps/admin/.dev.vars` too (the values may be
+copied from `.env`):
+
+```sh
+DATABASE_URL="postgres://…"
+ORIGIN="http://localhost:4173"
+BETTER_AUTH_SECRET="…"
+```
+
+Production has no `.dev.vars` at all — the same values are Worker secrets set with
+`wrangler secret put`. See
+[14-admin-app](./14-admin-app.md#local-environment-files).
 
 ---
 
 ## A filter command fails with "no projects matched"
 
 **Cause:** you filtered on a package that has no `package.json` — most likely
-`@banggai/admin`, which is a deliberate placeholder.
+`@banggai/admin`. The admin app exists, but its package is named **`admin`**, with no
+scope.
 
-**Fix:** filter on `@banggai/web` instead. Scaffold the admin app before using
-`@banggai/admin` (see [apps/admin/README.md](../apps/admin/README.md)).
+**Fix:** filter on `@banggai/web` for the site, or on `admin` for the back-office
+(`pnpm --filter admin check`). See [14-admin-app](./14-admin-app.md).
 
 ---
 

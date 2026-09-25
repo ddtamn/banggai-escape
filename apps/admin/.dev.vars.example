@@ -11,6 +11,15 @@
 # `/media/<key>` route, which reads the local bucket.
 MEDIA_PUBLIC_URL=""
 
-# Local-only secrets, if you prefer them here over `apps/admin/.env`:
+# The app's runtime variables. **These are required to run the built Worker** —
+# `pnpm --filter admin preview` serves `.svelte-kit/cloudflare/_worker.js` under
+# `wrangler dev`, and that Worker's `env` comes from this file alone. A checkout whose
+# values only live in `.env` answers `500 · DATABASE_URL is not set` on every route.
+#
+# `pnpm dev` does not need them here: SvelteKit's dev server fills
+# `$env/dynamic/private` from `.env`, which is exactly why this is easy to miss until the
+# first time you preview. Copy each value across from `.env` to preview locally, and in
+# production supply them with `wrangler secret put` instead of a file.
 # BETTER_AUTH_SECRET=""
 # DATABASE_URL=""
+# ORIGIN=""

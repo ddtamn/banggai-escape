@@ -282,6 +282,16 @@ inlined at build time. For production, set them with
 configuration (API tokens, account ids) and `.dev.vars` for the Worker's `env`. A token
 in `.dev.vars` is ignored; a binding in `.env` is invisible to the Worker.
 
+> **`pnpm --filter admin preview` needs the app's variables in `.dev.vars`, not `.env`.**
+> `preview` serves the *built* Worker under `wrangler dev`, and that Worker's `env` comes
+> from `.dev.vars` alone — so a checkout whose values live only in `.env` answers
+> `500 · DATABASE_URL is not set` on **every** route, `/login` included. `pnpm dev` is
+> unaffected, because SvelteKit's dev server fills `$env/dynamic/private` from `.env`, and
+> that asymmetry is what makes this easy to miss until the first preview. Copy
+> `DATABASE_URL`, `ORIGIN` and `BETTER_AUTH_SECRET` into `.dev.vars` to run the production
+> bundle locally. See
+> [12-troubleshooting](./12-troubleshooting.md#pnpm---filter-admin-preview-500s-with-database_url-is-not-set).
+
 The committed `.dev.vars.example` sets `MEDIA_PUBLIC_URL=""` for local development. That
 is not a default anyone should copy blindly — see [Serving an
 upload](#serving-an-upload) for why an empty value is the correct one locally.

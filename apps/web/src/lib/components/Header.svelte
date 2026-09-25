@@ -66,7 +66,9 @@ $effect(() => {
 		<div class="flex items-center space-x-2 sm:space-x-5">
 			<LanguageSwitcher {languages} />
 
-			<a class="btn-gold hidden lg:inline-flex" href="/contact">Contact us</a>
+			<a class="btn-gold hidden lg:inline-flex" href="/contact" data-track="contact_click"
+				>Contact us</a
+			>
 
 			<button
 				type="button"
@@ -137,6 +139,7 @@ $effect(() => {
 				<a
 					class="btn-gold block w-full text-center"
 					href="/contact"
+					data-track="contact_click"
 					onclick={() => (open = false)}>Contact us</a
 				>
 			</div>

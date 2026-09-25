@@ -270,6 +270,7 @@ $effect(() => {
 					<a
 						class="block w-full rounded-xl bg-gold px-4 py-3.5 text-center text-xs font-bold tracking-wider text-forest-deep uppercase shadow-sm transition-all hover:bg-gold-deep"
 						href="/contact?package={pkg.slug}"
+						data-track="booking_cta_click"
 					>
 						Book Now
 					</a>
@@ -324,7 +325,9 @@ $effect(() => {
 					<span class="text-[11px] font-medium text-stone-400">/Person</span>
 				</div>
 			</div>
-			<a class="btn-gold shrink-0" href="/contact?package={pkg.slug}">Book Now</a>
+			<a class="btn-gold shrink-0" href="/contact?package={pkg.slug}" data-track="booking_cta_click"
+				>Book Now</a
+			>
 		</div>
 	</div>
 {/if}

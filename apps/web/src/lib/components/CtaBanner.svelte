@@ -1,10 +1,18 @@
 <script lang="ts">
+import type { AnalyticsEvent } from '@banggai/content-model';
+
 type Props = {
 	title: string;
 	text?: string;
 	ctaLabel?: string;
 	ctaHref?: string;
 	image: string;
+	/**
+	 * The event this banner's call to action reports. Declared rather than assumed, and
+	 * defaulted because every banner on the site closes on the same invitation to get in
+	 * touch. See `$lib/analytics` — `data-track` is read by one delegated listener.
+	 */
+	track?: AnalyticsEvent;
 };
 
 let {
@@ -13,6 +21,7 @@ let {
 	ctaLabel = 'Book your trip',
 	ctaHref = '/contact',
 	image,
+	track = 'booking_cta_click',
 }: Props = $props();
 
 const lines = $derived(title.split('\n'));
@@ -31,6 +40,6 @@ const style = $derived(
 		{#if text}
 			<p class="mx-auto mb-8 max-w-md text-xs font-normal text-stone-200 sm:text-sm">{text}</p>
 		{/if}
-		<a class="btn-gold px-8 py-3.5" href={ctaHref}>{ctaLabel}</a>
+		<a class="btn-gold px-8 py-3.5" href={ctaHref} data-track={track}>{ctaLabel}</a>
 	</div>
 </section>

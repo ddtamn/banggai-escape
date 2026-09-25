@@ -19,6 +19,17 @@
 	"vars": {
 		"MEDIA_PUBLIC_URL": "https://media.banggaiescape.com"
 	},
+	// One data point per navigation and per tracked click, written here rather than by the
+	// browser so that a blocked beacon cannot silently hide a page view. Cloudflare creates
+	// the dataset on the first write, so this is the only place its name is declared — rename
+	// it and you start a second, empty table. The column layout is fixed in
+	// `@banggai/content-model` (`analytics.ts`) and read back by the admin.
+	"analytics_engine_datasets": [
+		{
+			"binding": "ANALYTICS",
+			"dataset": "BANGGAI_SITE_EVENTS"
+		}
+	],
 	"workers_dev": true,
 	"preview_urls": true
 }

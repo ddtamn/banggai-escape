@@ -68,11 +68,15 @@ const year = 2026;
 				</h4>
 				<p class="flex items-center gap-2 text-stone-300">
 					<i class="fa-solid fa-phone text-xs text-gold"></i>
-					<a class="transition hover:text-gold" href={site.phoneHref}>{site.phone}</a>
+					<a class="transition hover:text-gold" href={site.phoneHref} data-track="contact_click"
+						>{site.phone}</a
+					>
 				</p>
 				<p class="flex items-center gap-2 text-stone-300">
 					<i class="fa-regular fa-envelope text-xs text-gold"></i>
-					<a class="transition hover:text-gold" href="mailto:{site.email}">{site.email}</a>
+					<a class="transition hover:text-gold" href="mailto:{site.email}" data-track="contact_click"
+						>{site.email}</a
+					>
 				</p>
 			</div>
 		</div>

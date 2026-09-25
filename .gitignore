@@ -34,5 +34,6 @@ vite.config.ts.timestamp-*
 # Neon CLI link state (org/project/branch IDs)
 .neon
 
-# One-shot content migration snapshot (apps/web export -> apps/admin import)
+# Leftover snapshot from the pre-Neon content migration. Nothing reads it any more, but
+# it is still ignored so a stale directory on an old checkout cannot be committed.
 /.migration

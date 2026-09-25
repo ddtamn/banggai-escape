@@ -1,0 +1,16 @@
+[TEMPLATE]
+# Local `wrangler dev` bindings. Copy to `.dev.vars` (git-ignored).
+#
+# Wrangler reads `.env` for its own configuration and this file for the Worker's `env`,
+# so the two are not interchangeable. Values here override `vars` in `wrangler.jsonc`,
+# and anything listed as a secret (`wrangler secret put <NAME>`) belongs here locally.
+
+# Blank on purpose in local development. `wrangler.jsonc` points this at the production
+# media host, but a local upload is written to the local R2 simulation, so that host
+# does not have the bytes. Empty means `publicMediaUrl()` falls back to this Worker's own
+# `/media/<key>` route, which reads the local bucket.
+MEDIA_PUBLIC_URL=""
+
+# Local-only secrets, if you prefer them here over `apps/admin/.env`:
+# BETTER_AUTH_SECRET=""
+# DATABASE_URL=""

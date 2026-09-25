@@ -1,0 +1,31 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "admin",
+	"compatibility_date": "2026-09-25",
+	"compatibility_flags": [
+		"nodejs_als"
+	],
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	// Uploaded media. `media.banggaiescape.com` is a custom domain on this bucket, so
+	// objects are read straight from R2's edge with no Worker in the path. The
+	// `r2.dev` public URL stays **disabled**: it is rate-limited, not a production host.
+	"r2_buckets": [
+		{
+			"binding": "R2_MEDIA",
+			"bucket_name": "banggaiescape-media"
+		}
+	],
+	// Where a published media object is read from. A var rather than a constant so
+	// `wrangler dev` can leave it empty and fall back to this Worker's own
+	// `/media/<key>` route — a local upload is written to the local R2 simulation, so it
+	// does not exist on the production host. See MEDIA_PUBLIC_URL in docs/14.
+	"vars": {
+		"MEDIA_PUBLIC_URL": "https://media.banggaiescape.com"
+	},
+	"workers_dev": true,
+	"preview_urls": true
+}

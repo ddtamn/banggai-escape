@@ -1,0 +1,3 @@
+ALTER TABLE "media_assets" ALTER COLUMN "mime_type" DROP NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "media_assets_external_url_idx" ON "media_assets" USING btree ("external_url") WHERE "media_assets"."external_url" is not null;--> statement-breakpoint
+ALTER TABLE "media_assets" ADD CONSTRAINT "media_assets_upload_check" CHECK ("media_assets"."object_key" is null or "media_assets"."mime_type" is not null);

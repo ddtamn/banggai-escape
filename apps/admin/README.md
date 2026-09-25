@@ -1,26 +1,44 @@
-# Banggai Escape — Admin (placeholder)
+# sv
 
-Reserved workspace for the future **admin / back-office** app: tour package and
-destination management, booking enquiries from the contact form, blog authoring
-and media uploads.
+Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
 
-Nothing is scaffolded here yet — intentionally. There is no `package.json`, so
-`pnpm install` and the workspace filter skip this directory until the app is
-initialised.
+## Creating a project
 
-## When you are ready to build it
+If you're seeing this, you've probably already done this step. Congrats!
 
 ```sh
-pnpm create svelte@latest apps/admin   # pick SvelteKit, TypeScript, no demo app
-pnpm install
+# create a new project
+npx sv create my-app
 ```
 
-Conventions to follow once it exists:
+To recreate the original **scaffold** with the same configuration (this is history, not
+the current app — the demo `task` table, `better-auth` demo routes, and
+`vitest-examples/` have since been replaced; see `docs/14-admin-app.md`):
 
-- Name the package `@banggai/admin` so `pnpm --filter @banggai/admin <script>` works.
-- Reuse the design system in [`../../DESIGN.md`](../../DESIGN.md): the same forest /
-  gold / warm-sand `@theme` tokens, Plus Jakarta Sans, and the pill-and-hairline
-  component language. Copy `apps/web/src/routes/layout.css` as the token source
-  rather than re-deriving colours.
-- Keep shared, app-agnostic types (packages, destinations, posts) in a future
-  `packages/*` workspace rather than importing across apps.
+```sh
+# recreate this project
+pnpm dlx sv@0.17.1 create --template minimal --types ts --add vitest="usages:unit,component" tailwindcss="plugins:typography,forms" sveltekit-adapter="adapter:cloudflare+cfTarget:workers" better-auth="demo:password" drizzle="database:postgresql+postgresql:neon" --install pnpm .
+```
+
+## Developing
+
+Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+
+```sh
+npm run dev
+
+# or start the server and open the app in a new browser tab
+npm run dev -- --open
+```
+
+## Building
+
+To create a production version of your app:
+
+```sh
+npm run build
+```
+
+You can preview the production build with `npm run preview`.
+
+> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.

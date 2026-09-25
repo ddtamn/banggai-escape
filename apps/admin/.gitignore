@@ -1,0 +1,33 @@
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Committed, intentionally empty: the `wrangler types --env-file` source (see .env.types)
+!.env.types
+
+# Wrangler's local secrets file. Never commit it; the committed template documents the
+# keys. The negation has to live in this file too: git resolves ignores from the
+# shallowest .gitignore down, so the root one alone would be overridden here.
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*

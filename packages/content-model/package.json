@@ -1,0 +1,18 @@
+{
+	"name": "@banggai/content-model",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"check": "tsc --noEmit"
+	},
+	"dependencies": {
+		"zod": "^4.6.5"
+	},
+	"devDependencies": {
+		"typescript": "^6.0.3"
+	}
+}

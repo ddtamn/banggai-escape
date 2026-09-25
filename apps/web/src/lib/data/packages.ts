@@ -1,32 +1,20 @@
+import type { PackageSource, TripType } from '@banggai/content-model';
 import { img, media } from './media';
 
-export type TripType = 'Open Trip' | 'Private Trip';
+/**
+ * The shape of a package is defined once, in `@banggai/content-model`, so the admin
+ * validates and `apps/web` renders the same contract. These are aliases, not a second
+ * declaration — keep them so the rest of the site keeps its existing import names.
+ *
+ * The `…Source` variant is the authored one: its media fields hold what is written
+ * here (a bare CDN asset id or an absolute URL) rather than a `media_assets` id. The
+ * stored payloads use ids; this file stops being the source of truth in Phase 4.
+ */
+export type { TripType };
 
-export type ItineraryDay = {
-	label: string;
-	title: string;
-	text: string;
-};
+export type Package = PackageSource;
 
-export type Package = {
-	slug: string;
-	title: string;
-	subtitle: string;
-	region: string;
-	days: number;
-	nights: number;
-	tripType: TripType;
-	/** Price per person in IDR. */
-	price: number;
-	image: string;
-	groupSize: string;
-	accommodation: string;
-	overview: string;
-	highlights: { title: string; text: string }[];
-	included: string[];
-	itinerary: ItineraryDay[];
-	featured?: boolean;
-};
+export type ItineraryDay = PackageSource['itinerary'][number];
 
 /** Formats a number as an Indonesian rupiah amount: 2850000 -> "IDR 2.850.000". */
 export const formatPrice = (price: number): string => `IDR ${price.toLocaleString('id-ID')}`;

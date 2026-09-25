@@ -1,6 +1,17 @@
 /** Global site chrome: brand, navigation, contact details and footer link groups. */
 
-export const site = {
+import type {
+	Language as LanguageModel,
+	NavItem as NavItemModel,
+	SiteProfile,
+	Social,
+} from '@banggai/content-model';
+
+export type NavItem = NavItemModel;
+
+export type Language = LanguageModel;
+
+export const site: SiteProfile = {
 	name: 'Banggai Escape',
 	tagline: 'Connecting Curious Travelers with Authentic Island Life.',
 	locale: 'en',
@@ -11,8 +22,6 @@ export const site = {
 	reviewCount: 200,
 };
 
-export type NavItem = { label: string; href: string };
-
 export const nav: NavItem[] = [
 	{ label: 'Home', href: '/' },
 	{ label: 'Packages', href: '/packages' },
@@ -22,15 +31,13 @@ export const nav: NavItem[] = [
 	{ label: 'Contact', href: '/contact' },
 ];
 
-export type Language = { code: string; label: string; flag: string };
-
 /** Language options for the header switcher. UI only — no translation is wired up yet. */
 export const languages: Language[] = [
 	{ code: 'EN', label: 'English', flag: 'https://flagcdn.com/us.svg' },
 	{ code: 'ID', label: 'Bahasa Indonesia', flag: 'https://flagcdn.com/id.svg' },
 ];
 
-export const socials: { label: string; icon: string; href: string }[] = [
+export const socials: Social[] = [
 	{ label: 'Instagram', icon: 'fa-brands fa-instagram', href: '#' },
 	{ label: 'TikTok', icon: 'fa-brands fa-tiktok', href: '#' },
 	{ label: 'Facebook', icon: 'fa-brands fa-facebook-f', href: '#' },

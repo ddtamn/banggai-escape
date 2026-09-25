@@ -3,13 +3,28 @@
  * channels. Sourced from the Home, About Us and Contact Stitch designs.
  */
 
+import type {
+	ContactChannel as ContactChannelModel,
+	FaqItem as FaqItemModel,
+	Feature as FeatureModel,
+	Stat as StatModel,
+	TestimonialSource,
+} from '@banggai/content-model';
 import { img, media } from './media';
 import { site } from './site';
 
+/**
+ * Declared once in `@banggai/content-model`; aliased here so callers are unchanged. The
+ * testimonial avatar is the authored value here and a media id once stored.
+ */
+export type Feature = FeatureModel;
+export type Testimonial = TestimonialSource;
+export type FaqItem = FaqItemModel;
+export type Stat = StatModel;
+export type ContactChannel = ContactChannelModel;
+
 /** Single CTA banner background shared by every page for a consistent look. */
 export const ctaBackground = img(media.contact['turquoise-ocean-water-background'], 2000);
-
-export type Feature = { icon: string; title: string; text: string };
 
 /** "The Reason Travelers Choose Banggai Escape" — reused on Home and About Us. */
 export const features: Feature[] = [
@@ -44,14 +59,6 @@ export const features: Feature[] = [
 		text: "Thoughtfully curated moments that connect you meaningfully with Banggai's untouched nature and culture.",
 	},
 ];
-
-export type Testimonial = {
-	quote: string;
-	name: string;
-	country: string;
-	/** Asset id used to build the avatar URL with `img()`. */
-	avatar: string;
-};
 
 export const testimonials: Testimonial[] = [
 	{
@@ -91,8 +98,6 @@ export const testimonials: Testimonial[] = [
 	},
 ];
 
-export type FaqItem = { question: string; answer: string };
-
 export const faqs: FaqItem[] = [
 	{
 		question: 'How do I get to Banggai?',
@@ -126,8 +131,6 @@ export const faqs: FaqItem[] = [
 	},
 ];
 
-export type Stat = { value: string; label: string };
-
 export const stats: Stat[] = [
 	{
 		value: '5+',
@@ -156,16 +159,6 @@ export const visionMission: Feature[] = [
 		text: "To deliver safe, seamless, and deeply enriching travel experiences while preserving Banggai's natural ecosystems and empowering local coastal communities.",
 	},
 ];
-
-export type ContactChannel = {
-	icon: string;
-	title: string;
-	text: string;
-	value: string;
-	/** Second line for multi-line values such as the office address. */
-	extra?: string;
-	href: string;
-};
 
 export const contactChannels: ContactChannel[] = [
 	{

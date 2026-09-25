@@ -1,26 +1,14 @@
+import type { ArticleSource, Block as ArticleBlock } from '@banggai/content-model';
 import { img, media } from './media';
 
-export type Block =
-	| { kind: 'p'; text: string }
-	| { kind: 'h'; id: string; text: string }
-	| { kind: 'steps'; items: { title: string; text: string }[] }
-	| { kind: 'callout'; title: string; text: string };
+/**
+ * Declared once in `@banggai/content-model`; aliased here so callers are unchanged. The
+ * `…Source` variant is the authored one, whose media fields hold CDN ids or URLs rather
+ * than `media_assets` ids.
+ */
+export type Post = ArticleSource;
 
-export type Post = {
-	slug: string;
-	category: string;
-	tags: string[];
-	title: string;
-	excerpt: string;
-	image: string;
-	date: string;
-	updated: string;
-	readTime: string;
-	author: string;
-	authorRole: string;
-	hero: string;
-	body: Block[];
-};
+export type Block = ArticleBlock;
 
 export const author = {
 	name: 'Banggai Escape Team',

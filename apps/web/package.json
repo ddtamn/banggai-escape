@@ -10,11 +10,13 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"gen": "wrangler types"
+		"gen": "wrangler types",
+		"migrate:export": "tsx scripts/export-content.ts"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-cloudflare": "next",
-		"@sveltejs/kit": "next",
+		"@banggai/content-model": "workspace:*",
+		"@sveltejs/adapter-cloudflare": "^7.2.8",
+		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
 		"@tailwindcss/forms": "^0.5.11",
 		"@tailwindcss/typography": "^0.5.19",
@@ -22,6 +24,7 @@
 		"svelte": "^5.56.1",
 		"svelte-check": "^4.6.0",
 		"tailwindcss": "^4.3.0",
+		"tsx": "^4.23.15",
 		"typescript": "^6.0.3",
 		"vite": "^8.0.16",
 		"wrangler": "^4.97.0"

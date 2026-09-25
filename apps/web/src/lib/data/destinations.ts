@@ -1,26 +1,16 @@
+import type { DestinationSource } from '@banggai/content-model';
 import { img, media } from './media';
 
-export type QuickInfo = {
-	bestTime: string;
-	duration: string;
-	highlights: string;
-	accessibility: string;
-};
+/**
+ * Declared once in `@banggai/content-model`; aliased here so callers are unchanged. The
+ * `…Source` variant is the authored one, whose media fields hold CDN ids or URLs rather
+ * than `media_assets` ids.
+ */
+export type Destination = DestinationSource;
 
-export type Experience = { title: string; text: string };
+export type QuickInfo = DestinationSource['quickInfo'];
 
-export type Destination = {
-	slug: string;
-	name: string;
-	region: string;
-	tagline: string;
-	image: string;
-	overview: string[];
-	quickInfo: QuickInfo;
-	experiences: Experience[];
-	gallery: string[];
-	featured?: boolean;
-};
+export type Experience = DestinationSource['experiences'][number];
 
 const gallery = (keys: (keyof typeof media.destinations)[]): string[] =>
 	keys.map((key) => img(media.destinations[key]));

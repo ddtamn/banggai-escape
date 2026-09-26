@@ -106,6 +106,37 @@ describe('page copy is safe to deploy before the data exists', () => {
 		}
 	});
 
+	it('carries the copy the business approved, not a paraphrase of it', () => {
+		// This started as a check against the page, because the About default was written from
+		// a truncated `grep` and turned out to be a *paraphrase* of the two paragraphs rather
+		// than the paragraphs. It stopped working the moment the page began reading the CMS,
+		// which is the wrong moment for a transcription check to expire.
+		//
+		// So the approved words live here instead. The risk is permanent, not transitional: a
+		// fresh database is seeded from the schema's defaults, so a default that is a
+		// plausible-sounding paraphrase would give a new installation different words from the
+		// ones the business agreed to — and every one of them still validates.
+		//
+		// Apostrophes and dashes are folded before comparing, and that is deliberate. This is
+		// for *paraphrasing*, which changes what the business says; it is not for punctuation,
+		// which does not. A test that also failed on a straight apostrophe versus a curly one
+		// would fail again the next time somebody tidied a quotation mark, and the fix then
+		// would be to weaken or delete it — which is how a useful check dies.
+		const fold = (text: string) =>
+			text
+				.replace(/\s+/g, ' ')
+				.replace(/[‘’']/g, "'")
+				.replace(/[—\u2013]/g, '-');
+
+		/** What the About section said before it moved into the CMS, verbatim. */
+		const APPROVED_ABOUT = [
+			'At Banggai Escape, we are a team of local experts dedicated to sharing the untouched wonder of the Banggai Archipelago. Born from a deep passion for our home, we design seamless, personalized journeys that showcase vibrant marine life, pristine islands, and rich culture—all delivered with authentic warmth, safety, and comfort.',
+			'Travel is more than visiting a destination; it is about creating unforgettable stories. Banggai Escape was founded to bridge curious travelers with Central Sulawesi’s most breathtaking hidden paradise. With seasoned local guides, flexible itineraries, and dedicated support, we ensure every moment of your journey is effortless and extraordinary.',
+		];
+
+		expect(homePageCopySchema.parse({}).about.body.map(fold)).toEqual(APPROVED_ABOUT.map(fold));
+	});
+
 	it('lets a stored value override every default', () => {
 		// A default is a floor, not a ceiling. If an editor's value were being ignored the page
 		// would be uneditable in the most confusing way possible: the form would save, the

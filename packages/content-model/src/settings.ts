@@ -145,8 +145,8 @@ const homeSectionShape = {
  * `tsc --noEmit`.
  */
 const ABOUT_BODY: string[] = [
-	'At Banggai Escape, we are a team of local experts dedicated to sharing the untouched wonders of the Banggai Archipelago with curious travelers. From our home in Luwuk, we have spent years learning every hidden cove, charting the best currents, and building genuine relationships with the communities that call these islands home.',
-	'Travel is more than visiting a destination; it is about creating unforgettable stories. With deep local roots and a passion for our home, we design seamless, personalized journeys that let you experience Banggai the way we know it — thoughtfully, safely, and completely.',
+	'At Banggai Escape, we are a team of local experts dedicated to sharing the untouched wonder of the Banggai Archipelago. Born from a deep passion for our home, we design seamless, personalized journeys that showcase vibrant marine life, pristine islands, and rich culture—all delivered with authentic warmth, safety, and comfort.',
+	'Travel is more than visiting a destination; it is about creating unforgettable stories. Banggai Escape was founded to bridge curious travelers with Central Sulawesi’s most breathtaking hidden paradise. With seasoned local guides, flexible itineraries, and dedicated support, we ensure every moment of your journey is effortless and extraordinary.',
 ];
 
 export const homePageCopySchema = z

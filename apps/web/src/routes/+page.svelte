@@ -16,6 +16,9 @@ import { siteAgency } from '$lib/site-seo';
 
 let { data } = $props();
 
+/** This page's own words, from the CMS. See `siteSettingSchemas.homePage`. */
+const copy = $derived(data.settings.homePage);
+
 const ctaBackground = $derived(data.settings.ctaBackground);
 
 /** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
@@ -84,8 +87,8 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 </svelte:head>
 
 <Seo
-	title="{site.name} — Discover Banggai, Escape The Ordinary"
-	description="Banggai Escape designs seamless island journeys across the Banggai Archipelago in Central Sulawesi — mirror lakes, reef sanctuaries, and authentic local hospitality."
+	title={copy.seoTitle}
+	description={copy.seoDescription}
 	canonical={canonicalUrl}
 	siteName={site.name}
 	locale={site.locale}
@@ -128,20 +131,26 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 			class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 px-3.5 py-1 text-xs font-medium text-stone-100 backdrop-blur-sm md:mb-8"
 		>
 			<span class="size-1.5 rounded-full bg-gold"></span>
-			<span>New summer destinations added</span>
+			<span>{copy.badge}</span>
 		</div>
 
+		<!--
+			`\n` is a line break, split the same way `SectionHeader` and `CtaBanner` do it, so
+			an editor controls the wrap from the CMS without the markup carrying a `<br />`
+			that the copy has to be written around.
+		-->
 		<h1
 			class="mb-4 max-w-3xl text-3xl leading-[1.15] font-extrabold tracking-tight drop-shadow-md sm:text-4xl md:mb-5 md:text-5xl lg:text-6xl"
 		>
-			Discover Banggai<br />Escape The Ordinary
+			{#each copy.heading.split('\n') as line, index (line)}
+				{#if index > 0}<br />{/if}{line}
+			{/each}
 		</h1>
 
 		<p
 			class="mx-auto mb-8 max-w-2xl px-2 text-sm leading-relaxed font-normal text-stone-200 sm:text-base md:mb-12"
 		>
-			Embrace the natural beauty, culture, and heart of Banggai. Your journey
-			begins with Banggai Escape.
+			{copy.intro}
 		</p>
 
 		<BookingBar packages={data.bookingOptions} whatsapp={site.whatsapp} />
@@ -152,9 +161,9 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 <section class="section bg-white">
 	<div class="shell">
 		<SectionHeader
-			title={"The Banggai Experience"}
-			subtitle="Seamless planning, curated stays, and support at every step"
-			action={{ label: "View all packages", href: "/packages" }}
+			title={copy.packages.title}
+			subtitle={copy.packages.subtitle}
+			action={{ label: copy.packages.actionLabel, href: "/packages" }}
 		/>
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
 			{#each packages as pkg (pkg.slug)}
@@ -168,8 +177,8 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 <section class="section band-recessed">
 	<div class="shell">
 		<SectionHeader
-			title={"Curated Destinations\nby Banggai Escape"}
-			action={{ label: "View all destinations", href: "/destinations" }}
+			title={copy.destinations.title}
+			action={{ label: copy.destinations.actionLabel, href: "/destinations" }}
 		/>
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 			{#each destinations as destination (destination.slug)}
@@ -184,7 +193,9 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 	<div class="shell">
 		<div class="mx-auto mb-14 max-w-2xl text-center">
 			<h2 class="text-2xl font-extrabold text-stone-900 md:text-3xl">
-				The Reason Travelers<br />Choose Banggai Escape
+				{#each copy.features.title.split('\n') as line, index (line)}
+					{#if index > 0}<br />{/if}{line}
+				{/each}
 			</h2>
 		</div>
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -221,12 +232,11 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 	<div class="shell">
 		<div class="mb-8 md:mb-12">
 			<h2 class="mb-2 text-2xl font-extrabold text-stone-900 md:text-3xl">
-				About us
+				{copy.about.title}
 			</h2>
-			<p class="text-xs text-stone-500 sm:text-sm">
-				Born from a deep passion for sharing the untouched magic and legendary
-				warmth of Banggai.
-			</p>
+			{#if copy.about.subtitle}
+				<p class="text-xs text-stone-500 sm:text-sm">{copy.about.subtitle}</p>
+			{/if}
 		</div>
 		<div class="grid grid-cols-1 items-center gap-8 md:grid-cols-2 lg:gap-12">
 			<div
@@ -247,24 +257,16 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 			<div
 				class="space-y-4 text-base leading-relaxed text-stone-600 md:space-y-5"
 			>
-				<p>
-					At Banggai Escape, we are a team of local experts dedicated to sharing
-					the untouched wonder of the Banggai Archipelago. Born from a deep
-					passion for our home, we design seamless, personalized journeys that
-					showcase vibrant marine life, pristine islands, and rich culture—all
-					delivered with authentic warmth, safety, and comfort.
-				</p>
-				<p>
-					Travel is more than visiting a destination; it is about creating
-					unforgettable stories. Banggai Escape was founded to bridge curious
-					travelers with Central Sulawesi's most breathtaking hidden paradise.
-					With seasoned local guides, flexible itineraries, and dedicated
-					support, we ensure every moment of your journey is effortless and
-					extraordinary.
-				</p>
+				<!--
+					One stored paragraph per column, because the grid is two-up. The contract
+					requires at least two, so a shorter stored list cannot leave a hole here.
+				-->
+				{#each copy.about.body.slice(0, 2) as paragraph, index (index)}
+					<p>{paragraph}</p>
+				{/each}
 				<div class="pt-2 sm:pt-4">
 					<a class="btn-forest gap-2 px-5 py-3" href="/about">
-						<span>Learn More About Us</span>
+						<span>{copy.about.actionLabel}</span>
 						<Icon icon="fa-solid fa-arrow-right" size={10} />
 					</a>
 				</div>
@@ -278,7 +280,9 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 	<div class="shell">
 		<div class="mx-auto mb-14 max-w-xl text-center">
 			<h2 class="text-2xl font-extrabold text-stone-900 md:text-3xl">
-				The Banggai Escape<br />In Their Words
+				{#each copy.testimonials.title.split('\n') as line, index (line)}
+					{#if index > 0}<br />{/if}{line}
+				{/each}
 			</h2>
 		</div>
 
@@ -333,7 +337,7 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 
 		<div class="text-center">
 			<a class="btn-forest gap-2 px-5 py-3" href="/contact">
-				<span>See {site.reviewCount}+ Reviews</span>
+				<span>See {site.reviewCount}+ {copy.reviewsLabel}</span>
 				<Icon icon="fa-solid fa-arrow-right" size={10} />
 			</a>
 		</div>
@@ -348,8 +352,7 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 				<h2
 					class="mb-8 max-w-lg text-2xl leading-tight font-extrabold text-stone-900 md:text-3xl"
 				>
-					Everything you need to know about planning your seamless Banggai
-					experience.
+					{copy.faqs.title}
 				</h2>
 				<Faq items={faqs} />
 			</div>
@@ -376,9 +379,9 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 <section class="section bg-white">
 	<div class="shell">
 		<SectionHeader
-			title="Travel Insights"
-			subtitle="Explore our curated journal for local secrets, travel inspiration, and practical tips for your next escape."
-			action={{ label: "View all articles", href: "/blog" }}
+			title={copy.insights.title}
+			subtitle={copy.insights.subtitle}
+			action={{ label: copy.insights.actionLabel, href: "/blog" }}
 		/>
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
 			{#each posts as post (post.slug)}

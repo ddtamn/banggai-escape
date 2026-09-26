@@ -1282,26 +1282,28 @@ description as well as the URL, documented in
 landed too: the public Worker records validated page views and
 clicks, and the admin reads them back from Cloudflare's SQL API. The database no longer
 references the design-tool host; only the site's page-decoration images still come from the
-AIDA CDN. **Neither Worker is deployed yet**, which is also why the dashboard has never been
-seen against real aggregates.
+AIDA CDN. **Both Workers are deployed** — `admin.banggaiescape.com` and
+`banggaiescape.com`, each on its own custom domain, which `wrangler deploy` created the DNS
+records for — and both read the **production** Neon branch, the public one as the read-only
+`banggai_web` role. The dashboard has still never been seen against real aggregates, because
+its read token is the one setting that could not be created from here.
 
 1. **Component tests: started, not finished.** The `client` Vitest project now holds one
    spec — `FieldControl`, the form renderer, which is where the branching is. The screens
-   themselves (the overview's three states, the list's empty and filtered states, the
-   publish panel) are covered only by the browser checks, which is a reasonable place to
-   stop, but a second component spec would confirm the project is usable for whoever comes
-   next.
-2. **Deploy both Workers, with a least-privilege connection for the public one.** The
-   site's Worker still has no `banggai_web` role behind it — the role, the secret and
-   `MEDIA_PUBLIC_URL` are documented but unset — so Phase 6's staging/production split
-   is the gate before any of this is live. See
-   [11-deployment](./11-deployment.md#environment-and-secrets).
-   [02-architecture](./02-architecture.md) records what the site trades away by having no
-   static fallback.
-3. **The shadcn-svelte preset.** `components.json` still declares `"style": "rhea"`. The
-   `dashboard-01` and `login-01` blocks are in and adapted, so what is left is the preset
-   `b3XpoFP7kQ`, which would restyle the shell's tokens — a cross-cutting change to a
-   finished app, and a decision rather than a task.
+   themselves (the overview's three states, the list's empty and filtered states, the publish
+   panel) are covered only by the browser checks, which is a reasonable place to stop, but
+   a second component spec would confirm the project is usable for whoever comes next.
+2. **The analytics read token.** Everything else is deployed. The dashboard needs
+   `CLOUDFLARE_ANALYTICS_TOKEN` — Account → Account Analytics → Read — and it cannot be
+   minted from the token this repository holds, which lacks token-write permission. Until
+   it is set the dashboard shows its "Not configured yet" card, which names the setting and
+   the scope. The write path needs nothing: the deployed public Worker already created the
+   dataset. See
+   [11-deployment](./11-deployment.md#analytics-the-one-thing-left).
+3. **There is no staging environment.** The `dev` Neon branch is where the work was
+   rehearsed, and it still holds a copy of the content; the deployed Workers read
+   `production`. A staging branch with its own Workers is the remaining part of Phase 6 and
+   is not built.
 3. **Analytics — Cloudflare Workers Analytics Engine. Built.** The write path is live in
    the public Worker and the dashboard reads it in the admin; see
    [Analytics](#analytics-cloudflare-workers-analytics-engine) for what is wired and what

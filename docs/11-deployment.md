@@ -128,10 +128,75 @@ asserts that `banggai_web` **can** read `content_entries` and **cannot** read `u
 `session`, or write to `site_settings`.
 
 Locally, `vite dev` reads `apps/web/.env` and `pnpm preview` reads `apps/web/.dev.vars`
-(wrangler never reads `.env`). Both are git-ignored. They currently point at the same
-pooled connection as the admin, which is fine on a laptop and wrong in production — the
-deployed Worker must use `banggai_web`. See
-[12-troubleshooting](./12-troubleshooting.md#database-and-media-configuration-appsweb).
+(wrangler never reads `.env`). Both are git-ignored. **In production the two Workers do not
+share a database**: `apps/web`'s local files still point at the `dev` Neon branch, and the
+deployed Worker connects to `production` as `banggai_web`. That is the whole point of the
+role — a laptop can be pointed anywhere, a deployed Worker must not be.
+
+Because the roles now exist on the `production` branch, `neon connection-string` needs to be
+told which one to build:
+
+```sh
+neon connection-string br-<production-id> --role-name banggai_web
+```
+
+### How `production` got its content
+
+Worth recording, because the obvious next person will look for the script and it is not
+there.
+
+Phases 1–4 were rehearsed on the Neon `dev` branch, so for a long time **that branch was the
+only copy of the content**: the static modules it was migrated from were deleted, and the two
+one-shot scripts that loaded it were deleted with them. `production` had the auth tables and
+no content.
+
+It was seeded by a **single-use script that has since been deleted**, following the same
+convention as `export-content.ts` and `import-content.ts` before it. What it did, so it can be
+rebuilt if it ever has to be:
+
+1. `pnpm db:migrate` against `production`, for the content schema.
+2. A copy of `media_assets`, `content_entries`, `content_revisions`, `site_settings` and
+   `slug_redirects` from `dev`, ids and all, each insert `on conflict do nothing` so a re-run
+   adds nothing. The ids travel, so a media asset keeps the R2 object key it already has and
+   an entry keeps the slug its URL is built from.
+3. **Two passes, because the foreign key is circular.** `content_entries.published_revision_id`
+   points at `content_revisions` and `content_revisions.entry_id` points back. Entries went in
+   with a null pointer, revisions second, and the pointers were set by one `update … where
+   published_revision_id is null`.
+4. **Columns referencing `user` were nulled** — `site_settings.updated_by`,
+   `content_revisions.author_id`, `media_assets.uploaded_by`. The `user` table is not copied,
+   so a `dev` user id is a foreign key to a row that does not exist on the target, and the
+   value belongs to the branch it happened on. They were found by asking the catalogue which
+   columns reference `user`, not by a hand-written list.
+5. **A contract gate before the first insert.** `site_settings` and every *live* revision were
+   validated against `@banggai/content-model`, because those are the only rows the site
+   reads. Superseded revisions were reported rather than refused: 20 of the 40 on `dev` are
+   revision 1 from the first import, written before media references became
+   `media_assets` ids, so their `image` field holds the old CDN asset string and is not a
+   uuid. No entry points at one, so nothing serves them, but they are history and dropping
+   them would have lost the admin's rollback for rows no page can reach.
+6. `administrators` was **not** copied — it joins to `user`, and the two branches have
+   different accounts. The grant is a row for the account that exists on the target.
+
+Verified afterwards by reading the target back rather than trusting the copy: 20 live
+revisions, all valid; 13 settings, all valid; 29 media rows; **zero** dangling media
+references; zero entries whose pointer fails to resolve. A re-run reported every table
+`already present`, which is the idempotency the `on conflict do nothing` was for.
+
+### What is set where, today
+
+| Setting | App | Kind | Value |
+| --- | --- | --- | --- |
+| `DATABASE_URL` | admin | Worker secret | `banggai_admin` on the **production** branch |
+| `BETTER_AUTH_SECRET` | admin | Worker secret | generated for the deploy, not the local `.env` one |
+| `ORIGIN` | admin | var | `https://admin.banggaiescape.com` |
+| `DATABASE_URL` | web | Worker secret | `banggai_web` on the **production** branch |
+| `MEDIA_PUBLIC_URL` | both | var | `https://media.banggaiescape.com` |
+| `CLOUDFLARE_ACCOUNT_ID` | admin | var | the account that owns the zone and the bucket |
+| `CLOUDFLARE_ANALYTICS_TOKEN` | admin | Worker secret | **not set** — see [Analytics](#analytics-the-one-thing-left) |
+
+`ADMIN_DB_PASSWORD` and `WEB_DB_PASSWORD` are read only by `db:roles`. They are not Worker
+secrets and never leave the shell that ran it.
 
 When something *else* needs a secret:
 
@@ -172,11 +237,34 @@ pnpm --filter @banggai/web exec wrangler secret put MY_SECRET
 
 ## Custom domain
 
-1. In the Cloudflare dashboard, add the zone and create a Worker route or a custom
-   domain for the Worker (Workers → your Worker → Settings → Domains & Routes).
-2. Alternatively, declare it in `wrangler.jsonc` with a `routes` array and redeploy.
-3. `workers_dev` can then be set to `false` if you do not want the `*.workers.dev`
-   URL alongside the custom domain.
+**Both Workers are deployed on custom domains, and the DNS records are created by the
+deploy** — there is nothing to add by hand.
+
+| Worker | Hostname | `wrangler.jsonc` |
+| --- | --- | --- |
+| `banggai-escape` (public site) | `https://banggaiescape.com` | `apps/web` |
+| `admin` (back-office) | `https://admin.banggaiescape.com` | `apps/admin` |
+| R2 bucket `banggaiescape-media` | `https://media.banggaiescape.com` | bucket custom domain, not a Worker |
+
+Each app declares a `routes` entry with `"custom_domain": true`, and `wrangler deploy`
+creates the record and the route together. **What this needs from the deploying credential
+is a Workers Scripts edit for the account and a DNS edit for the zone**; a token with only
+the first will upload the Worker and fail to attach the hostname.
+
+`workers_dev` is `false` in both apps, which is deliberate. `workers_dev` would leave a
+second origin serving the same app, and for the admin that is not cosmetic: better-auth
+uses `ORIGIN` as its `baseURL` for the session cookie and the post-sign-in callback, so two
+hostnames mean a session that appears to work and then drops. One hostname per Worker.
+
+`ORIGIN` is a **var**, not a secret, in `apps/admin/wrangler.jsonc`:
+
+```jsonc
+"vars": { "ORIGIN": "https://admin.banggaiescape.com" }
+```
+
+It has to be the exact deployed origin. `wrangler secret put ORIGIN` looks right and is
+wrong — the value is not a credential, and putting it in secrets only makes it harder to
+read back.
 
 The site's `canonical` URLs and sitemap do not exist yet — see
 [09-seo-and-metadata](./09-seo-and-metadata.md#missing-seo-pieces-roadmap) — so a
@@ -195,20 +283,85 @@ Each deploy is a new immutable version; rollback points the Worker at an earlier
 Because the build is deterministic from a commit, redeploying a known-good commit is
 an equally valid recovery path.
 
+## Continuous integration and delivery
+
+Two workflows, in `.github/workflows/`.
+
+| Workflow | Trigger | Does |
+| --- | --- | --- |
+| `ci.yml` | push to `main`, and every pull request | Four jobs: `check` (types and a11y in both apps plus the shared package), `lint` (Biome), `test` (both Vitest suites, with Chromium installed *before* the admin suite that needs it), `build` (both Workers' bundles) |
+| `deploy.yml` | **after `ci.yml` succeeds on `main`**, or by hand | Builds and `wrangler deploy`s each Worker, then curls the hostname to prove it answered |
+
+### Why the deploy waits for CI
+
+`deploy.yml` triggers on `workflow_run`, not on the same push. Deploying on the push would
+race the test job, and the site could go out while the tests were still red. Its `if:`
+conditions require `conclusion == 'success'`, `event == 'push'` and `head_branch == 'main'` —
+a pull request's CI run also finishes successfully and must never deploy anything.
+
+`workflow_dispatch` takes an `app` input (`both` / `admin` / `web`) for redeploying one
+Worker without a code change.
+
+### The two secrets CI needs, and the ones it must never have
+
+Only `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, as repository secrets. **No
+database credential is in either workflow, and none is needed**: `DATABASE_URL` and
+`BETTER_AUTH_SECRET` are already Worker secrets in Cloudflare, and `wrangler deploy` leaves a
+Worker's secrets in place while replacing its code. So a leaked CI log cannot leak a
+connection string, and a compromised workflow cannot read one.
+
+Each deploy job declares `environment: production`, so a GitHub environment protection rule
+can require a manual approval before anything reaches a live hostname.
+
+### What CI does not run
+
+- **`test:e2e`.** It needs a database and a signed-in administrator, and a runner has
+  neither. The signed-in specs skip themselves without `ADMIN_EMAIL`/`ADMIN_PASSWORD`, so
+  running it here would produce a green run that proved less than it appeared to.
+- **`pnpm check:code` across the workspace.** It currently fails on the pre-existing
+  unformatted `apps/admin` scaffold (see [AGENTS.md](../AGENTS.md)). `ci.yml` lints the paths
+  this repository owns — `apps/web`, `packages`, `apps/admin/src`, `apps/admin/e2e` — so the
+  gate is honest rather than permanently red.
+
 ## Deploy checklist
 
 ```sh
 pnpm install --frozen-lockfile   # reproducible install
 pnpm check                       # types + a11y: 0 errors, 0 warnings
-pnpm check:code                  # lint + format
-pnpm build                       # must exit 0
-pnpm preview                     # optional: click through the built Worker
+pnpm --filter @banggai/content-model check
+pnpm --filter @banggai/admin check
+npx biome check apps/web packages apps/admin/src apps/admin/e2e
+pnpm test                        # public read layer
+pnpm --filter @banggai/admin test # admin, including the component project
+pnpm build && pnpm --filter @banggai/admin build
 pnpm --filter @banggai/web exec wrangler deploy
 ```
 
 Then verify the deployed URL: the home page renders styled (not unstyled HTML — a
 sign the CSS bundle is missing), an article and a package detail page load, and a
 bogus slug shows the branded error page with the header and footer intact.
+
+## Analytics: the one thing left
+
+Everything else about the two Workers is deployed and verified. **The admin's analytics
+dashboard is the exception, and it needs a credential that cannot be created from here.**
+
+`CLOUDFLARE_ANALYTICS_TOKEN` is an API token with **Account → Account Analytics → Read**,
+scoped to this account. Minting one requires a token that carries *token-write* permission;
+the token this repository was given cannot (`403`, `9109 Unauthorized to access requested
+resource`), which is the correct answer from a credential that is not itself an admin.
+
+Until it is set, the dashboard shows its **"Not configured yet"** card, which names the
+missing setting and the exact scope to grant — an unconfigured dashboard is a described
+state, not an error. The write path needs nothing: the public Worker creates the
+`BANGGAI_SITE_EVENTS` dataset on its first event, and a same-origin `POST /api/events`
+already returns `204` in production.
+
+To finish it:
+
+```sh
+pnpm --filter @banggai/admin exec wrangler secret put CLOUDFLARE_ANALYTICS_TOKEN
+```
 
 ## The admin Worker
 

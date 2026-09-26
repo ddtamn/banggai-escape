@@ -30,12 +30,13 @@ packages/
 docs/       # comprehensive engineering documentation — start at docs/README.md
 DESIGN.md   # design system, source of truth for apps/web
 biome.json  # workspace lint + format config
+.github/workflows/  # ci.yml (the gate) and deploy.yml (both Workers)
 ```
 
 | App | Purpose | Status |
 | --- | --- | --- |
-| `apps/web` | The public site: packages, destinations, blog, about, contact | Working; reads published content from Neon, records analytics events; Vitest covers the presenters and the slug-redirect walk |
-| `apps/admin` | Content management + analytics back-office | Sign-in, the route guard, the content screens (draft → publish), the **media library**, settings, the **analytics dashboard** and the **overview** work; neither Worker is deployed yet |
+| `apps/web` | The public site: packages, destinations, blog, about, contact | **Deployed** at `banggaiescape.com`; reads published content from Neon as the read-only `banggai_web` role, records analytics events; Vitest covers the presenters and the slug-redirect walk |
+| `apps/admin` | Content management + analytics back-office | **Deployed** at `admin.banggaiescape.com`; sign-in, the route guard, the content screens (draft → publish), the **media library**, settings, the **analytics dashboard** and the **overview** all work; only its analytics read token is unset |
 
 ## Commands
 

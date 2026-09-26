@@ -464,8 +464,11 @@ root. `.stitch/` is git-ignored, so this needs the local folder.
   an editor's job in the media library, one asset at a time.
 - **`post.date` is unused in the UI**; the byline shows `updated`. It stays populated for
   future sort/display work.
-- **The stage and production Workers share one database.** There is no separate staging
-  branch wired up yet; see [11-deployment](./11-deployment.md).
+- **There is no staging environment.** The deployed site reads the **production** Neon
+  branch as the read-only `banggai_web` role. The `dev` branch is where the migration was
+  rehearsed and still holds a copy of the content, so there are two copies and no staging
+  between them. A staging branch with its own Workers is unbuilt; see
+  [11-deployment](./11-deployment.md).
 
 ## Related
 

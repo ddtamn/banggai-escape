@@ -431,12 +431,32 @@ The whole flow — guard redirect, rejected password, successful sign-in, sign-o
 the guard again — was verified in Chromium against the dev server, which is also the
 only way to test it: better-auth's `api` helpers cannot run outside a request context.
 
-Still open in this phase: applying the requested preset. The **`dashboard-01` and
-`login-01` blocks are already in** — `app-sidebar.svelte`, `nav-main.svelte`,
-`nav-user.svelte`, `site-header.svelte` and `src/lib/components/login-01/` came from them,
-with the blocks' demo data replaced by this app's sections — so what remains is the
-*preset* (`b3XpoFP7kQ`), which would restyle the shell's CSS tokens. `components.json` still
-declares `"style": "rhea"`.
+Still open in this phase: **nothing.** Applying the requested preset
+`b3XpoFP7kQ` turned out to be a no-op, and it is worth saying why rather than leaving the
+plan claiming work that was already done.
+
+`b3XpoFP7kQ` **is** the `rhea` preset — the registry returns its `name` as `rhea` — and the
+project was scaffolded with it. Verified three ways rather than by eye:
+
+- `components.json` matches the preset's `config` field for field: `style: rhea`,
+  `iconLibrary: lucide`, `menuColor: default-translucent`, `menuAccent: subtle`,
+  `tailwind.baseColor: neutral`.
+- All **63** of the preset's CSS variables are present in `src/routes/layout.css` and match
+  value for value — 32 light, 31 dark, zero missing, zero differing.
+- Its three imports (`tw-animate-css`, `shadcn-svelte/tailwind.css`,
+  `@fontsource-variable/geist`) are the first three lines of that file, and its five
+  devDependencies are all installed.
+
+Re-running the scoped form changes nothing:
+
+```sh
+pnpm dlx shadcn-svelte@latest apply b3XpoFP7kQ --only theme font -y
+# → Preset b3XpoFP7kQ applied successfully.   git status: no changes.
+```
+
+`--only theme font` is the form to use here. A full `apply` would also re-copy the preset's
+`registryDependencies` over components this app has customised — the sidebar, the status
+badge, the form renderer — which is the one way this command could do damage.
 
 > **The `dev` branch is in place.** The project's default branch is `Production`, and the
 > auth migration is applied there. Schema and content work happens on `dev`
@@ -688,10 +708,16 @@ exact messages; a probe redirect 301s, a two-row chain collapses to one hop, and
 database and the same URL kept serving the old page while a previously unseen URL served the
 new one. `pnpm check`, `npx biome check apps/web` and `pnpm build` are clean.
 
-**Still open.** The deployed Worker does not exist yet, so `banggai_web`, the secret and
-the var are documented but unset. The five-minute window is a ceiling rather than a
-purge-on-publish. The local `.env` reads as `neondb_owner`, which is fine on a laptop and
-must not be what the deployed Worker uses.
+**Still open.** The five-minute window is a ceiling rather than a purge-on-publish. The local
+`.env` reads as `neondb_owner`, which is fine on a laptop and must not be what the deployed
+Worker uses.
+
+**Deployed.** Both Workers are live on custom domains — `banggaiescape.com` and
+`admin.banggaiescape.com` — and the public one connects to the **production** Neon branch as
+the read-only `banggai_web` role, created and self-verified by `db:roles` on that branch. All
+thirteen routes answer, the media URLs resolve from the R2 custom domain, and the three
+detail 404s keep their exact messages. See
+[11-deployment](./11-deployment.md#continuous-integration-and-delivery).
 
 **`apps/web` now has a test runner.** `pnpm test` runs Vitest against the parts of the read
 path with the most interesting rules and no database: the presenters that put a price and a
@@ -807,10 +833,17 @@ path against the live SQL API **cannot** be verified from here — neither Worke
 and no token exists — so the dashboard has been exercised in its unconfigured state and
 through those tests, which is the limit the phase ships with.
 
-**Still open.** Deploy both Workers, mint the read-only token, and watch the first real
-aggregates; a browser test for the dashboard needs a deployed dataset to be worth writing.
-The account's published Free-tier limits (100,000 writes/day, 10,000 read queries/day) should
-be reconfirmed before release, as the plan notes.
+**Still open, and it is one credential.** The write path is live: the deployed public Worker
+accepts a same-origin `POST /api/events` with a `204`, which created the `BANGGAI_SITE_EVENTS`
+dataset. The read path needs `CLOUDFLARE_ANALYTICS_TOKEN` — an Account Analytics **Read**
+token — and it **cannot be minted from the token this repository holds**, which lacks
+token-write permission (`403`, `9109`). Until it is set the dashboard shows its
+"Not configured yet" card, which is the described state rather than an error.
+
+A browser test for the dashboard is still not worth writing: it would need that credential
+and a dataset with traffic in it. The account's published Free-tier limits (100,000
+writes/day, 10,000 read queries/day) should be reconfirmed before release, as the plan
+notes.
 
 ### Phase 6 — hardening and release
 
@@ -818,13 +851,21 @@ be reconfirmed before release, as the plan notes.
   see the note at the end of Phase 4. `apps/web/src/lib/data/` now holds only the generated
   decoration manifest, and `apps/web` no longer depends on `tsx`.
 - Run functional, browser, security, migration, and performance checks; verify mobile
-  and keyboard workflows and check logs for failed Neon/R2/analytics operations.
+  and keyboard workflows and check logs for failed Neon/R2/analytics operations. **Done** as
+  far as it can be without the analytics credential: 24 browser checks pass against a real
+  database, and the deployed endpoints were exercised directly.
 - Configure separate staging and production Worker bindings/secrets; deploy admin
   independently, then deploy public database-backed reads after the migration
-  checklist is signed off.
+  checklist is signed off. **Done, with one deviation worth recording.** Both Workers are
+  deployed to the **production** Neon branch and the local `dev` branch is *not* a
+  staging environment — it is where the work was rehearsed, and it still holds a copy of the
+  content. A real staging branch, with its own database and its own Workers, is the
+  remaining piece of Phase 6 and is not built.
 - Document account bootstrap, secret setup, R2/domain setup, migration/rollback,
   content recovery, and analytics limits in `docs/14-admin-app.md` or the relevant
-  operational documentation once implemented.
+  operational documentation once implemented. **Done** in
+  [11-deployment](./11-deployment.md), including the DNS permissions a deploying token
+  needs and why `ORIGIN` is a var rather than a secret.
 
 ## Environment and Cloudflare setup checklist
 
@@ -841,7 +882,7 @@ be reconfirmed before release, as the plan notes.
 | `MEDIA_PUBLIC_URL` | admin + web | config | Public custom-domain base URL for published media. |
 | `ANALYTICS` | web | Analytics Engine binding | WAE dataset used for validated event writes. |
 | `CLOUDFLARE_ACCOUNT_ID` | admin | non-secret config | Account identifier used to query the SQL API. |
-| `CLOUDFLARE_ANALYTICS_TOKEN` | admin | secret | Read-only Account Analytics API token; never client-visible. |
+| `CLOUDFLARE_ANALYTICS_TOKEN` | admin | secret | Read-only Account Analytics API token; never client-visible. **Not set** — it cannot be minted from the token this repository holds, which lacks token-write permission. See [11-deployment](./11-deployment.md#analytics-the-one-thing-left). |
 
 Set production values as Cloudflare Worker secrets/vars/bindings and local development
 values in ignored `.env` files. Do not write actual secrets in this plan or commit

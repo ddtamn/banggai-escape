@@ -1,6 +1,8 @@
 import {
 	collectMediaIds,
 	collectSettingMediaIds,
+	contentKinds,
+	mediaFieldsFor,
 	rewriteMediaRefs,
 	rewriteSettingMediaRefs,
 } from '@banggai/content-model';
@@ -30,6 +32,7 @@ const articlePayload = {
 	slug: 'getting-there',
 	title: 'Getting there',
 	image: A,
+	hero: B,
 	body: [
 		{ kind: 'p', text: 'Start in Luwuk.' },
 		{ kind: 'steps', items: [{ title: 'Fly', text: 'To Luwuk.' }] },
@@ -47,7 +50,10 @@ describe('collectMediaIds', () => {
 	});
 
 	it('ignores text that merely looks like content', () => {
-		expect(collectMediaIds('article', articlePayload)).toEqual([A]);
+		// The two images and nothing from `body`: a paragraph and a list of steps are objects
+		// full of strings, and a walker that matched on shape rather than field name would
+		// find media in all of them.
+		expect(collectMediaIds('article', articlePayload)).toEqual([A, B]);
 	});
 
 	it('finds nothing in a payload with no media', () => {
@@ -147,3 +153,98 @@ describe('site settings', () => {
 		]);
 	});
 });
+
+/**
+ * What the public site does with the same walker: it substitutes a **rendered image** rather
+ * than another id, because that is the shape a page renders. These run here, in the admin,
+ * because this is where the walker is already covered.
+ */
+describe('resolving a reference to a rendered image', () => {
+	/** An image, or `null` alt for an asset nobody has described. */
+	const image = (id: string) => ({ src: `https://media.example/${id}`, alt: null });
+
+	it('substitutes an object, not a string', () => {
+		const result = rewriteMediaRefs('destination', destinationPayload, image);
+
+		expect(result.unresolved).toEqual([]);
+		expect(result.payload).toMatchObject({
+			image: { src: `https://media.example/${A}`, alt: null },
+			gallery: [{ src: `https://media.example/${A}` }, { src: `https://media.example/${B}` }],
+		});
+	});
+
+	it('still refuses to blank a reference it cannot resolve', () => {
+		const result = rewriteMediaRefs('package', packagePayload, () => undefined);
+
+		expect(result.unresolved).toEqual([A]);
+		expect(result.payload).toMatchObject({ image: A });
+	});
+
+	it('substitutes avatars inside settings, for the site the same way', () => {
+		const result = rewriteSettingMediaRefs(
+			'testimonials',
+			[{ quote: 'Lovely.', name: 'Ada', country: 'ID', avatar: A }],
+			image,
+		);
+
+		expect(result.value).toEqual([
+			{
+				quote: 'Lovely.',
+				name: 'Ada',
+				country: 'ID',
+				avatar: { src: `https://media.example/${A}`, alt: null },
+			},
+		]);
+	});
+
+	/**
+	 * The guard on the two halves of the rendered type.
+	 *
+	 * `RenderedPayloadFor` is derived from `mediaFieldsByKind` so a new media field cannot be
+	 * added to a payload without changing what a page renders. That derivation is a *type*,
+	 * which nothing executes — so if the two lists ever drift, this is what notices. The
+	 * fields that came back holding images have to be exactly the declared media fields, and
+	 * no other field may have been touched.
+	 */
+	it('touches exactly the fields the contract declares as media', () => {
+		const payloads = {
+			package: packagePayload,
+			destination: destinationPayload,
+			article: articlePayload,
+		} as const;
+
+		for (const kind of contentKinds) {
+			const resolved = rewriteMediaRefs(kind, payloads[kind], image).payload as Record<
+				string,
+				unknown
+			>;
+
+			const imageFields = Object.entries(resolved)
+				.filter(([, value]) => holdsImages(value))
+				.map(([field]) => field);
+
+			expect(imageFields.sort()).toEqual([...mediaFieldsFor(kind)].sort());
+		}
+	});
+});
+
+/** Whether a value is a rendered image, or a non-empty list of them (`gallery`). */
+function holdsImages(value: unknown): boolean {
+	if (Array.isArray(value)) return value.length > 0 && value.every(isImage);
+
+	return isImage(value);
+}
+
+/**
+ * Matched on the shape a rendered image has, not on "is an object": a payload is full of
+ * nested objects that must be left alone (`itinerary`, `highlights`), and only a resolved
+ * reference grows a `src`.
+ */
+function isImage(value: unknown): boolean {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		!Array.isArray(value) &&
+		typeof (value as { src?: unknown }).src === 'string'
+	);
+}

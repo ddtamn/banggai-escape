@@ -6,7 +6,7 @@
  * in a key is a validation failure instead of a silently ignored row.
  */
 import { z } from 'zod';
-import { authoredMediaSchema, mediaIdSchema } from './content';
+import { authoredMediaSchema, mediaIdSchema, type RenderedMedia } from './content';
 
 /**
  * Setting fields whose value is a media reference. `avatar` sits inside each testimonial,
@@ -91,6 +91,13 @@ export type Testimonial = z.infer<typeof testimonialSchema>;
 
 export type TestimonialSource = z.infer<typeof testimonialSourceSchema>;
 
+/**
+ * A testimonial as a page renders it. The avatar is the one field here that becomes an
+ * image rather than a URL — it is an `<img>` with the reviewer's face in it, so it carries
+ * the media library's description.
+ */
+export type RenderedTestimonial = Omit<Testimonial, 'avatar'> & { avatar: RenderedMedia };
+
 export const faqItemSchema = z.strictObject({
 	question: z.string().min(1),
 	answer: z.string().min(1),
@@ -151,6 +158,19 @@ export type SiteSettingKey = keyof typeof siteSettingSchemas;
 export type SiteSettingValue<Key extends SiteSettingKey> = z.infer<
 	(typeof siteSettingSchemas)[Key]
 >;
+
+/**
+ * A setting as a page renders it. Exactly one key changes, and the asymmetry is the point:
+ * a testimonial's avatar is an image in the page and gains the library's description, while
+ * `ctaBackground` stays a bare URL because it is a CSS background — a decorative layer with
+ * no accessible name to give, so resolving it to an image would invent a field nothing reads.
+ *
+ * Declared here, beside the two shapes it distinguishes, so a second `<img>` setting cannot
+ * be added without noticing that it owes the same treatment.
+ */
+export type RenderedSiteSettingValue<Key extends SiteSettingKey> = Key extends 'testimonials'
+	? RenderedTestimonial[]
+	: SiteSettingValue<Key>;
 
 /** Validates one stored `site_settings.value` against the contract for its key. */
 export function parseSiteSetting(key: SiteSettingKey, value: unknown) {

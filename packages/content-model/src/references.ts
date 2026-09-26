@@ -64,11 +64,17 @@ export function collectSettingMediaIds(key: string, value: unknown): string[] {
  *
  * Returns the new payload plus the refs `resolve` could not handle: the caller wants to
  * refuse a partial import rather than write a payload with a hole in it.
+ *
+ * `Resolved` is whatever the resolver puts back, not necessarily a string. The import swaps
+ * a legacy CDN value for a `media_assets` id and gets a string back; the public site swaps
+ * an id for a rendered image — a URL *and* the description the library holds — and gets an
+ * object. Both go through this one traversal, because a second copy of the walk is how one
+ * side stops resolving a field the other side still writes.
  */
-export function rewriteMediaRefs(
+export function rewriteMediaRefs<Resolved>(
 	kind: ContentKind,
 	payload: unknown,
-	resolve: (ref: string) => string | undefined,
+	resolve: (ref: string) => Resolved | undefined,
 ): { payload: unknown; unresolved: string[] } {
 	const unresolved: string[] = [];
 
@@ -88,10 +94,10 @@ export function rewriteMediaRefs(
 }
 
 /** The same, for one `site_settings` value. */
-export function rewriteSettingMediaRefs(
+export function rewriteSettingMediaRefs<Resolved>(
 	key: string,
 	value: unknown,
-	resolve: (ref: string) => string | undefined,
+	resolve: (ref: string) => Resolved | undefined,
 ): { value: unknown; unresolved: string[] } {
 	if (isMediaSettingKey(key)) {
 		if (typeof value !== 'string') return { value, unresolved: [] };
@@ -124,7 +130,11 @@ export function rewriteSettingMediaRefs(
  * The single traversal. A media field's value is a leaf — a string, or an array of them
  * for something like `gallery` — and is handed to `visit`; anything else is recursed.
  */
-function walk(value: unknown, fields: readonly string[], visit: (ref: string) => string): unknown {
+function walk<Resolved>(
+	value: unknown,
+	fields: readonly string[],
+	visit: (ref: string) => Resolved,
+): unknown {
 	if (Array.isArray(value)) {
 		return value.map((item) => walk(item, fields, visit));
 	}
@@ -140,7 +150,7 @@ function walk(value: unknown, fields: readonly string[], visit: (ref: string) =>
 	return out;
 }
 
-function mapStrings(value: unknown, visit: (ref: string) => string): unknown {
+function mapStrings<Resolved>(value: unknown, visit: (ref: string) => Resolved): unknown {
 	if (typeof value === 'string') return visit(value);
 	if (Array.isArray(value)) return value.map((item) => mapStrings(item, visit));
 

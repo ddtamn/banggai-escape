@@ -26,6 +26,27 @@ export const contentKindSchema = z.enum(contentKinds);
 export const mediaIdSchema = z.uuid();
 
 /**
+ * A media field as a page renders it: where the bytes are, and what they show.
+ *
+ * This is the counterpart to `mediaIdSchema`, and it exists because a URL cannot carry the
+ * one piece of an image an editor actually writes — the description. An `alt` attribute
+ * matters to a screen-reader user and to an image search, and the administrator writes it
+ * once in the media library. A bare string has nowhere to put it, so the alternative is
+ * what the site did before: inventing `alt={pkg.title}` for every photograph and calling
+ * that a description.
+ *
+ * `alt` is null rather than '' when the asset has no description yet, because the two mean
+ * different things to whoever renders it: `''` marks an image as decorative, while null
+ * says nobody has written one and leaves the call site free to fall back to something it
+ * does know. The fallback belongs at the call site — the honest description of a
+ * photograph depends on where it appears, and only the page knows that.
+ */
+export type RenderedMedia = {
+	src: string;
+	alt: string | null;
+};
+
+/**
  * A media value as `apps/web` still authors it, before the migration resolves it:
  * either a bare CDN asset id or an absolute URL.
  *
@@ -55,12 +76,19 @@ export const titledTextSchema = z.strictObject({
  * admin's reference scan (which refuses to delete an in-use asset). A field missing from
  * this list keeps its authored value and then fails payload validation, so forgetting a
  * name here surfaces as a named error rather than as a broken image.
+ *
+ * `as const` + `satisfies` rather than a bare annotation, and the literals are the reason.
+ * `Record<ContentKind, readonly string[]>` alone still guarantees the three kinds are all
+ * listed, but it types every field name as `string` — and `RenderPayload` below asks
+ * whether a field name is one of these, so a widened `string` would answer yes to *every*
+ * field and quietly type a package's `region` as an image. `satisfies` keeps the
+ * exhaustiveness check that the annotation was there for.
  */
-export const mediaFieldsByKind: Record<ContentKind, readonly string[]> = {
+export const mediaFieldsByKind = {
 	package: ['image'],
 	destination: ['image', 'gallery'],
 	article: ['image', 'hero'],
-};
+} as const satisfies Record<ContentKind, readonly string[]>;
 
 // ---------------------------------------------------------------------------
 // package
@@ -219,6 +247,57 @@ export const sourceSchemas = {
 } as const;
 
 export type PayloadFor<Kind extends ContentKind> = z.infer<(typeof payloadSchemas)[Kind]>;
+
+/** The field names that hold a media reference in a payload of this kind. */
+type MediaFieldName<Kind extends ContentKind> = (typeof mediaFieldsByKind)[Kind][number];
+
+/**
+ * How one stored media field becomes a rendered one. A single reference (`image`, `hero`)
+ * becomes one image; a list of them (`gallery`) becomes a list of images. Anything else is
+ * left alone, which cannot happen today — every entry in `mediaFieldsByKind` holds a string
+ * or a list of them — but keeps the type total if that ever stops being true.
+ */
+type RenderedField<Value> = Value extends string
+	? RenderedMedia
+	: Value extends readonly string[]
+		? RenderedMedia[]
+		: Value;
+
+/**
+ * A payload with its media fields resolved, derived rather than written out.
+ *
+ * Deriving it from `MediaFieldName` is the point: the field list and the type have to agree,
+ * and nothing at runtime can catch it when they do not. A field added to the list and
+ * forgotten here would still receive a `RenderedMedia` from the resolver while its type still
+ * said `string`, so the mistake would reach a visitor as `<img src="[object Object]">`.
+ * Deriving it makes that a type error at the component that renders the image.
+ *
+ * `Payload` is passed concretely rather than looked up through `PayloadFor<Kind>`, because a
+ * mapped type over a still-generic indexed access stays *deferred* — and a deferred
+ * `Field extends MediaFieldName<Kind>` test resolves to both branches, which quietly types
+ * every field as `string | RenderedMedia` instead of only the media ones.
+ */
+type RenderPayload<Payload, Media extends PropertyKey> = {
+	[Field in keyof Payload]: Field extends Media ? RenderedField<Payload[Field]> : Payload[Field];
+};
+
+export type RenderedPackage = RenderPayload<PackagePayload, MediaFieldName<'package'>>;
+
+export type RenderedDestination = RenderPayload<DestinationPayload, MediaFieldName<'destination'>>;
+
+export type RenderedArticle = RenderPayload<ArticlePayload, MediaFieldName<'article'>>;
+
+/**
+ * The rendered payload for a kind, for callers that hold the kind as a type parameter.
+ *
+ * A dispatch rather than one generic mapped type, for the reason `RenderPayload` takes a
+ * concrete payload: it has to resolve at the call site, where the kind is a literal.
+ */
+export type RenderedPayloadFor<Kind extends ContentKind> = Kind extends 'package'
+	? RenderedPackage
+	: Kind extends 'destination'
+		? RenderedDestination
+		: RenderedArticle;
 
 /** Validates a stored JSONB payload against its kind's contract. */
 export function parsePayload(kind: ContentKind, value: unknown) {

@@ -97,7 +97,10 @@ jobs:
         # Proof the deploy answered, rather than that the command exited zero.
       - name: check it answers
         run: |
-          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+          # `_` rather than a named counter: the loop is ten attempts, and nothing reads
+          # the index. (Named `attempt` it is an unused variable, which is what shellcheck
+          # said the first time this ran.)
+          for _ in 1 2 3 4 5 6 7 8 9 10; do
             if curl -fsS -o /dev/null -w '%{http_code}' https://admin.banggaiescape.com/login | grep -q 200; then
               echo "admin.banggaiescape.com is serving the sign-in page"
               exit 0
@@ -147,7 +150,10 @@ jobs:
         run: |
           # A document request, because the site only caches a document and decides what a
           # document is from the Accept header.
-          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+          # `_` rather than a named counter: the loop is ten attempts, and nothing reads
+          # the index. (Named `attempt` it is an unused variable, which is what shellcheck
+          # said the first time this ran.)
+          for _ in 1 2 3 4 5 6 7 8 9 10; do
             if curl -fsS -H 'Accept: text/html' -o /dev/null https://banggaiescape.com/; then
               echo "banggaiescape.com is serving the home page"
               exit 0

@@ -17,6 +17,18 @@ const site = $derived(data.settings.site);
 
 /** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
 const siteCta = $derived(data.settings.siteCta);
+
+/**
+ * The words on a content card.
+ *
+ * Cards render on four routes each, so this is read once per page and handed to them
+ * rather than the card importing settings — a shared component takes props, and a page
+ * that reaches into the database from a component is a component that cannot be previewed.
+ */
+const cardLabels = $derived(data.settings.cards);
+
+/** This page's own words, from the CMS. See `siteSettingSchemas.packageDetail`. */
+const copy = $derived(data.settings.packageDetail);
 const pkg = $derived(data.pkg);
 
 /** The five-photo mosaic at the top of the detail page. */
@@ -180,7 +192,7 @@ const structuredData = $derived([
 			class="mt-2 flex items-center justify-center gap-2 text-label font-medium text-stone-500 md:hidden"
 		>
 			<Icon icon="fa-solid fa-arrows-left-right" size={10} class="text-gold" />
-			Swipe to see all {gallery.length} photos
+			{copy.galleryHint.replace('{count}', String(gallery.length))}
 		</p>
 	</section>
 
@@ -193,8 +205,7 @@ const structuredData = $derived([
 						{pkg.title} - {pkg.subtitle}
 					</h1>
 					<p class="mt-3 max-w-3xl text-base leading-relaxed text-stone-600">
-						A perfectly crafted {pkg.days}-day expedition designed to immerse you in pristine
-						turquoise lagoons, mirror-like lakes, and the timeless warmth of Banggai island life.
+						{copy.summary.replace('{days}', String(pkg.days))}
 					</p>
 				</div>
 
@@ -210,12 +221,12 @@ const structuredData = $derived([
 				</div>
 
 				<div class="space-y-3">
-					<h2 class="text-xl font-bold text-stone-900 sm:text-2xl">Trip Overview</h2>
+					<h2 class="text-xl font-bold text-stone-900 sm:text-2xl">{copy.overview}</h2>
 					<p class="text-sm leading-relaxed text-stone-600 sm:text-base">{pkg.overview}</p>
 				</div>
 
 				<div class="space-y-4">
-					<h2 class="text-xl font-bold text-stone-900 sm:text-2xl">Trip Highlights</h2>
+					<h2 class="text-xl font-bold text-stone-900 sm:text-2xl">{copy.highlights}</h2>
 					<ul class="space-y-2.5 text-sm text-stone-700 sm:text-base">
 						{#each pkg.highlights as highlight (highlight.title)}
 							<li class="flex items-start gap-2">
@@ -227,7 +238,7 @@ const structuredData = $derived([
 				</div>
 
 				<div class="space-y-4">
-					<h2 class="text-xl font-bold text-stone-900 sm:text-2xl">What's Included</h2>
+					<h2 class="text-xl font-bold text-stone-900 sm:text-2xl">{copy.included}</h2>
 					<ul class="space-y-3">
 						{#each pkg.included as item (item)}
 							<li class="flex items-center gap-3 text-sm text-stone-700 sm:text-base">
@@ -243,7 +254,7 @@ const structuredData = $derived([
 				</div>
 
 				<div class="space-y-4 pt-2">
-					<h2 class="text-xl font-bold text-stone-900 sm:text-2xl">Itinerary</h2>
+					<h2 class="text-xl font-bold text-stone-900 sm:text-2xl">{copy.itinerary}</h2>
 					<div class="divide-y divide-stone-200">
 						{#each pkg.itinerary as day, index (day.label)}
 							<details class="group py-5" open={index === 0}>
@@ -282,13 +293,13 @@ const structuredData = $derived([
 
 					<div class="border-b border-forest-line/60 pt-2 pb-5">
 						<span class="mb-1 block text-label font-bold tracking-widest text-gold-light uppercase">
-							START FROM
+							{copy.priceFromLabel}
 						</span>
 						<div class="flex items-baseline gap-1.5">
 							<span class="text-2xl font-extrabold text-white sm:text-[26px]">
 								{formatPrice(pkg.price)}
 							</span>
-							<span class="text-xs font-medium text-stone-400">/Person</span>
+							<span class="text-xs font-medium text-stone-400">/{copy.perPersonLabel}</span>
 						</div>
 					</div>
 
@@ -313,11 +324,11 @@ const structuredData = $derived([
 						href="/contact?package={pkg.slug}"
 						data-track="booking_cta_click"
 					>
-						Book Now
+						{copy.bookNowLabel}
 					</a>
 
 					<p class="mt-4 text-center text-label text-stone-400">
-						No payment today — we confirm availability first.
+						{copy.bookingNote}
 					</p>
 				</div>
 			</div>
@@ -328,20 +339,20 @@ const structuredData = $derived([
 	<section class="mx-auto max-w-7xl border-t border-stone-200/80 px-6 pt-6 pb-20">
 		<div class="mb-8 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
 			<div>
-				<h2 class="text-2xl font-extrabold text-stone-900 md:text-3xl">You Might Also Like</h2>
+				<h2 class="text-2xl font-extrabold text-stone-900 md:text-3xl">{copy.related}</h2>
 			</div>
 			<a
 				class="flex items-center gap-1 text-xs font-bold text-stone-800 transition hover:text-forest-deep sm:text-sm"
 				href="/packages"
 			>
-				<span>View All Packages</span>
+				<span>{copy.relatedActionLabel}</span>
 				<Icon icon="fa-solid fa-arrow-right" size={10} />
 			</a>
 		</div>
 
 		<div class="grid grid-cols-1 gap-8 md:grid-cols-2">
 			{#each related as pkgItem (pkgItem.slug)}
-				<PackageCard pkg={pkgItem} />
+				<PackageCard pkg={pkgItem} labels={cardLabels.package} />
 			{/each}
 		</div>
 	</section>
@@ -359,15 +370,15 @@ const structuredData = $derived([
 		<div class="flex items-center justify-between gap-4">
 			<div class="min-w-0">
 				<span class="block text-label font-bold tracking-widest text-gold-light uppercase">
-					START FROM
+					{copy.priceFromLabel}
 				</span>
 				<div class="flex items-baseline gap-1.5">
 					<span class="text-lg font-extrabold text-white">{formatPrice(pkg.price)}</span>
-					<span class="text-label font-medium text-stone-400">/Person</span>
+					<span class="text-label font-medium text-stone-400">/{copy.perPersonLabel}</span>
 				</div>
 			</div>
 			<a class="btn-gold shrink-0" href="/contact?package={pkg.slug}" data-track="booking_cta_click"
-				>Book Now</a
+				>{copy.bookNowLabel}</a
 			>
 		</div>
 	</div>

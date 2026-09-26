@@ -33,6 +33,7 @@
  *
  * ```sh
  * pnpm --filter @banggai/admin exec tsx scripts/add-page-copy-settings.ts
+ * pnpm --filter @banggai/admin exec tsx scripts/add-page-copy-settings.ts --force
  * ```
  *
  * **Run it against every branch, production included, before deploying the schema** — and note
@@ -55,14 +56,34 @@ import { neon } from '@neondatabase/serverless';
  * copy, because the defaults are the copy as it was when this was written. Adding a key means
  * adding it here too.
  */
+/**
+ * Overwrite rows that already exist, rather than only creating missing ones.
+ *
+ * The default behaviour is create-only, and that is right: it means running this against a
+ * database an editor has worked on cannot quietly throw their copy away. But it has a
+ * consequence worth naming, because it bit during this work — **a corrected default in the
+ * schema never reaches a row that already holds the old one.** The `galleryHint` default
+ * gained a `{count}` token, the seeded row kept the sentence without it, and the live page
+ * rendered "Swipe to see all photos" with no number. The row validated; nothing failed.
+ *
+ * So this flag is the way to push the schema's copy back out, for the case where the schema
+ * was the thing that was wrong. It discards any edit made in the admin, so it is named for
+ * what it does rather than hidden behind a prompt.
+ */
+const force = process.argv.includes('--force');
+
 const KEYS = [
 	'siteCta',
+	'cards',
 	'homePage',
 	'packagesPage',
 	'destinationsPage',
 	'blogPage',
 	'aboutPage',
 	'contactPage',
+	'packageDetail',
+	'destinationDetail',
+	'articleDetail',
 ] as const satisfies readonly SiteSettingKey[];
 
 async function main() {
@@ -78,10 +99,11 @@ async function main() {
 	const existing = await sql`select key from site_settings`;
 
 	const present = new Set(existing.map((row) => String((row as { key: string }).key)));
-	const missing = KEYS.filter((key) => !present.has(key));
+	const missing = force ? KEYS : KEYS.filter((key) => !present.has(key));
 
 	if (missing.length === 0) {
 		console.log(`All ${KEYS.length} page-copy rows already exist — nothing to do.`);
+		console.log("To roll them back to the schema's copy, re-run with --force.");
 		return;
 	}
 
@@ -102,6 +124,9 @@ async function main() {
 		return { key, value: parsed.data as Record<string, unknown> };
 	});
 
+	// `on conflict do nothing` becomes `do update` under `--force`, which is the only
+	// difference between the two modes at the database.
+	//
 	// One insert per key, rather than a set-based one. There are seven, they run once, and a
 	// loop is readable in a way that `jsonb_to_recordset` is not — which matters more here than
 	// the seven round trips.
@@ -113,15 +138,19 @@ async function main() {
 	// `on conflict do nothing` as well as the check above: the read and the write are separate
 	// statements, so two runs against one database could both see a key as missing. The
 	// conflict clause is what makes that harmless.
+	const onConflict = force
+		? sql`on conflict (key) do update set value = excluded.value, updated_at = now()`
+		: sql`on conflict (key) do nothing`;
+
 	for (const { key, value } of values) {
 		await sql`
 			insert into site_settings (key, value)
 			values (${key}, ${JSON.stringify(value)}::jsonb)
-			on conflict (key) do nothing
+			${onConflict}
 		`;
 	}
 
-	console.log(`Created ${values.length} row(s):`);
+	console.log(`${force ? 'Reset' : 'Created'} ${values.length} row(s):`);
 	for (const { key, value } of values) {
 		// The shape, not the copy: a log of forty full paragraphs is unreadable, and what a
 		// reviewer needs to see is that the right keys landed with content in them.
@@ -138,8 +167,13 @@ async function main() {
 		console.log(`  ${key}: ${top}`);
 	}
 
-	if (present.size > 0) {
-		console.log(`\nLeft alone (row already present): ${[...present].join(', ')}`);
+	// The keys this script does *not* touch, so the log makes clear the run was scoped. Under
+	// `--force` this cannot include any of `KEYS` — they were all just written — so filtering
+	// by the list is what keeps the line from claiming otherwise.
+	const untouched = [...present].filter((key) => !(KEYS as readonly string[]).includes(key));
+
+	if (untouched.length > 0) {
+		console.log(`\nUntouched (not page copy): ${untouched.join(', ')}`);
 	}
 }
 

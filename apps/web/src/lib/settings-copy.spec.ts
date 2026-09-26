@@ -17,6 +17,7 @@
 import {
 	blogPageCopy,
 	homePageCopySchema,
+	innerPageBaseCopy,
 	packagesPageCopy,
 	siteCtaSchema,
 } from '@banggai/content-model';
@@ -171,8 +172,38 @@ describe('page copy rejects what it should', () => {
 	it('treats an absent hero subtitle as "no standfirst" rather than an empty one', () => {
 		// Different on purpose: absent renders nothing, empty renders an empty paragraph with
 		// its bottom margin. Storing `''` would put a visible gap under the heading.
-		const parsed = packagesPageCopy.parse({});
+		//
+		// Asked of the *shared shape* rather than of a page, because that is where the rule
+		// lives. Every page that declares a standfirst replaces the optional field with a
+		// defaulted one, so no page schema exhibits the base behaviour — and a test pointed at
+		// a page would be asserting that page's copy, which is a different assertion wearing
+		// this test's name.
+		const base = innerPageBaseCopy.parse({});
 
-		expect(parsed.heroSubtitle).toBeUndefined();
+		// Zod *omits* an absent optional key rather than setting it to `undefined`, so the
+		// record carries no standfirst at all. That is what the page checks for, and it is why
+		// storing `''` would be worse: the key would be present, would render an empty
+		// paragraph, and in the form would be indistinguishable from one an editor had written.
+		expect(Object.keys(base)).not.toContain('heroSubtitle');
+		expect(base.heroSubtitle).toBeUndefined();
+	});
+
+	it('refuses an empty standfirst, which would render a visible gap', () => {
+		// The other half of the test above: absent is fine, `''` is not. A record that has
+		// decided to carry a standfirst must carry words.
+		//
+		// Asserted of the base shape, because that is where the `min(1)` lives. Checked of a
+		// page instead, it would be testing the page's own `copy(…)` — a different `min(1)`,
+		// on a different field — and would go on passing if the base's constraint were dropped.
+		expect(innerPageBaseCopy.safeParse({ heroSubtitle: '' }).success).toBe(false);
+		expect(innerPageBaseCopy.safeParse({}).success).toBe(true);
+	});
+
+	it('gives every listing page a standfirst, because all five turned out to have one', () => {
+		// Recorded because the opposite was assumed and built into the schema. The about
+		// page's standfirst was only ever going to be found by reading the page.
+		for (const copy of [packagesPageCopy, blogPageCopy]) {
+			expect(copy.parse({}).heroSubtitle).toBeTruthy();
+		}
 	});
 });

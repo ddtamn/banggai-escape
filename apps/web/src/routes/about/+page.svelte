@@ -83,20 +83,17 @@ const structuredData = $derived([
 	<div class="max-w-4xl">
 		<div class="mb-6 flex items-center space-x-2.5">
 			<span class="inline-block h-[3px] w-7 rounded-full bg-gold-deep"></span>
-			<span class="text-xs font-bold tracking-[0.2em] text-stone-600 uppercase">OUR STORY</span>
+			<span class="text-xs font-bold tracking-[0.2em] text-stone-600 uppercase">
+				{copy.storyEyebrow}
+			</span>
 		</div>
 
 		<h2 class="mb-8 text-2xl leading-snug font-extrabold text-forest-deep sm:text-3xl sm:leading-tight md:text-[34px]">
-			Banggai Escape was born from a deep-rooted love for our home—the pristine, untouched archipelago
-			of Banggai. We realized that while these islands offer world-class turquoise lagoons, rich
-			culture, and breathtaking marine life, navigating them requires genuine local knowledge.
+			{copy.storyTitle}
 		</h2>
 
 		<p class="mb-14 text-base leading-relaxed text-stone-600 md:text-lg">
-			Founded by locals and hospitality enthusiasts, we bridge the gap between curious global
-			travelers and authentic island experiences. We take care of every detail—from seamless island
-			transfers to tailored daily itineraries—allowing you to immerse yourself fully in the magic of
-			the tropics with total safety, comfort, and ease.
+			{copy.storyBody}
 		</p>
 	</div>
 
@@ -126,7 +123,7 @@ const structuredData = $derived([
 				<div class="mb-8 flex items-center space-x-2.5">
 					<span class="inline-block h-[3px] w-7 rounded-full bg-gold-deep"></span>
 					<span class="text-xs font-bold tracking-[0.2em] text-stone-600 uppercase">
-						VISION &amp; MISSION
+						{copy.missionEyebrow}
 					</span>
 				</div>
 
@@ -173,7 +170,9 @@ const structuredData = $derived([
 	<div class="mx-auto max-w-7xl px-6">
 		<div class="mx-auto mb-14 max-w-3xl text-center">
 			<h2 class="text-2xl font-extrabold text-forest-deep md:text-3xl">
-				The Reason Travelers<br />Choose Banggai Escape
+				{#each copy.reasonsTitle.split('\n') as line, index (line)}
+					{#if index > 0}<br />{/if}{line}
+				{/each}
 			</h2>
 		</div>
 

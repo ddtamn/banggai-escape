@@ -16,6 +16,15 @@ const ctaBackground = $derived(data.settings.ctaBackground);
 
 /** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
 const siteCta = $derived(data.settings.siteCta);
+
+/**
+ * The words on a content card.
+ *
+ * Cards render on four routes each, so this is read once per page and handed to them
+ * rather than the card importing settings — a shared component takes props, and a page
+ * that reaches into the database from a component is a component that cannot be previewed.
+ */
+const cardLabels = $derived(data.settings.cards);
 const site = $derived(data.settings.site);
 
 /** This page's own words, from the CMS. */
@@ -110,7 +119,7 @@ const structuredData = $derived([
 		{#if featured.length}
 			<div class="mb-8 grid grid-cols-1 gap-8 md:grid-cols-2">
 				{#each featured as post (post.slug)}
-					<PostCard {post} />
+					<PostCard {post} labels={cardLabels.post} />
 				{/each}
 			</div>
 		{/if}
@@ -118,7 +127,7 @@ const structuredData = $derived([
 		{#if rest.length}
 			<div class="mb-8 grid grid-cols-1 gap-8 md:grid-cols-3">
 				{#each rest as post (post.slug)}
-					<PostCard {post} />
+					<PostCard {post} labels={cardLabels.post} />
 				{/each}
 			</div>
 		{/if}

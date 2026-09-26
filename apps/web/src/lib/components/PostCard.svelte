@@ -3,9 +3,12 @@ import type { RenderedArticle } from '@banggai/content-model';
 import { CARD_SIZES } from '$lib/card-sizes';
 import Icon from '$lib/components/Icon.svelte';
 
-type Props = { post: RenderedArticle };
+/** The card's own words. See `PackageCard` for why they are a prop. */
+type Labels = { actionLabel: string };
 
-let { post }: Props = $props();
+type Props = { post: RenderedArticle; labels: Labels };
+
+let { post, labels }: Props = $props();
 </script>
 
 <article
@@ -40,7 +43,7 @@ let { post }: Props = $props();
 
 	<div class="px-5 pt-2 pb-5">
 		<a class="btn-ghost" href="/blog/{post.slug}">
-			<span>Read More</span>
+			<span>{labels.actionLabel}</span>
 			<Icon icon="fa-solid fa-arrow-right" size={10} />
 		</a>
 	</div>

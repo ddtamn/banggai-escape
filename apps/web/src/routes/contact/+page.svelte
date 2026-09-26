@@ -105,7 +105,7 @@ const structuredData = $derived([
 				</h1>
 
 				<p class="mb-8 text-sm leading-relaxed text-stone-600 sm:text-base">
-					Plan your bespoke island journey or write directly to
+					{copy.formIntroLead}
 					<a class="font-semibold text-forest-deep underline" href="mailto:{site.email}">{site.email}</a
 					>.
 				</p>
@@ -194,10 +194,10 @@ const structuredData = $derived([
 					</div>
 
 					<p class="mt-5 text-xs leading-relaxed text-stone-500">
-						Prefer email? Write to
+						{copy.preferEmailLabel}
 						<a class="font-semibold text-forest-deep underline" href="mailto:{site.email}"
 							>{site.email}</a
-						>. For anything urgent, call
+						>. {copy.urgentLabel}
 						<a class="font-semibold text-forest-deep" href={site.phoneHref}>{site.phone}</a>.
 					</p>
 				</div>
@@ -209,11 +209,10 @@ const structuredData = $derived([
 	<section class="mx-auto max-w-7xl border-t border-stone-100 px-6 py-16">
 		<div class="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-end">
 			<div>
-				<h2 class="text-2xl font-extrabold text-forest-deep md:text-3xl">We'd Love to Hear From You.</h2>
+				<h2 class="text-2xl font-extrabold text-forest-deep md:text-3xl">{copy.formEyebrow}</h2>
 			</div>
 			<p class="max-w-sm text-sm leading-relaxed text-stone-500 md:text-right">
-				Our local island specialists are on hand to tailor custom itineraries, boat transfers, and
-				guided expeditions.
+				{copy.formIntro}
 			</p>
 		</div>
 

@@ -221,92 +221,258 @@ export const homePageCopySchema = z
 export type HomePageCopy = z.infer<typeof homePageCopySchema>;
 
 /**
- * The editorial copy of one inner page: how it describes itself, and its hero.
+ * What every page that has a hero needs, as a raw shape a page can extend.
  *
- * A builder rather than one shared schema, and the distinction matters. A single schema would
- * have one set of defaults, so five pages would be seeded with the *same* placeholder words and
- * the blog would render "Banggai Escape" where its heading belongs. Per-page defaults are the
- * whole point; what the builder buys is that the five cannot drift in *shape* while differing in
- * content.
+ * A raw shape rather than a built schema, for the same reason `homeSectionShape` is one: these
+ * pages need their own section headings underneath, and `strictObject` has no `extend` that
+ * survives being wrapped in `prefault`. Each page spreads this and adds what is its own, so the
+ * four shared fields cannot drift across five pages while the rest stay per-page.
  *
- * `seoTitle` is the page's own name, **not** the browser title. The brand is appended by the
+ * The one place the `heroSubtitle`-is-optional rule lives. Every page that declares a
+ * standfirst replaces the optional field with a defaulted one, so no page schema exhibits the
+ * base behaviour; `innerPageBaseCopy` below is what makes it testable without reaching for
+ * `zod` from an app that does not depend on it.
+ *
+ * **`seoTitle` is the page's own name, not the browser title.** The brand is appended by the
  * page (`${site.name} — ${seoTitle}`) for the same reason it is stored once in `site.name`:
- * transcribing "Banggai Escape" into seven stored strings is seven places to forget when the
+ * transcribing "Banggai Escape" into five stored strings is five places to forget when the
  * business is renamed, and the stale ones fail silently — the page renders, the tab says the
  * old name.
+ *
+ * ## The line between content and interface
+ *
+ * The fields here are things the *business* says: headings, standfirsts, calls to action. The
+ * strings that describe a control — a form label, a placeholder, an `aria-label`, a "no results"
+ * message — stay in the component that renders the control. The test is whether an editor would
+ * expect to change it when they changed the business, and whether the string still makes sense
+ * if the control's behaviour changed. "Trip Overview" is the first kind; "Close contents" is the
+ * second, and putting the second in a CMS would mean an editor could rename a button into
+ * something that is not a button. See `docs/08-content-data-layer.md`.
  */
-function innerPageCopy(defaults: {
-	seoTitle: string;
-	seoDescription: string;
-	heroTitle: string;
-	heroSubtitle?: string;
-}) {
-	return (
-		z
-			.strictObject({
-				seoTitle: copy(defaults.seoTitle),
-				seoDescription: copy(defaults.seoDescription),
-				heroTitle: copy(defaults.heroTitle),
-				/**
-				 * Absent means "no standfirst", which is different from an empty one and is why this is
-				 * `.optional()` rather than a defaulted string. An empty string would render an empty
-				 * paragraph with its bottom margin, which is a visible gap; an absent key renders
-				 * nothing at all.
-				 */
-				heroSubtitle: z.string().min(1).optional(),
-			})
-			// See `siteCtaSchema`.
-			.prefault({})
-	);
+const innerPageShape = {
+	seoTitle: copy('Page'),
+	seoDescription: copy('Page'),
+	heroTitle: copy('Page'),
+	/**
+	 * Absent means "no standfirst", which is different from an empty one and is why this is
+	 * `.optional()` rather than a defaulted string. An empty string would render an empty
+	 * paragraph with its bottom margin, which is a visible gap; an absent key renders nothing
+	 * at all.
+	 */
+	heroSubtitle: z.string().min(1).optional(),
+} as const;
+
+/**
+ * The words on one inner page's *detail* route — `/packages/[slug]` and its two siblings.
+ *
+ * Separate keys from the listing pages' copy, and the split is the point. A listing page is a
+ * hero over a grid of cards: it renders no section headings at all, so putting "Trip Overview"
+ * on it would tell an editor that a page has a section it does not have, and the only way to
+ * find out that it does not render is to publish and look. Each detail key carries exactly the
+ * strings that route shows.
+ *
+ * The three shapes differ because the three pages do. That is not inconsistency to be smoothed
+ * away — `destinations/[slug]` has a gallery and no booking box, and `blog/[slug]` has a
+ * closing invitation and no itinerary.
+ */
+export const packageDetailCopy = z
+	.strictObject({
+		// Named fields rather than a list, because the page renders a fixed set of bands and a
+		// list would let an editor delete one the layout still tries to render.
+		overview: copy('Trip Overview'),
+		highlights: copy('Trip Highlights'),
+		included: copy("What's Included"),
+		itinerary: copy('Itinerary'),
+		/** The label above the price, and the suffix after it. */
+		priceFromLabel: copy('START FROM'),
+		perPersonLabel: copy('Person'),
+		/**
+		 * The booking button's own words.
+		 *
+		 * Both appear **twice** on this page — once in the booking box and once in the mobile
+		 * bar that follows the reader down — so a hardcoded string was two places to change for
+		 * one edit. That is the whole argument for the field.
+		 */
+		bookNowLabel: copy('Book Now'),
+		bookingNote: copy('No payment today — we confirm availability first.'),
+		related: copy('You Might Also Like'),
+		relatedActionLabel: copy('View All Packages'),
+		/**
+		 * The standfirst under the package's name, with a `{days}` token for the trip length.
+		 *
+		 * A token for the same reason `galleryHint` is one: the sentence interpolates the
+		 * duration, so a stored string either drops the number or needs a placeholder. The
+		 * alternative — two stored fragments, "A perfectly crafted" and "-day expedition…"
+		 * — was rejected because it makes the grammar a CMS field, and the pair has to be
+		 * edited together or not at all. One sentence with a visible token is one edit.
+		 */
+		summary: copy(
+			'A perfectly crafted {days}-day expedition designed to immerse you in pristine turquoise lagoons, mirror-like lakes, and the timeless warmth of Banggai island life.',
+		),
+		/**
+		 * The gallery's affordance hint, with a `{count}` token for the photo total.
+		 *
+		 * A token rather than a stored `"Swipe to see all photos"`, because the sentence
+		 * genuinely interpolates the number — "Swipe to see all 12 photos" — and storing the
+		 * noun on its own would mean the grammar lived in the markup and the words in the
+		 * CMS, which is the split this whole phase exists to remove. A token an editor can see
+		 * is better than a sentence fragment that reads as broken English on its own.
+		 */
+		galleryHint: copy('Swipe to see all {count} photos'),
+	})
+	// See `siteCtaSchema`.
+	.prefault({} as never);
+
+export const destinationDetailCopy = z
+	.strictObject({
+		overview: copy('Overview'),
+		quickInfo: copy('Quick Info'),
+		experiences: copy('Key Experiences'),
+		gallery: copy('Captured Moments in Paradise'),
+	})
+	// See `siteCtaSchema`.
+	.prefault({} as never);
+
+export const articleDetailCopy = z
+	.strictObject({
+		/** The closing invitation, which is a different message from the site-wide one. */
+		articleCtaTitle: copy('Need Help Planning?'),
+		articleCtaText: copy('Personalized Banggai Itineraries by Locals'),
+		articleCtaBody: copy(
+			'Skip the logistics hassle. Let our experts craft seamless boat rides, airport pickups, and lake transfers for you.',
+		),
+		articleCtaLabel: copy('Talk to a Specialist'),
+		articleCtaCallLabel: copy('Call / WhatsApp:'),
+		articleCtaPopularLabel: copy('Popular Tour'),
+		keepReadingLabel: copy('Keep Reading'),
+		relatedLabel: copy('More guides from our local team'),
+	})
+	// See `siteCtaSchema`.
+	.prefault({} as never);
+
+/**
+ * The five pages that share a hero, each with its own defaults and any extra fields.
+ *
+ * The `as never` on `prefault({})` is the same one `section()` carries, for the same reason:
+ * every field here is defaulted, so the honest input is `{}`, but the input type Zod infers
+ * for "all fields optional" is not `{}` and rejects it. Checked at runtime by
+ * `apps/web/src/lib/settings-copy.spec.ts`, which parses `{}` and asserts every leaf came back
+ * populated — so the cast is verified rather than merely asserted.
+ */
+function innerPageCopy<Extra extends z.ZodRawShape>(extra: Extra) {
+	return z.strictObject({ ...innerPageShape, ...extra }).prefault({} as never);
 }
 
+/**
+ * The shared shape on its own, with nothing a page adds.
+ *
+ * Exists for one test: that the base is *optional* about a standfirst, and that an absent one
+ * is rejected while an empty one is refused. No page can show that, because every page that has
+ * a standfirst defaults it and every page that has not got a schema that does not exist. It is
+ * published as a schema rather than as the raw shape so a consumer never has to reassemble one
+ * — a reassembled copy is exactly how a caller ends up with something that is not prefaulted,
+ * which is the bug the base exists to rule out.
+ */
+export const innerPageBaseCopy = z.strictObject(innerPageShape).prefault({} as never);
+
 export const packagesPageCopy = innerPageCopy({
-	seoTitle: 'Tour Packages',
-	seoDescription:
+	seoTitle: copy('Tour Packages'),
+	seoDescription: copy(
 		'Choose from our all-inclusive, fully customizable tour packages designed by local experts to showcase the very best of Central Sulawesi’s hidden gems.',
-	heroTitle: 'Find Your Perfect\nBanggai Escape',
-	heroSubtitle:
+	),
+	heroTitle: copy('Find Your Perfect\nBanggai Escape'),
+	heroSubtitle: copy(
 		'Choose from our all-inclusive, fully customizable tour packages designed by local experts to showcase the very best of Central Sulawesi’s hidden gems.',
+	),
+	// The listing page has no section headings of its own — its cards do the talking — so it
+	// inherits the shared ones and uses none of them.
 });
 
 export const destinationsPageCopy = innerPageCopy({
-	seoTitle: 'Destinations',
-	seoDescription:
+	seoTitle: copy('Destinations'),
+	seoDescription: copy(
 		'Handpicked natural sanctuaries across the Banggai Archipelago, curated by local experts for travelers seeking authentic beauty.',
-	heroTitle: 'Extraordinary Destinations',
-	heroSubtitle:
+	),
+	heroTitle: copy('Extraordinary Destinations'),
+	heroSubtitle: copy(
 		'Handpicked natural sanctuaries across the Banggai Archipelago, curated by local experts for travelers seeking authentic beauty.',
+	),
 });
 
 export const blogPageCopy = innerPageCopy({
-	seoTitle: 'Blog',
-	seoDescription:
+	seoTitle: copy('Blog'),
+	seoDescription: copy(
 		'Discover curated articles, destination guides, and travel insight to inspire your next adventure.',
-	heroTitle: 'Insights to Help You\nTravel Smarter',
-	heroSubtitle:
+	),
+	heroTitle: copy('Insights to Help You\nTravel Smarter'),
+	heroSubtitle: copy(
 		'Discover curated articles, destination guides, and travel insight to inspire your next adventure.',
+	),
+	// The listing page has no closing invitation of its own — the article page has one,
+	// and it is in `articleDetailCopy` because that is the route that renders it.
 });
 
 export const aboutPageCopy = innerPageCopy({
-	seoTitle: 'About Us',
-	seoDescription:
+	seoTitle: copy('About Us'),
+	seoDescription: copy(
 		'Born from a deep passion for sharing the untouched magic and legendary warmth of Banggai.',
-	heroTitle: 'About Us',
+	),
+	heroTitle: copy('About Us'),
 	// Added after assuming this page had no standfirst. It does — the sentence under its
 	// heading — and the assumption was only visible by reading the page, which is the argument
 	// for putting the copy in the CMS rather than reasoning about it in a schema.
-	heroSubtitle:
+	heroSubtitle: copy(
 		'Born from a deep passion for sharing the untouched magic and legendary warmth of Banggai.',
+	),
+	storyEyebrow: copy('OUR STORY'),
+	/**
+	 * The story: a heading and a paragraph, not two paragraphs.
+	 *
+	 * An array because the markup is a heading followed by prose and an array keeps the order
+	 * explicit, but `min(1)` rather than `min(2)` — there is one of each, and a `min(2)` would
+	 * be satisfied by two paragraphs and no heading.
+	 */
+	storyTitle: copy(
+		'Banggai Escape was born from a deep-rooted love for our home—the pristine, untouched archipelago of Banggai. We realized that while these islands offer world-class turquoise lagoons, rich culture, and breathtaking marine life, navigating them requires genuine local knowledge.',
+	),
+	storyBody: copy(
+		'Founded by locals and hospitality enthusiasts, we bridge the gap between curious global travelers and authentic island experiences. We take care of every detail—from seamless island transfers to tailored daily itineraries—allowing you to immerse yourself fully in the magic of the tropics with total safety, comfort, and ease.',
+	),
+	missionEyebrow: copy('VISION & MISSION'),
+	/**
+	 * The band heading, which the home page also uses.
+	 *
+	 * Duplicated across the two pages on purpose rather than shared, because they are two
+	 * different pages that happen to say the same thing today. An editor rewording one should
+	 * not silently reword the other, and when they *should* match, the CMS makes that a
+	 * decision rather than an accident of two literals happening to agree.
+	 */
+	reasonsTitle: copy('The Reason Travelers\nChoose Banggai Escape'),
 });
 
 export const contactPageCopy = innerPageCopy({
-	seoTitle: 'Contact Us',
-	seoDescription:
+	seoTitle: copy('Contact Us'),
+	seoDescription: copy(
 		'Plan your bespoke island journey with Banggai Escape — our local island specialists are on hand to tailor custom itineraries, boat transfers, and guided expeditions.',
-	heroTitle: 'Let’s Get In Touch.',
+	),
+	heroTitle: copy('Let’s Get In Touch.'),
+	formEyebrow: copy('We’d Love to Hear From You.'),
+	formIntro: copy(
+		'Our local island specialists are on hand to tailor custom itineraries, boat transfers, and guided expeditions.',
+	),
+	formIntroLead: copy('Plan your bespoke island journey or write directly to'),
+	/**
+	 * The two halves of one sentence, because a link sits between them.
+	 *
+	 * "Prefer email? Write to `hello@…`. For anything urgent, call `(62) 813…`." is a single
+	 * sentence with two anchors in it, so it cannot be one stored string without either
+	 * stripping the links or embedding markup in the content. Two labels and a full stop in the
+	 * markup is the honest decomposition — the stop is punctuation between two sentences, not
+	 * copy.
+	 */
+	preferEmailLabel: copy('Prefer email? Write to'),
+	urgentLabel: copy('For anything urgent, call'),
 });
-
-export type InnerPageCopy = z.infer<typeof packagesPageCopy>;
 
 export const navItemSchema = z.strictObject({
 	label: z.string().min(1),
@@ -414,14 +580,60 @@ export const siteSettingSchemas = {
 	 * editing the default would have left half the site showing the old text.
 	 */
 	siteCta: siteCtaSchema,
+	/**
+	 * The words on a content card.
+	 *
+	 * The most repeated copy on the site: `PackageCard` renders on four routes and `PostCard`
+	 * on four more, so "Start from", "/Person", "View Details" and "Read More" were eight
+	 * hardcoded strings across eight call sites. They are content rather than chrome — an
+	 * editor changing the site's voice would want them, and they are among the first words a
+	 * visitor reads.
+	 *
+	 * Keyed by card rather than flat, because "View Details" and "Read More" are the same kind
+	 * of string for two different kinds of card, and grouping them says so where eight
+	 * unrelated fields would not.
+	 */
+	cards: z
+		.strictObject({
+			package: z
+				.strictObject({
+					/** Above the price. Sentence case, unlike the detail page's shoutier one. */
+					priceFromLabel: copy('Start from'),
+					/** After it, behind the slash: "/Person". */
+					perPersonLabel: copy('Person'),
+					actionLabel: copy('View Details'),
+				})
+				.prefault({} as never),
+			post: z
+				.strictObject({
+					actionLabel: copy('Read More'),
+				})
+				.prefault({} as never),
+		})
+		// See `siteCtaSchema`.
+		.prefault({} as never),
+
 	/** The home page's own words. See `homePageCopySchema` for why every field is defaulted. */
 	homePage: homePageCopySchema,
-	/** The four inner pages that share a hero shape: packages, destinations, blog, contact. */
+	/**
+	 * The five pages that are a hero over a grid: their SEO metadata and their hero.
+	 *
+	 * Keyed per page rather than one shared `innerPages`, so a page can be edited without
+	 * touching the others and so an editor's index lists them separately.
+	 */
 	packagesPage: packagesPageCopy,
 	destinationsPage: destinationsPageCopy,
 	blogPage: blogPageCopy,
 	aboutPage: aboutPageCopy,
 	contactPage: contactPageCopy,
+	/**
+	 * The three detail routes, which are a different shape from their listing pages: section
+	 * headings, a booking box, a closing invitation. See `packageDetailCopy` for why these are
+	 * not folded into the keys above.
+	 */
+	packageDetail: packageDetailCopy,
+	destinationDetail: destinationDetailCopy,
+	articleDetail: articleDetailCopy,
 } as const;
 
 /**

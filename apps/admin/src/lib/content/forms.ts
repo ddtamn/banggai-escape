@@ -332,9 +332,26 @@ function homeSection(name: string, label: string, extra: readonly FieldSpec[] = 
  * about what they can say. Each is still a *separate* key — one row in `site_settings`, one
  * entry in the editor's index — so a page can be edited without touching the others.
  */
+/**
+ * One detail route's own words.
+ *
+ * The counterpart to `innerPageSpec`, and deliberately not a parameter of it: a detail page has
+ * no SEO metadata and no hero — both come from its entry — so giving it those fields would
+ * offer an editor two controls that the page never reads. Keeping them separate is what stops
+ * "Trip Overview" appearing on a form titled "Packages page", where it is never rendered.
+ */
+function detailSpec(
+	key: 'packageDetail' | 'destinationDetail' | 'articleDetail',
+	label: string,
+	fields: readonly FieldSpec[],
+): FieldSpec {
+	return { type: 'object', name: key, label, fields };
+}
+
 function innerPageSpec(
 	key: 'packagesPage' | 'destinationsPage' | 'blogPage' | 'aboutPage' | 'contactPage',
 	label: string,
+	extra: readonly FieldSpec[] = [],
 ): FieldSpec {
 	return {
 		type: 'object',
@@ -345,7 +362,11 @@ function innerPageSpec(
 				type: 'text',
 				name: 'seoTitle',
 				label: 'Page title',
-				hint: 'The browser tab and the share card',
+				// The brand is appended by the page, so this is the page's own name — "Blog",
+				// not "Blog — Banggai Escape". Storing the brand here would be a second copy
+				// of it, and renaming the business would leave these stale without anything
+				// failing.
+				hint: 'The page’s own name — the site name is added to it',
 			},
 			{
 				type: 'words',
@@ -363,11 +384,11 @@ function innerPageSpec(
 				type: 'words',
 				name: 'heroSubtitle',
 				label: 'Hero standfirst',
-				// Optional, and marked as such, because a page whose hero is a photograph and a
-				// heading has no standfirst. Absent renders nothing; `''` would render an
-				// empty paragraph with its margin.
+				// Optional, and marked as such, because a page whose hero has no standfirst
+				// should render nothing rather than an empty paragraph with its margin.
 				optional: true,
 			},
+			...extra,
 		],
 	};
 }
@@ -408,6 +429,29 @@ export const settingSpecs: Record<SiteSettingKey, FieldSpec> = {
 			{ type: 'words', name: 'title', label: 'Heading', hint: 'Use \\n for a line break' },
 			{ type: 'words', name: 'text', label: 'Text' },
 			{ type: 'text', name: 'ctaLabel', label: 'Button label' },
+		],
+	},
+	cards: {
+		type: 'object',
+		name: 'cards',
+		label: 'Cards',
+		fields: [
+			{
+				type: 'object',
+				name: 'package',
+				label: 'Package card',
+				fields: [
+					{ type: 'text', name: 'priceFromLabel', label: 'Price prefix' },
+					{ type: 'text', name: 'perPersonLabel', label: 'Per-person suffix' },
+					{ type: 'text', name: 'actionLabel', label: 'Button label' },
+				],
+			},
+			{
+				type: 'object',
+				name: 'post',
+				label: 'Article card',
+				fields: [{ type: 'text', name: 'actionLabel', label: 'Button label' }],
+			},
 		],
 	},
 	homePage: {
@@ -542,8 +586,55 @@ export const settingSpecs: Record<SiteSettingKey, FieldSpec> = {
 	packagesPage: innerPageSpec('packagesPage', 'Packages page'),
 	destinationsPage: innerPageSpec('destinationsPage', 'Destinations page'),
 	blogPage: innerPageSpec('blogPage', 'Blog page'),
-	aboutPage: innerPageSpec('aboutPage', 'About page'),
-	contactPage: innerPageSpec('contactPage', 'Contact page'),
+	aboutPage: innerPageSpec('aboutPage', 'About page', [
+		{ type: 'text', name: 'storyEyebrow', label: 'Story eyebrow' },
+		{ type: 'words', name: 'storyTitle', label: 'Story heading' },
+		{ type: 'words', name: 'storyBody', label: 'Story text' },
+		{ type: 'text', name: 'missionEyebrow', label: 'Mission eyebrow' },
+		{ type: 'words', name: 'reasonsTitle', label: 'Reasons band heading' },
+	]),
+	packageDetail: detailSpec('packageDetail', 'Package page', [
+		{ type: 'text', name: 'overview', label: 'Overview heading' },
+		{ type: 'text', name: 'highlights', label: 'Highlights heading' },
+		{ type: 'text', name: 'included', label: 'Included heading' },
+		{ type: 'text', name: 'itinerary', label: 'Itinerary heading' },
+		{ type: 'text', name: 'priceFromLabel', label: 'Price prefix' },
+		{ type: 'text', name: 'perPersonLabel', label: 'Per-person suffix' },
+		{ type: 'text', name: 'bookNowLabel', label: 'Booking button label' },
+		{ type: 'words', name: 'bookingNote', label: 'Booking note' },
+		{ type: 'text', name: 'related', label: 'Related heading' },
+		{ type: 'text', name: 'relatedActionLabel', label: 'Related link label' },
+		{ type: 'text', name: 'galleryHint', label: 'Gallery swipe hint' },
+		{
+			type: 'words',
+			name: 'summary',
+			label: 'Standfirst under the title',
+			hint: 'Use {days} where the trip length goes',
+		},
+	]),
+	destinationDetail: detailSpec('destinationDetail', 'Destination page', [
+		{ type: 'text', name: 'overview', label: 'Overview heading' },
+		{ type: 'text', name: 'quickInfo', label: 'Quick info heading' },
+		{ type: 'text', name: 'experiences', label: 'Experiences heading' },
+		{ type: 'text', name: 'gallery', label: 'Gallery heading' },
+	]),
+	articleDetail: detailSpec('articleDetail', 'Article page', [
+		{ type: 'text', name: 'articleCtaTitle', label: 'Banner heading' },
+		{ type: 'text', name: 'articleCtaText', label: 'Banner standfirst' },
+		{ type: 'words', name: 'articleCtaBody', label: 'Banner text' },
+		{ type: 'text', name: 'articleCtaLabel', label: 'Banner button label' },
+		{ type: 'text', name: 'articleCtaCallLabel', label: 'Banner phone label' },
+		{ type: 'text', name: 'articleCtaPopularLabel', label: 'Banner tour label' },
+		{ type: 'text', name: 'keepReadingLabel', label: 'Keep reading label' },
+		{ type: 'words', name: 'relatedLabel', label: 'More guides standfirst' },
+	]),
+	contactPage: innerPageSpec('contactPage', 'Contact page', [
+		{ type: 'text', name: 'formEyebrow', label: 'Form heading' },
+		{ type: 'words', name: 'formIntro', label: 'Form intro' },
+		{ type: 'text', name: 'formIntroLead', label: 'Form intro, before the email address' },
+		{ type: 'text', name: 'preferEmailLabel', label: 'Email prompt' },
+		{ type: 'text', name: 'urgentLabel', label: 'Urgent-call prompt' },
+	]),
 } as const;
 
 /** The order the settings screen lists them in. Every key must appear exactly once. */
@@ -563,16 +654,19 @@ export const settingGroups: readonly {
 	{ title: 'Contact page', keys: ['contactChannels', 'faqs'] },
 	{ title: 'Blog', keys: ['blogCategories'] },
 	{
-		title: 'Page copy',
-		keys: [
-			'siteCta',
-			'homePage',
-			'packagesPage',
-			'destinationsPage',
-			'blogPage',
-			'aboutPage',
-			'contactPage',
-		],
+		title: 'Page copy — shared, home, and the closing banner',
+		keys: ['siteCta', 'cards', 'homePage'],
+	},
+	{
+		title: 'Page copy — listing pages',
+		keys: ['packagesPage', 'destinationsPage', 'blogPage', 'aboutPage', 'contactPage'],
+	},
+	{
+		// A group of its own because these are a different *kind* of page: a listing page is a
+		// hero over a grid, a detail page is a set of band headings. An editor looking for
+		// "Trip Overview" should not be offered the page that never shows it.
+		title: 'Page copy — detail pages',
+		keys: ['packageDetail', 'destinationDetail', 'articleDetail'],
 	},
 ];
 
@@ -592,12 +686,17 @@ export const settingNotes: Record<SiteSettingKey, string> = {
 	blogCategories: 'The filter chips above the blog listing.',
 	ctaBackground: 'The image behind the “plan your trip” banner on every page.',
 	siteCta: 'The closing invitation at the foot of every page.',
+	cards: 'The words on a package or article card — the price prefix and the button label.',
 	homePage: 'The home page’s hero, its six section headings, and its About text.',
 	packagesPage: 'The packages listing page — its hero, and how it describes itself.',
 	destinationsPage: 'The destinations listing page — its hero, and how it describes itself.',
 	blogPage: 'The blog listing page — its hero, and how it describes itself.',
-	aboutPage: 'The about page — its hero, and how it describes itself.',
-	contactPage: 'The contact page — its hero, and how it describes itself.',
+	aboutPage: 'The about page — its story, its vision, and how it describes itself.',
+	contactPage: 'The contact page — its hero and the wording around the form.',
+	packageDetail:
+		'One package page — its four band headings, the booking box, and the related block.',
+	destinationDetail: 'One destination page — its four band headings.',
+	articleDetail: 'One article page — the closing invitation and the “keep reading” block.',
 };
 
 /**

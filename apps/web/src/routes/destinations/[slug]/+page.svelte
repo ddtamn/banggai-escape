@@ -16,6 +16,18 @@ const site = $derived(data.settings.site);
 
 /** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
 const siteCta = $derived(data.settings.siteCta);
+
+/**
+ * The words on a content card.
+ *
+ * Cards render on four routes each, so this is read once per page and handed to them
+ * rather than the card importing settings — a shared component takes props, and a page
+ * that reaches into the database from a component is a component that cannot be previewed.
+ */
+const cardLabels = $derived(data.settings.cards);
+
+/** This page's own words, from the CMS. See `siteSettingSchemas.destinationDetail`. */
+const copy = $derived(data.settings.destinationDetail);
 const destination = $derived(data.destination);
 /** A representative mosaic drawn from the destination photography set. */
 const mosaic = $derived(data.mosaic);
@@ -108,7 +120,7 @@ const structuredData = $derived([
 <div class="mx-auto max-w-7xl space-y-16 px-6 py-14 sm:py-16">
 	<!-- Overview -->
 	<section>
-		<h2 class="mb-4 text-xl font-bold text-forest-deep sm:text-2xl">Overview</h2>
+		<h2 class="mb-4 text-xl font-bold text-forest-deep sm:text-2xl">{copy.overview}</h2>
 		<div class="max-w-3xl space-y-4 text-sm leading-relaxed text-stone-600 sm:text-base">
 			{#each destination.overview as paragraph, index (index)}
 				<p>{paragraph}</p>
@@ -118,7 +130,7 @@ const structuredData = $derived([
 
 	<!-- Quick info -->
 	<section>
-		<h2 class="mb-5 text-xl font-bold text-forest-deep sm:text-2xl">Quick Info</h2>
+		<h2 class="mb-5 text-xl font-bold text-forest-deep sm:text-2xl">{copy.quickInfo}</h2>
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 			{#each quickInfo as info (info.label)}
 				<div
@@ -135,7 +147,7 @@ const structuredData = $derived([
 
 	<!-- Key experiences -->
 	<section>
-		<h2 class="mb-5 text-xl font-bold text-forest-deep sm:text-2xl">Key Experiences</h2>
+		<h2 class="mb-5 text-xl font-bold text-forest-deep sm:text-2xl">{copy.experiences}</h2>
 		<ul class="space-y-3.5 text-sm text-stone-700 sm:text-base">
 			{#each destination.experiences as experience (experience.title)}
 				<li class="flex items-start">
@@ -152,7 +164,7 @@ const structuredData = $derived([
 
 	<!-- Gallery -->
 	<section>
-		<h2 class="mb-6 text-xl font-bold text-forest-deep sm:text-2xl">Captured Moments in Paradise</h2>
+		<h2 class="mb-6 text-xl font-bold text-forest-deep sm:text-2xl">{copy.gallery}</h2>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 			{#each mosaic as image, index (image.src)}
 				<div
@@ -180,7 +192,7 @@ const structuredData = $derived([
 		<SectionHeader title="Related Packages" subtitle="Journeys that include this destination" />
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
 			{#each related as pkg (pkg.slug)}
-				<PackageCard {pkg} />
+				<PackageCard {pkg} labels={cardLabels.package} />
 			{/each}
 		</div>
 	</section>

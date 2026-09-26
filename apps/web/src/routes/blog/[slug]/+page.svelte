@@ -19,6 +19,18 @@ const site = $derived(data.settings.site);
 
 /** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
 const siteCta = $derived(data.settings.siteCta);
+
+/**
+ * The words on a content card.
+ *
+ * Cards render on four routes each, so this is read once per page and handed to them
+ * rather than the card importing settings — a shared component takes props, and a page
+ * that reaches into the database from a component is a component that cannot be previewed.
+ */
+const cardLabels = $derived(data.settings.cards);
+
+/** This page's own words, from the CMS. See `siteSettingSchemas.articleDetail`. */
+const copy = $derived(data.settings.articleDetail);
 const post = $derived(data.post);
 const toc = $derived(tableOfContents(post));
 const related = $derived(data.related);
@@ -340,25 +352,24 @@ const structuredData = $derived([
 
 			<div class="rounded-xl border border-forest-line bg-forest-deep p-6 text-white shadow-md">
 				<span class="mb-2 block text-label font-bold tracking-widest text-gold-light uppercase">
-					Need Help Planning?
+					{copy.articleCtaTitle}
 				</span>
 				<h3 class="mb-3 text-base font-bold leading-tight">
-					Personalized Banggai Itineraries by Locals
+					{copy.articleCtaText}
 				</h3>
 				<p class="mb-5 text-sm leading-relaxed text-stone-300">
-					Skip the logistics hassle. Let our experts craft seamless boat rides, airport pickups, and
-					lake transfers for you.
+					{copy.articleCtaBody}
 				</p>
 				<a
 					class="block w-full rounded bg-gold py-2.5 text-center text-xs font-bold tracking-wider text-forest-deep uppercase shadow-sm transition-all hover:bg-gold-deep"
 					href="/contact"
 				>
-					Talk to a Specialist
+					{copy.articleCtaLabel}
 				</a>
 				<div
 					class="mt-4 flex items-center justify-between border-t border-forest-line/60 pt-4 text-label font-medium text-stone-400"
 				>
-					<span>Call / WhatsApp:</span>
+					<span>{copy.articleCtaCallLabel}</span>
 					<a class="font-semibold text-stone-200" href={site.phoneHref}>{site.phone}</a>
 				</div>
 			</div>
@@ -372,7 +383,7 @@ const structuredData = $derived([
 						<span
 							class="absolute top-3 left-3 rounded bg-gold px-2.5 py-1 text-label font-extrabold text-forest-abyss uppercase shadow"
 						>
-							Popular Tour
+							{copy.articleCtaPopularLabel}
 						</span>
 						<img
 							class="h-44 w-full object-cover"
@@ -459,13 +470,13 @@ const structuredData = $derived([
 	<section class="border-t border-stone-200 bg-white px-6 py-16">
 		<div class="mx-auto max-w-7xl">
 			<SectionHeader
-				title="Keep Reading"
-				subtitle="More guides from our local team"
+				title={copy.keepReadingLabel}
+				subtitle={copy.relatedLabel}
 				action={{ label: 'View all posts', href: '/blog' }}
 			/>
 			<div class="grid grid-cols-1 gap-8 md:grid-cols-3">
 				{#each related as item (item.slug)}
-					<PostCard post={item} />
+					<PostCard post={item} labels={cardLabels.post} />
 				{/each}
 			</div>
 		</div>

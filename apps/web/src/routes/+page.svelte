@@ -23,6 +23,15 @@ const ctaBackground = $derived(data.settings.ctaBackground);
 
 /** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
 const siteCta = $derived(data.settings.siteCta);
+
+/**
+ * The words on a content card.
+ *
+ * Cards render on four routes each, so this is read once per page and handed to them
+ * rather than the card importing settings — a shared component takes props, and a page
+ * that reaches into the database from a component is a component that cannot be previewed.
+ */
+const cardLabels = $derived(data.settings.cards);
 const faqs = $derived(data.settings.faqs);
 const features = $derived(data.settings.features);
 const site = $derived(data.settings.site);
@@ -167,7 +176,7 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 		/>
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
 			{#each packages as pkg (pkg.slug)}
-				<PackageCard {pkg} />
+				<PackageCard {pkg} labels={cardLabels.package} />
 			{/each}
 		</div>
 	</div>
@@ -385,7 +394,7 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 		/>
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
 			{#each posts as post (post.slug)}
-				<PostCard {post} />
+				<PostCard {post} labels={cardLabels.post} />
 			{/each}
 		</div>
 	</div>

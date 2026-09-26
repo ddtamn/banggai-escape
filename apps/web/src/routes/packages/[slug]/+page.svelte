@@ -134,7 +134,7 @@ $effect(() => {
 		</div>
 
 		<p
-			class="mt-2 flex items-center justify-center gap-2 text-[11px] font-medium text-stone-500 md:hidden"
+			class="mt-2 flex items-center justify-center gap-2 text-label font-medium text-stone-500 md:hidden"
 		>
 			<i class="fa-solid fa-arrows-left-right text-[10px] text-gold"></i>
 			Swipe to see all {gallery.length} photos
@@ -208,7 +208,7 @@ $effect(() => {
 									class="flex w-full cursor-pointer items-center justify-between gap-4 text-left [&::-webkit-details-marker]:hidden"
 								>
 									<span>
-										<span class="block text-[11px] font-bold tracking-wider text-stone-400 uppercase">
+										<span class="block text-label font-bold tracking-wider text-stone-400 uppercase">
 											{day.label}
 										</span>
 										<span class="block text-base font-bold text-stone-900 sm:text-lg">
@@ -240,7 +240,7 @@ $effect(() => {
 					</div>
 
 					<div class="border-b border-forest-line/60 pt-2 pb-5">
-						<span class="mb-1 block text-[10px] font-bold tracking-widest text-gold-light uppercase">
+						<span class="mb-1 block text-label font-bold tracking-widest text-gold-light uppercase">
 							START FROM
 						</span>
 						<div class="flex items-baseline gap-1.5">
@@ -260,7 +260,7 @@ $effect(() => {
 									<i class="{badge.icon} text-xs"></i>
 								</div>
 								<span class="text-xs font-bold text-white">{badge.title}</span>
-								<span class="text-center text-[10px] leading-tight text-stone-400">
+								<span class="text-center text-label leading-tight text-stone-400">
 									{badge.text}
 								</span>
 							</div>
@@ -275,7 +275,7 @@ $effect(() => {
 						Book Now
 					</a>
 
-					<p class="mt-4 text-center text-[11px] text-stone-400">
+					<p class="mt-4 text-center text-label text-stone-400">
 						No payment today — we confirm availability first.
 					</p>
 				</div>
@@ -317,12 +317,12 @@ $effect(() => {
 	>
 		<div class="flex items-center justify-between gap-4">
 			<div class="min-w-0">
-				<span class="block text-[10px] font-bold tracking-widest text-gold-light uppercase">
+				<span class="block text-label font-bold tracking-widest text-gold-light uppercase">
 					START FROM
 				</span>
 				<div class="flex items-baseline gap-1.5">
 					<span class="text-lg font-extrabold text-white">{formatPrice(pkg.price)}</span>
-					<span class="text-[11px] font-medium text-stone-400">/Person</span>
+					<span class="text-label font-medium text-stone-400">/Person</span>
 				</div>
 			</div>
 			<a class="btn-gold shrink-0" href="/contact?package={pkg.slug}" data-track="booking_cta_click"

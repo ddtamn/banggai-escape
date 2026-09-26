@@ -79,7 +79,7 @@ const related = $derived(data.related);
 				<div
 					class="flex flex-col justify-between rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs"
 				>
-					<span class="mb-2 text-[11px] font-bold tracking-wider text-stone-400 uppercase">
+					<span class="mb-2 text-label font-bold tracking-wider text-stone-400 uppercase">
 						{info.label}
 					</span>
 					<p class="text-xs leading-snug font-semibold text-stone-800 sm:text-sm">{info.value}</p>

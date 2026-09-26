@@ -23,13 +23,13 @@ let { pkg }: Props = $props();
 	<div class="flex flex-1 flex-col justify-between p-4">
 		<div>
 			<h3 class="text-sm font-bold text-stone-900">{pkg.title}</h3>
-			<p class="mt-0.5 text-[11px] text-stone-400">Start from</p>
+			<p class="mt-0.5 text-label text-stone-400">Start from</p>
 			<p class="text-xs font-bold text-stone-900">
 				{formatPrice(pkg.price)}
-				<span class="text-[10px] font-normal text-stone-400">/Person</span>
+				<span class="text-label font-normal text-stone-400">/Person</span>
 			</p>
 
-			<div class="mt-3 flex items-center gap-4 text-[11px] text-stone-500">
+			<div class="mt-3 flex items-center gap-4 text-label text-stone-500">
 				<span class="flex items-center gap-1.5">
 					<i class="fa-solid fa-leaf text-[10px] text-accent"></i>
 					{pkg.tripType}

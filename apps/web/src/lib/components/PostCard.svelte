@@ -30,7 +30,7 @@ let { post }: Props = $props();
 			<h3 class="mb-2 text-sm leading-snug font-bold text-stone-900">
 				<a class="transition-colors hover:text-accent" href="/blog/{post.slug}">{post.title}</a>
 			</h3>
-			<p class="line-clamp-3 text-xs leading-relaxed text-stone-500">{post.excerpt}</p>
+			<p class="line-clamp-3 text-sm leading-relaxed text-stone-500">{post.excerpt}</p>
 		</div>
 	</div>
 

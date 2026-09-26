@@ -12,7 +12,7 @@ Banggai Escape is a **gilded eco-adventure travel house** — the visual languag
 
 The mood is **weathered-luxury meets tropical documentary** — confident, editorial, and quietly premium rather than glossy or corporate. Deep jungle emerald (#18342A and its near-black siblings) is the constant; **brushed gold (#B48A5A)** is the only jewel, and it is rationed carefully: call-to-action pills, the active navigation item, prices, location pins, small icon touches, and section eyebrow dots. The palette reads as "forest canopy + palm oil lantern light."
 
-The photography does the selling. Layouts are **gallery-first**: generous 4:3 and full-bleed hero image blocks, slow 300–500 ms scale-on-hover zooms, gradient scrims at image bottoms so white type can sit over water and karst. Typography is deliberately **small and restrained** — body copy runs at 12–14 px, captions and metadata at 10–11 px uppercase with wide letter-spacing — so images, not text, carry the emotional weight. Headlines alone go large (30–60 px extrabold) to anchor each band.
+The photography does the selling. Layouts are **gallery-first**: generous 4:3 and full-bleed hero image blocks, slow 300–500 ms scale-on-hover zooms, gradient scrims at image bottoms so white type can sit over water and karst. Typography is deliberately **restrained** — body copy runs at 16 px with a 14 px floor, captions and metadata at 12 px (`text-label`) uppercase with wide letter-spacing — so images, not text, carry the emotional weight. Headlines alone go large (30–60 px extrabold) to anchor each band.
 
 **Key Characteristics**
 - Dark-forest "curtain" hero bands opening onto warm sand content
@@ -69,15 +69,29 @@ The photography does the selling. Layouts are **gallery-first**: generous 4:3 an
 **Single Typeface:** Plus Jakarta Sans is the only family loaded and is used everywhere, including long-form editorial contexts. No secondary display or serif family ships.
 *(Inter 300–700 and Playfair Display also appear in the original screens — legacy drift, now removed. Use Plus Jakarta Sans for all screens.)*
 
-**Iconography:** Font Awesome 6.7.2 (`fa-solid`, `fa-regular`, `fa-brands`) loaded from CDN. Icons are always small (10–14 px), tinted with gold or the local text color, and frequently sit inline with 10–11 px uppercase labels.
+**Iconography:** Font Awesome 6.7.2 (`fa-solid`, `fa-regular`, `fa-brands`) loaded from CDN. Icons are always small (10–14 px), tinted with gold or the local text color, and frequently sit inline with 12 px uppercase labels. Icon sizes are the one deliberate exception to the type floor: an icon is sized, not read.
 
 ### Hierarchy & Weights
 - **Display / Hero (H1):** Extrabold (800), `tracking-tight`, 3 steps (`text-3xl → text-5xl → text-6xl`, ≈30–60 px), line-height ≈1.15. Centered on hero bands with a soft `drop-shadow-md` when sitting over photography.
 - **Section Headers (H2):** Extrabold (800), `tracking-tight`, `text-2xl → text-3xl` (24–30 px) on light bands; `text-3xl → text-4xl/5xl` when it's a full-bleed banner headline. Left-aligned in content grids, centered in banners.
 - **Card / Item Titles (H3):** Bold (700), `text-sm` (14 px), `leading-snug`. Small but heavy — density is carried by weight, not size.
-- **Body Text:** Regular (400), `text-xs → text-sm` (12–14 px), relaxed line-height (1.6–1.7). Intentionally compact; the photography supplies the visual scale.
-- **Micro-labels / Eyebrows:** Bold (700), **10–11 px uppercase**, `tracking-wider` to `tracking-widest`. Used for form labels, footer column headers, card tags, filter chips, and button text. This tiny-wide-caps treatment is the single most repeated typographic signature in the system.
-- **Prices:** Bold (700), `text-xs`, in Charcoal Ink, with the "Start from" line above in a 11 px Warm Gray and the "/Person" suffix dropped to 10 px regular — a three-tier micro-hierarchy inside one card corner.
+- **Body Text:** Regular (400), **16 px (`text-base`)** for long-form prose, **14 px
+  (`text-xs`)** as the absolute floor for anything a visitor must read in order to act,
+  relaxed line-height (1.6–1.7).
+  *Revised from `text-xs → text-sm` (12–14 px).* 12 px body is below comfortable reading
+  size and was the single largest reason the site read as unpolished: 83 of its text sizes
+  were `text-xs`, which put testimonial quotes, FAQ answers and the About paragraphs at
+  12 px. `text-xs` is redefined to 14 px in `layout.css`, so the floor holds site-wide.
+- **Micro-labels / Eyebrows:** Bold (700), **12 px (`text-label`) uppercase**,
+  `tracking-wider` to `tracking-widest`. Used for form labels, footer column headers, card
+  tags, filter chips, and button text. This tracked-wide-caps treatment is the single most
+  repeated typographic signature in the system.
+  *Revised from 10–11 px.* The treatment is unchanged; the size moved to a named 12 px step
+  because 10–11 px is at the edge of legibility on a high-DPI phone, and a signature is not
+  worth a visitor squinting.
+- **Prices:** Bold (700), `text-xs`, in Charcoal Ink, with the "Start from" line above at
+  `text-label` Warm Gray and the "/Person" suffix at `text-label` regular — a three-tier
+  micro-hierarchy inside one card corner.
 
 ### Spacing & Letter-spacing Principles
 - Big headlines tighten (`tracking-tight`); small uppercase labels open up (`tracking-wider`). Never invert this.
@@ -125,8 +139,8 @@ The photography does the selling. Layouts are **gallery-first**: generous 4:3 an
 ### Recurring Patterns
 - **Section Header Row:** left-aligned H2 + 12 px Warm Gray subtitle, with a Forest Pill "View all →" aligned to the right baseline (`flex items-end justify-between`). Appears above every content grid.
 - **Eyebrow Chip:** small `rounded-full` pill with a gold dot + 12 px emerald-tinted label, e.g. "New summer destinations added" on the hero.
-- **Stats / Attribute Row:** inline `gap-4` cluster of 10–11 px `stone-500` items, each prefixed by a 10 px gold or emerald icon.
-- **FAQ Accordion:** `divide-y divide-stone-200` rows; 12–14 px bold question with a `fa-chevron-down/up` toggle at the right, 12 px `stone-500` answer with relaxed leading below.
+- **Stats / Attribute Row:** inline `gap-4` cluster of `text-label` `stone-500` items, each prefixed by a 10 px gold or emerald icon.
+- **FAQ Accordion:** `divide-y divide-stone-200` rows; `text-sm` bold question with a `fa-chevron-down/up` toggle at the right, 16 px `stone-500` answer with relaxed leading below.
 - **Testimonial / Info Tiles:** warm sand tiles with hairline borders and a small circular avatar or icon badge.
 
 ---
@@ -259,8 +273,8 @@ Tokens live in `src/routes/layout.css` (`@theme`) and are consumed directly by t
       "heroH1":   "30–60px / 1.15 / 800 / tracking-tight",
       "sectionH2":"24–30px / tight / 800",
       "cardH3":   "14px / 1.4 / 700",
-      "body":     "12–14px / 1.6–1.7 / 400",
-      "microLabel":"10–11px / uppercase / 700 / tracking-wider"
+      "body":     "16px / 1.6 / 400, 14px floor",
+      "microLabel":"12px (text-label) / uppercase / 700 / tracking-wider"
     }
   },
   "shape": {
@@ -274,6 +288,7 @@ Tokens live in `src/routes/layout.css` (`@theme`) and are consumed directly by t
     "container":  "max-w-7xl mx-auto px-6",
     "readColumn": "max-w-2xl / max-w-3xl",
     "sectionPy":  ["64px", "80px", "96px", "112px"],
+    "typeScale": {"label": "12px", "xs": "14px", "base": "16px"},
     "breakpoints":{ "sm": 640, "md": 768, "lg": 1024 }
   }
 }

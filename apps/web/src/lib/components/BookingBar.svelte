@@ -65,9 +65,14 @@ function step(delta: number) {
 						class="fa-solid fa-magnifying-glass pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-stone-400"
 						aria-hidden="true"
 					></i>
+					<!--
+						`bg-none` is load-bearing. `@tailwindcss/forms` puts its own chevron in a
+						`background-image` on every `select`, independently of `appearance`, so
+						without it this control shows two arrows: the plugin's and the one below.
+					-->
 					<select
 						id="booking-package"
-						class="field appearance-none pl-9"
+						class="field appearance-none bg-none pr-10 pl-9"
 						bind:value={selectedSlug}
 					>
 						<option value="">Any package</option>

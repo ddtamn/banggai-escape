@@ -38,6 +38,30 @@
 	--color-alert: #bd3d44;
 
 	--shadow-gold: 0 2px 10px rgb(180 138 90 / 0.35);
+
+	/*
+	 * Type scale.
+	 *
+	 * `--text-xs` is redefined from Tailwind's 12px default to 14px, which raises the floor
+	 * for the whole site in one place. It was the single most-used size in the codebase (83
+	 * occurrences) and the reason body copy read as 12px.
+	 *
+	 * The 10-11px sizes are *not* kept, and that is a considered change rather than an
+	 * oversight. `DESIGN.md` names the tiny-wide-caps micro-label as "the single most
+	 * repeated typographic signature in the system", and the *treatment* is preserved here —
+	 * uppercase, tracked open, bold, tinted. What changes is the size: 10-11px is at the edge
+	 * of legibility on a high-DPI phone, and a signature is not worth a visitor squinting.
+	 * Labels move to a named 12px step instead of arbitrary 10px and 11px values.
+	 *
+	 * Three steps, with names, so the scale is a decision rather than a habit:
+	 *   `text-label` 12px — micro-labels, metadata, suffixes
+	 *   `text-xs`    14px — the floor for anything a visitor must read in order to act
+	 *   `text-base`  16px — the floor for anything they read to enjoy
+	 */
+	--text-label: 0.75rem;
+	--text-label--line-height: 1.5;
+	--text-xs: 0.875rem;
+	--text-xs--line-height: 1.6;
 }
 
 @layer base {
@@ -144,12 +168,12 @@
 
 	/* Floating glass badge for image corners. */
 	.badge {
-		@apply absolute rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-xs;
+		@apply absolute rounded-full bg-black/60 px-2 py-0.5 text-label font-semibold text-white backdrop-blur-xs;
 	}
 
 	/* Small uppercase category chip. */
 	.chip {
-		@apply rounded bg-stone-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-stone-600;
+		@apply rounded bg-stone-100 px-2 py-0.5 text-label font-bold uppercase tracking-wider text-stone-600;
 	}
 
 	/* ---------- Forms ---------- */
@@ -163,7 +187,7 @@
 	}
 
 	.field-label {
-		@apply mb-2 block text-[11px] font-bold uppercase tracking-wider text-stone-700;
+		@apply mb-2 block text-label font-bold uppercase tracking-wider text-stone-700;
 	}
 
 	/* ---------- Decorative grounds ---------- */

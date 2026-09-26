@@ -155,7 +155,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 				/>
 			</div>
 			<div
-				class="space-y-4 text-xs leading-relaxed text-stone-600 sm:text-sm md:space-y-5"
+				class="space-y-4 text-base leading-relaxed text-stone-600 md:space-y-5"
 			>
 				<p>
 					At Banggai Escape, we are a team of local experts dedicated to sharing
@@ -213,7 +213,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 								<i class="fa-solid fa-star" aria-hidden="true"></i>
 							{/each}
 						</div>
-						<p class="mb-6 text-xs leading-relaxed text-stone-600 italic">
+						<p class="mb-6 text-base leading-relaxed text-stone-600 italic">
 							"{testimonial.quote}"
 						</p>
 					</div>
@@ -230,7 +230,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 							<div class="text-xs font-bold text-stone-900">
 								{testimonial.name}
 							</div>
-							<div class="text-[11px] text-stone-400">
+							<div class="text-label text-stone-400">
 								{testimonial.country}
 							</div>
 						</div>

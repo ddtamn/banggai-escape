@@ -21,7 +21,7 @@ let { items, openIndex = 0 }: Props = $props();
 					class="fa-solid fa-chevron-down text-xs text-stone-500 transition-transform duration-200 group-open:rotate-180"
 				></i>
 			</summary>
-			<div class="pt-2 text-xs leading-relaxed text-stone-500">{item.answer}</div>
+			<div class="pt-2 text-base leading-relaxed text-stone-500">{item.answer}</div>
 		</details>
 	{/each}
 </div>

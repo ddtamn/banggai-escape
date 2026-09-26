@@ -43,7 +43,7 @@ const shortcuts = [
 	<div class="shell">
 		<div class="mx-auto max-w-2xl text-center">
 			<span
-				class="inline-flex items-center gap-2 rounded-full border border-hairline bg-white px-3.5 py-1 text-[11px] font-bold tracking-wider text-gold-deep uppercase"
+				class="inline-flex items-center gap-2 rounded-full border border-hairline bg-white px-3.5 py-1 text-label font-bold tracking-wider text-gold-deep uppercase"
 			>
 				<span class="size-1.5 rounded-full bg-gold"></span>
 				Error {page.status}
@@ -81,7 +81,7 @@ const shortcuts = [
 		</div>
 
 		<nav class="mx-auto mt-14 max-w-3xl border-t border-hairline pt-8" aria-label="Popular pages">
-			<h2 class="mb-4 text-center text-[11px] font-bold tracking-widest text-stone-400 uppercase">
+			<h2 class="mb-4 text-center text-label font-bold tracking-widest text-stone-400 uppercase">
 				Popular pages
 			</h2>
 			<ul class="grid grid-cols-2 gap-3 sm:grid-cols-4">

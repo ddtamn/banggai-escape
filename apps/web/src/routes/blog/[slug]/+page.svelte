@@ -116,7 +116,7 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 	<div class="mx-auto max-w-7xl">
 		<div class="mb-4">
 			<span
-				class="inline-block rounded-full bg-gold/15 px-3 py-1 text-[11px] font-bold tracking-wider text-gold-deep uppercase"
+				class="inline-block rounded-full bg-gold/15 px-3 py-1 text-label font-bold tracking-wider text-gold-deep uppercase"
 			>
 				{post.category}
 			</span>
@@ -141,7 +141,7 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 				</div>
 				<div>
 					<div class="text-xs font-bold text-stone-900 sm:text-sm">{post.author}</div>
-					<div class="text-[11px] font-medium text-stone-400">
+					<div class="text-label font-medium text-stone-400">
 						{post.updated} · {post.readTime}
 					</div>
 				</div>
@@ -167,7 +167,7 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 			height="1100"
 		/>
 	</div>
-	<p class="mt-3 text-center text-xs text-stone-500 italic">{post.excerpt}</p>
+	<p class="mt-3 text-center text-base text-stone-500 italic">{post.excerpt}</p>
 </section>
 
 <!-- Article + aside -->
@@ -196,7 +196,7 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 								<h3 class="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-stone-900">
 									{item.title}
 								</h3>
-								<p class="text-xs leading-relaxed text-stone-600">{item.text}</p>
+								<p class="text-base leading-relaxed text-stone-600">{item.text}</p>
 							</div>
 						{/each}
 					</div>
@@ -237,12 +237,12 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 					<div class="mb-1 flex items-center gap-3">
 						<h3 class="text-sm font-bold text-stone-900">{post.author}</h3>
 						<span
-							class="rounded bg-stone-200 px-2 py-0.5 text-[10px] font-bold tracking-wider text-stone-700 uppercase"
+							class="rounded bg-stone-200 px-2 py-0.5 text-label font-bold tracking-wider text-stone-700 uppercase"
 						>
 							{post.authorRole}
 						</span>
 					</div>
-					<p class="text-xs leading-relaxed text-stone-600">{authorBio}</p>
+					<p class="text-base leading-relaxed text-stone-600">{authorBio}</p>
 				</div>
 			</div>
 		</article>
@@ -278,13 +278,13 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 			{/if}
 
 			<div class="rounded-xl border border-forest-line bg-forest-deep p-6 text-white shadow-md">
-				<span class="mb-2 block text-[10px] font-bold tracking-widest text-gold-light uppercase">
+				<span class="mb-2 block text-label font-bold tracking-widest text-gold-light uppercase">
 					Need Help Planning?
 				</span>
 				<h3 class="mb-3 text-base font-bold leading-tight">
 					Personalized Banggai Itineraries by Locals
 				</h3>
-				<p class="mb-5 text-xs leading-relaxed text-stone-300">
+				<p class="mb-5 text-sm leading-relaxed text-stone-300">
 					Skip the logistics hassle. Let our experts craft seamless boat rides, airport pickups, and
 					lake transfers for you.
 				</p>
@@ -295,7 +295,7 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 					Talk to a Specialist
 				</a>
 				<div
-					class="mt-4 flex items-center justify-between border-t border-forest-line/60 pt-4 text-[11px] font-medium text-stone-400"
+					class="mt-4 flex items-center justify-between border-t border-forest-line/60 pt-4 text-label font-medium text-stone-400"
 				>
 					<span>Call / WhatsApp:</span>
 					<a class="font-semibold text-stone-200" href={site.phoneHref}>{site.phone}</a>
@@ -309,7 +309,7 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 				>
 					<div class="relative">
 						<span
-							class="absolute top-3 left-3 rounded bg-gold px-2.5 py-1 text-[10px] font-extrabold text-forest-abyss uppercase shadow"
+							class="absolute top-3 left-3 rounded bg-gold px-2.5 py-1 text-label font-extrabold text-forest-abyss uppercase shadow"
 						>
 							Popular Tour
 						</span>
@@ -359,7 +359,7 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 				onclick={() => (tocOpen = !tocOpen)}
 			>
 				<i class="fa-solid fa-list-ul text-xs text-gold"></i>
-				<span class="shrink-0 text-[10px] font-bold tracking-widest text-stone-400 uppercase">
+				<span class="shrink-0 text-label font-bold tracking-widest text-stone-400 uppercase">
 					Contents
 				</span>
 				<span class="min-w-0 flex-1 truncate text-sm font-semibold text-stone-800">

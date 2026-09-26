@@ -110,7 +110,7 @@ const year = 2026;
 			</div>
 		</div>
 
-		<div class="pt-8 text-center text-[11px] text-stone-400">
+		<div class="pt-8 text-center text-label text-stone-400">
 			&copy; {year} {site.name}. All rights reserved
 		</div>
 	</div>

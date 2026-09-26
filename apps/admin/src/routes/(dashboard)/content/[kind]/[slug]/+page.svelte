@@ -29,8 +29,15 @@ const published = $derived(data.entry.published);
 			>
 			/
 		</p>
+		<!--
+			The entry's own title, or its slug when it has none. `displayTitle` rather than
+			`title ?? name ?? slug`: a draft is allowed to be incomplete, and a cleared title is
+			an empty string rather than a missing one, so `??` walked straight past it and left
+			this heading with no text at all — an unnamed page for exactly the half-finished
+			draft this screen exists to hold. The list already used the same rule.
+		-->
 		<h1 class="font-heading text-xl font-semibold text-foreground">
-			{data.entry.draft.title ?? data.entry.draft.name ?? data.entry.slug}
+			{data.title}
 		</h1>
 		<p class="mt-1 text-sm text-muted-foreground">
 			/{data.entry.slug} · position {data.entry.sortOrder}

@@ -47,9 +47,15 @@ const notice = $derived(form?.message ? { text: form.message, bad: page.status >
 {/if}
 
 <div class="mt-6 flex flex-wrap items-center gap-2">
+	<!--
+		Which filter is active was carried by colour alone, so it was invisible to a screen
+		reader and to anyone who cannot tell the two shades apart. The analytics range filter
+		has said so with `aria-current` from the start.
+	-->
 	{#each filters as filter (filter.key)}
 		<a
 			href="?status={filter.key}"
+			aria-current={data.status === filter.key ? 'true' : undefined}
 			class="rounded-md border px-3 py-1.5 text-sm {data.status === filter.key
 				? 'border-foreground bg-foreground text-background'
 				: 'border-border text-muted-foreground hover:bg-muted'}"

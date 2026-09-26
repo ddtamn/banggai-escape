@@ -17,6 +17,7 @@ import {
 	parseContentForm,
 } from '$lib/content/forms';
 import {
+	displayTitle,
 	getEntry,
 	listRedirects,
 	listRevisions,
@@ -49,6 +50,9 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 		kind: params.kind,
 		kindLabel: kindLabels[params.kind],
 		entry,
+		// Resolved here so the page does not re-derive it, and so this screen and the list
+		// agree on what an entry with no title is called. See `displayTitle`.
+		title: displayTitle(params.kind, entry.draft) ?? entry.slug,
 		revisions,
 		redirects,
 		media,

@@ -157,14 +157,26 @@ export async function countByStatus(
 	kind: ContentKind,
 	db: Database = defaultDb,
 ): Promise<Record<ContentStatus | 'all', number>> {
-	const all = await listEntries(kind, { status: 'all' }, db);
+	return countStatuses(await listEntries(kind, { status: 'all' }, db));
+}
 
+/**
+ * The same tally, from rows that have already been read.
+ *
+ * Split out because the overview needs the counts *and* the entries — for its totals and its
+ * recent-edits list — and asking for both through `countByStatus` would read every entry
+ * twice. The rule for what counts as published stays here, in one place, rather than being
+ * restated by a second caller.
+ */
+export function countStatuses(
+	entries: readonly Pick<EntrySummary, 'status'>[],
+): Record<ContentStatus | 'all', number> {
 	return {
-		all: all.length,
-		draft: all.filter((entry) => entry.status === 'draft').length,
-		published: all.filter((entry) => entry.status === 'published').length,
-		changed: all.filter((entry) => entry.status === 'changed').length,
-		archived: all.filter((entry) => entry.status === 'archived').length,
+		all: entries.length,
+		draft: entries.filter((entry) => entry.status === 'draft').length,
+		published: entries.filter((entry) => entry.status === 'published').length,
+		changed: entries.filter((entry) => entry.status === 'changed').length,
+		archived: entries.filter((entry) => entry.status === 'archived').length,
 	};
 }
 
@@ -686,7 +698,15 @@ export function stableStringify(value: unknown): string {
 }
 
 /** The field a list shows as the entry's name. Titles differ per kind by design. */
-function displayTitle(kind: ContentKind, payload: Record<string, unknown>): string | null {
+/**
+ * The name to show for a payload: its `name` or `title`, or null when that is blank.
+ *
+ * Blank rather than merely absent is the case that matters, because a draft is allowed to be
+ * incomplete: `title ?? name ?? slug` leaves an **empty** heading on screen for an entry
+ * whose title has been cleared, which is both an unnamed page and a row in the list that
+ * says nothing. Null here is what lets the caller fall back to the slug.
+ */
+export function displayTitle(kind: ContentKind, payload: Record<string, unknown>): string | null {
 	const field = kind === 'destination' ? 'name' : 'title';
 	const value = payload[field];
 

@@ -28,6 +28,7 @@
  */
 
 import type { Handle, RequestEvent } from '@sveltejs/kit';
+import { sequence } from '@sveltejs/kit/hooks';
 import { dev } from '$app/environment';
 
 /** How long a rendered page may be served from the edge before Neon is read again. */
@@ -40,7 +41,7 @@ const CACHE_SECONDS = 300;
  */
 const STALE_SECONDS = CACHE_SECONDS * 2;
 
-export const handle: Handle = async ({ event, resolve }) => {
+export const handleCaching: Handle = async ({ event, resolve }) => {
 	if (dev || !isDocumentRequest(event)) return resolve(event);
 
 	const response = await resolve(event);
@@ -54,6 +55,56 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	return response;
 };
+
+/**
+ * The headers a browser has no reason to guess and no way to protect itself without.
+ *
+ * `Content-Security-Policy` is deliberately *not* here: SvelteKit emits a ~40 KB inline
+ * hydration script, and only the framework can nonce it correctly. It is configured in
+ * `vite.config.ts` under `sveltekit({ csp })`, which is the only place that can do it
+ * without the policy either breaking the site or being useless.
+ */
+const handleSecurityHeaders: Handle = async ({ event, resolve }) => {
+	const response = await resolve(event);
+
+	// HSTS is only honoured over HTTPS, and sending it on a dev origin would poison the
+	// localhost cache in the browser for as long as `max-age` says.
+	if (!dev) {
+		response.headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
+	}
+
+	// The site serves images, styles and scripts. It never serves a document of an
+	// unexpected type, so nothing should ever be sniffed into one.
+	response.headers.set('x-content-type-options', 'nosniff');
+
+	/**
+	 * `strict-origin-when-cross-origin` keeps the full path and query on same-origin
+	 * navigations — which is what a campaign landing page needs — while sending only the
+	 * origin to WhatsApp, so an enquiry link cannot leak the referring page.
+	 */
+	response.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+
+	// The site asks for no device capability. Saying so up front means a future embed
+	// cannot quietly start using one without this line being revisited.
+	response.headers.set(
+		'permissions-policy',
+		'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+	);
+
+	// Cross-Origin-Resource-Policy: the media host is a separate origin, so its own
+	// responses need to opt in explicitly for `<img>` to keep working. Same-origin by
+	// default is the safe value; this Worker only ever serves its own documents.
+	response.headers.set('cross-origin-resource-policy', 'same-origin');
+
+	return response;
+};
+
+/**
+ * Composed once, so the order is stated rather than implied: security headers wrap the
+ * caching decision, which means the cache-control header set on the way out is the one
+ * that gets sent.
+ */
+export const handle = sequence(handleSecurityHeaders, handleCaching);
 
 /**
  * Whether this is a page a browser navigated to, rather than one of SvelteKit's own data

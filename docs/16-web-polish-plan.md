@@ -1,0 +1,342 @@
+# 16 — Web Polish, SEO, Performance and Security Plan
+
+What the public site still needs to look professional, rank, load fast and behave safely.
+Every claim in this document was measured against the live site on 2026-09-26, not assumed.
+
+> **Scope:** `apps/web`. The admin is out of scope except where an upload-time hook is the
+> only sane place to do something (see [images](#phase-4--weight)). Where this plan
+> contradicts the roadmap in [09-seo-and-metadata](./09-seo-and-metadata.md), this plan
+> wins; the gaps recorded there are re-stated here with what is now known about them.
+
+---
+
+## The findings this plan is built on
+
+| # | Finding | Measured | Severity |
+| --- | --- | --- | --- |
+| 1 | The contact form discards every enquiry | `preventDefault()` then `submitted = true`; no `action`, no `method`, and the only POST endpoint on the site is `/api/events` | **Critical** |
+| 2 | The hero "booking" bar has no inputs | Two styled `<div>`s and a submit that navigates to `/packages` | High |
+| 3 | Images are ~95% of page weight | 5.2 MB across 25 unique images on `/`; hero 326 KB | High |
+| 4 | No security headers at all | Live response carries no CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` or `frame-ancestors` | High |
+| 5 | Type is set too small, everywhere | 116 occurrences under 14px — 75 at 12px, 23 at 10px, 18 at 11px | High |
+| 6 | No social or canonical metadata | No `og:*`, `twitter:*`, `rel="canonical"`, JSON-LD, or `sitemap.xml` | High |
+| 7 | Four dead footer socials | Every `socials.href` is `"#"` — Instagram, TikTok, Facebook, YouTube | Medium |
+| 8 | The hero is an unpreloadable LCP element | A CSS `background-image`, which cannot be preloaded or given `fetchpriority` | Medium |
+| 9 | Two render-blocking third-party stylesheets | Google Fonts (7 weight files, 2 origins) and Font Awesome 6.7.2 from cdnjs | Medium |
+| 10 | Six external origins on the home page | Including `lh3.googleusercontent.com` and `images.unsplash.com` placeholders | Medium |
+| 11 | Share buttons are inert | Four buttons with `aria-label`s and no handlers | Medium |
+| 12 | Documented accessibility gaps | No `prefers-reduced-motion`, no skip link, nested `<main>`, unlabelled star ratings | Medium |
+
+**What is already right, and must not be regressed.** The code payload is light — 21 KB
+HTML, 12 KB CSS and 2 KB of entry JS, all brotli. There is **no `{@html}` anywhere**:
+article bodies are a closed union of block kinds rendered through escaped interpolation, so
+authored content cannot inject script. That is what makes a strict CSP viable rather than a
+permissive one. The design system in [`DESIGN.md`](../DESIGN.md) is coherent and the
+analytics layer is cookie-free and fails open. This plan polishes execution; it does not
+redesign the brand.
+
+---
+
+## Phase 1 — Trust and safety
+
+### The contact form has to actually reach someone
+
+`apps/web/src/routes/contact/+page.svelte:13` currently reads:
+
+```ts
+function handleSubmit(event: SubmitEvent) {
+	event.preventDefault();
+	submitted = true;
+}
+```
+
+A visitor fills in their details, sees a confirmation, and nothing is sent. This is the
+highest-stakes item in the plan: it is a business's enquiry channel, and a form that
+appears to submit and does not is a deceptive pattern rather than a cosmetic gap.
+
+**Decision: one enquiry path, on WhatsApp.** The number already exists in the CMS —
+`contactChannels` carries a "Call & WhatsApp" entry at `+6281354911647` — and the audience
+books over WhatsApp. So the contact form composes a message and hands off to
+`https://wa.me/6281354911647?text=…`, sharing one helper with the hero booking bar
+([Phase 2](#phase-2--real-controls)) rather than growing a second code path.
+
+Because `wa.me` **silently does nothing for a visitor without WhatsApp**, both surfaces
+show the composed message with a **Copy message** button beside the WhatsApp button.
+
+Persisting enquiries into Neon (an `enquiries` table) is a reasonable follow-up, but it is
+deliberately not in this phase: it needs a spam defence, a retention policy and a
+notification path, and none of that should be bolted on to a form that currently sends
+nothing.
+
+### Security headers
+
+All of it lands in `apps/web/src/hooks.server.ts`, alongside the existing caching `handle`:
+
+| Header | Value | Why |
+| --- | --- | --- |
+| `content-security-policy` | strict `default-src 'self'`, with the origins this site actually uses | There is no `{@html}`, so inline script is never needed |
+| `strict-transport-security` | `max-age=31536000; includeSubDomains` | The site is HTTPS-only behind Cloudflare |
+| `x-content-type-options` | `nosniff` | Stops MIME sniffing on media |
+| `referrer-policy` | `strict-origin-when-cross-origin` | Keeps campaign data out of the WhatsApp referrer |
+| `permissions-policy` | camera, mic, geolocation denied | Nothing on the site uses them |
+| `frame-ancestors` | `'none'` | Clickjacking; the admin must not be framable either |
+
+The CSP has to name the remaining origins precisely — the media host, Google Fonts,
+cdnjs and `static.cloudflareinsights.com` — which is one more reason [Phase 4](#phase-4--weight)
+removes the third-party stylesheets. Enforce it in a report-only pass first, read the
+violations, then switch it on.
+
+### Accessibility gaps already on record
+
+[09-seo-and-metadata](./09-seo-and-metadata.md#gaps-worth-knowing) lists these; all four are
+still open and all four are cheap:
+
+- **No `prefers-reduced-motion`.** The mobile bars, hover zooms and
+  `scroll-behavior: smooth` on `<html>` all animate unconditionally.
+- **No skip-to-content link.** Keyboard users tab the whole header on every page.
+- **Nested `<main>`.** The layout already provides one; `contact` and others add another.
+- **Star ratings have no accessible name.** A screen reader announces
+  "star star star star star". Give the row an `aria-label` such as "Rated 5 out of 5".
+
+### Copy errors that are visible on every visit
+
+- `"Ready To Begin Your Next Adventure ?"` — space before the question mark.
+- Action labels disagree on capitalisation: `View all packages`, `View All Articles`,
+  `View all destinations`, `Learn More About Us`.
+
+These are Phase 6's real subject, but they are corrected in passing wherever a file is
+already open, because they are the cheapest polish on the site.
+
+### Dead social links
+
+Every `socials.href` is `"#"`. Either supply the real profiles or remove the row — four
+icons that do nothing in the footer of every page is worse than no social row at all.
+
+---
+
+## Phase 2 — Real controls
+
+### The hero booking bar
+
+**This is an enquiry builder, not a search widget.** There are no results to filter, so
+the usual search-bar patterns — result counts, facets, zero-result states — do not apply.
+The research consensus on this kind of control is consistent on two points: *present
+flexible inputs as the default rather than an advanced option*, and *never front-load
+complexity before the user has seen value*. Three optional fields and one CTA.
+
+| Field | Control | Behaviour |
+| --- | --- | --- |
+| **Select Package** | native `<select>` | Defaults to "Any package". Lists every published package as `Title — 4D3N` so duration is legible in the list. Native matters: on a phone it opens the OS picker, and this audience is mobile-majority. |
+| **Preferred dates** | two optional native `<input type="date">` | From/To, `min` set to today, labelled as *preferences*. Blank means flexible. |
+| **Guests** | stepper, 1–20, default 2 | Ceiling drops to the selected package's maximum when one is chosen. |
+
+**No availability calendar.** The content model has no departure dates and no availability
+(`packagePayloadSchema` carries `days`, `nights`, `tripType`, `price`, `groupSize` and no
+dates at all), so a picker that greys out sold-out days would be inventing availability.
+These are preferences handed to a person, which is how a WhatsApp-first operator actually
+works.
+
+**`groupSize` is a display string** — `"Min 2, Max 8"`, already string-manipulated for
+display by `PackageCard`. Parse the maximum defensively for the stepper ceiling and fall
+back to the cap above when parsing fails. Do not build a numeric guest model in this phase.
+
+Composed message, then handed off:
+
+```
+Hello Banggai Escape, I'd like to ask about:
+• Package: 4D3N Banggai Island Odyssey
+• Dates: 12–19 July 2026
+• Guests: 2
+
+Sent from https://banggaiescape.com
+```
+
+Two implementation notes that matter:
+
+- **The number comes from the CMS, not a constant.** Add a validated `whatsapp` field to
+  the site profile (digits and country code only), seeded from the existing
+  `contactChannels` value. A hardcoded phone number in a component is exactly the kind of
+  copy `AGENTS.md` forbids.
+- **The loader returns a minimal list.** `apps/web/src/routes/+page.server.ts` currently
+  returns `packages.slice(0, 4)` with full payloads, which is right for the card grid and
+  wrong for a dropdown — shipping every package's complete itinerary to populate a
+  `<select>` is wasteful. Add a second, minimal shape:
+  `{ slug, title, days, nights, maxGuests }`.
+
+### Share buttons
+
+`apps/web/src/routes/blog/[slug]/+page.svelte` defines four share rows with `aria-label`s
+and no handlers. Implement:
+
+- **Web Share API** where `navigator.share` exists (all mobile browsers) — the native
+  sheet is better than any custom row.
+- **Real X / Facebook / WhatsApp URLs and Copy link** everywhere else.
+- Build every URL from `page.url` so the shared link is the canonical one, and use
+  `rel="noopener"`.
+
+---
+
+## Phase 3 — Craft
+
+### The type scale
+
+The single largest reason the site reads as unpolished. 116 occurrences below 14px,
+including 23 at 10px, and body paragraphs, testimonial quotes and FAQ answers all sit at
+11–12px.
+
+- Raise the floor to **14px**, and **16px for body copy**.
+- Define the scale in the `@theme` block in `apps/web/src/routes/layout.css` so it is a
+  token rather than a convention, and so it cannot silently regress.
+- Leave the two legitimate small sizes — superscript-style metadata and the badge/chip
+  labels — as tokens with names that say they are labels.
+
+This is a large mechanical diff across every component. It is worth doing early anyway,
+because it changes how everything else reads.
+
+### Section rhythm and hierarchy
+
+Every section on the home page is the same warm sand, separated by ad-hoc
+`border-y border-stone-100`, so the page has no visual beats. Establish real rhythm from
+the `section` / `section-wide` utilities that already exist in `layout.css`, and give
+sections alternating grounds from the existing token set — no new colours.
+
+Then remove the tells that the `frontend-design` skill
+(`.agents/skills/frontend-design/SKILL.md`) names as the commonest signatures of a
+generated page, all of which this page currently has:
+
+- a centred hero over a dark image
+- three equal feature cards
+- ALL-CAPS eyebrow labels (`WHERE TO?`, `DATES`, `GUESTS`)
+- `→` appended to link and button text
+- one border-radius everywhere (`rounded-2xl` on every card, `rounded-full` on every pill)
+- `shadow-xs` under every card
+
+None of these is wrong alone. Together they are what reads as unconsidered. The brand
+stays; the tells go.
+
+---
+
+## Phase 4 — Weight
+
+### Third-party stylesheets
+
+The home page depends on **six external origins**. Two of them are render-blocking CSS.
+
+**Self-host the typeface.** `@fontsource-variable/plus-jakarta-sans` (v5.3.0) exists. The
+site uses six weights (normal, medium, semibold, bold, extrabold, black), so a variable
+font is strictly better: 7 files across 2 origins become 1 file and 0 origins.
+
+**Subset Font Awesome — do not replace it.** The `icon` fields hold `fa-*` class strings
+**in the database** (socials, contact channels, features, nav), so an editor picks them
+from the CMS. There are ~31 distinct icons across the site, 17 of them on the home page
+alone. Swapping to inline SVG means migrating every icon string in the data and building
+an icon picker. Instead, install `@fortawesome/fontawesome-free` and import only the icons
+actually used: that removes the cdnjs origin and cuts the payload to a fraction of the full
+library while leaving the CMS's icon vocabulary intact.
+
+### Images: 5.2 MB to under 1 MB
+
+**The storage design needs no migration.** With a fixed width set (400/900/2000) and
+deterministic keys (`{uuid}-{width}.webp`), `RenderedMedia` can build a `srcset` from the
+base URL with no schema change, because the widths are known rather than looked up.
+
+Then:
+
+- The **hero** becomes `<img fetchpriority="high">` with a preload. A CSS `background-image`
+  cannot be preloaded and cannot carry a priority hint, so as written the LCP element is
+  structurally unpreloadable. This is the highest-leverage single change in the phase.
+- `srcset`/`sizes` across the 49 content-image references on the home page.
+- A `loading`/`fetchpriority` pass: 3 images are eager today and none is marked
+  high-priority.
+- The **29 legacy assets** on `lh3.googleusercontent.com` and `images.unsplash.com` are
+  design-tool placeholders, not owned media. They need fetching and re-uploading, and those
+  hosts should not survive to production.
+
+**One constraint to resolve during implementation:** Cloudflare Workers cannot run `sharp`,
+so variant generation has to happen in Node — a one-shot script, as this repo has already
+done — or through Cloudflare's transform API. Storage and URL scheme are settled; the
+transform step is the open question, and it carries a cost implication worth deciding
+deliberately.
+
+---
+
+## Phase 5 — Discoverability
+
+Everything on the [09 roadmap](./09-seo-and-metadata.md#missing-seo-pieces-roadmap) is
+still outstanding and was re-verified against the live site on 2026-09-26.
+
+| Piece | Where |
+| --- | --- |
+| `og:title`, `og:description`, `og:image`, `og:type`, `twitter:card` | `+layout.svelte` defaults plus per-page overrides |
+| `<link rel="canonical">` | built from `page.url` |
+| `sitemap.xml` | a new route, plus a `Sitemap:` line in `static/robots.txt` |
+| JSON-LD | `TravelAgency`/`LocalBusiness`, `TouristTrip`/`Product` for packages, `BlogPosting`, `BreadcrumbList` |
+
+The loaders already return the right shapes to serialise, so this is mostly presentation.
+Titles and descriptions are currently hardcoded per page (see Phase 6), which is the one
+thing that will limit how far this can go.
+
+---
+
+## Phase 6 — Copy into the CMS
+
+The home page hardcodes the h1, the hero paragraph, the badge text, all six section
+headings and subtitles, both About paragraphs, and the action labels. `AGENTS.md` is
+explicit that *"pages are presentational and must not hardcode copy"*, so this is a standing
+rule violation as well as an SEO limitation — none of it is editable without a code change
+and a deploy.
+
+- Add the strings as site settings in `packages/content-model/src/settings.ts`.
+- Add the fields to the admin's form spec.
+- Write a reviewable migration with `pnpm --filter @banggai/admin db:generate`, seed from
+  the current copy, and read the SQL before applying it.
+- Validate on write through the existing `assertValidSiteSetting()`.
+
+This also gives per-locale copy a home if multilingual support is ever picked up.
+
+---
+
+## Decisions and their reasons
+
+| Decision | Reason |
+| --- | --- |
+| Enquiries hand off to WhatsApp | The number is already in the CMS, the audience books that way, and it needs no new credential or infrastructure |
+| Composed message stays visible with a Copy fallback | `wa.me` silently does nothing without WhatsApp installed |
+| No availability calendar | The content model has no dates; a picker would invent availability |
+| Subset Font Awesome rather than replace it | Icon class strings are CMS-authored data, so replacement means a data migration and an icon picker |
+| Fixed width set with deterministic keys | Lets `srcset` be derived from the base URL with **no** database change |
+| Hero as `<img fetchpriority="high">` | A CSS background cannot be preloaded, so as written the LCP element is unpreloadable |
+| Language / i18n deferred | Explicitly out of scope for now. The switcher stays as it is, which leaves it inert — a known trade-off, not an oversight |
+
+---
+
+## Definition of done for every phase
+
+Unchanged from `AGENTS.md`, and this plan is exactly the class of work it warns about —
+these changes typecheck and build without ever running a loader.
+
+```sh
+pnpm check        # 0 errors, 0 warnings — no new a11y warnings
+pnpm test
+npx biome check apps/web
+pnpm build
+```
+
+Plus, because none of this is verifiable from the four commands above:
+
+- a real request against `pnpm dev` (needs `DATABASE_URL` and `MEDIA_PUBLIC_URL` in
+  `apps/web/.env`), inspected with a browser-like `Accept: text/html`
+- a Core Web Vitals read against the p75 thresholds — **LCP ≤ 2.5 s, INP ≤ 200 ms,
+  CLS ≤ 0.1** — before and after the performance phase
+- a confirmation that a deploy through CI still gates on a green run
+
+---
+
+## Related
+
+- [06 Styling](./06-styling.md) — the `@theme` token table and the component class layer.
+- [07 Design system](./07-design-system.md) — design rules as code.
+- [08 Content data layer](./08-content-data-layer.md) — `RenderedMedia`, `srcset`, and the read layer.
+- [09 SEO and metadata](./09-seo-and-metadata.md) — the authoritative SEO reference; its roadmap is superseded by this plan.
+- [11 Deployment](./11-deployment.md) — CI/CD and the Cloudflare setup.
+- [`../DESIGN.md`](../DESIGN.md) — the design system, source of truth for `apps/web`.

@@ -70,6 +70,7 @@ it, phase by phase, with what each phase shipped and what remains open.
 | 13 | [Contributing](./13-contributing.md) | Make a change and get it merged |
 | 14 | [The admin app](./14-admin-app.md) | Work on `apps/admin` — its stack, auth, database, scripts, and gaps |
 | 15 | [Admin dashboard plan](./15-admin-dashboard-plan.md) | Phased plan for the admin CMS, Neon publishing, R2 media, and free-tier Cloudflare analytics |
+| 16 | [Web polish plan](./16-web-polish-plan.md) | Measured gaps in `apps/web` and a phased plan for trust, real controls, craft, page weight, SEO, and copy in the CMS |
 
 ---
 

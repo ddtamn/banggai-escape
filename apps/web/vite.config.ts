@@ -2,6 +2,9 @@ import adapter from '@sveltejs/adapter-cloudflare';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
+// The extension is deliberate: Vite's future default config loader requires it, and
+// omitting it warns on every single command run from this file.
+import { cspDirectives } from './src/lib/csp.ts';
 
 export default defineConfig({
 	plugins: [
@@ -13,6 +16,19 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true,
 			},
 			adapter: adapter(),
+			csp: {
+				/**
+				 * SvelteKit's own hydration payload is a ~40 KB inline `<script>`, so a
+				 * hand-rolled `script-src 'self'` would break the site rather than protect it.
+				 * `auto` makes SvelteKit stamp a nonce on the scripts and styles it generates
+				 * itself, which is what keeps the policy strict without breaking anything.
+				 *
+				 * The directives live in `src/lib/csp.ts` so `csp.spec.ts` can assert the
+				 * policy still allows every origin this site loads.
+				 */
+				mode: 'auto',
+				directives: cspDirectives,
+			},
 			typescript: {
 				config: (config) => {
 					// One-shot migration scripts are not part of the Worker bundle, but they still

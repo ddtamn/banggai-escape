@@ -1,8 +1,10 @@
 <script lang="ts">
 import { fly } from 'svelte/transition';
+import { page } from '$app/state';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import PostCard from '$lib/components/PostCard.svelte';
 import SectionHeader from '$lib/components/SectionHeader.svelte';
+import ShareRow from '$lib/components/ShareRow.svelte';
 import { authorBio, tableOfContents } from '$lib/content';
 import { img, media } from '$lib/data/media';
 
@@ -85,12 +87,17 @@ $effect(() => {
 	return () => observer.disconnect();
 });
 
-const shares = [
-	{ label: 'Share on X', icon: 'fa-brands fa-x-twitter' },
-	{ label: 'Share on Facebook', icon: 'fa-brands fa-facebook-f' },
-	{ label: 'Share on WhatsApp', icon: 'fa-brands fa-whatsapp' },
-	{ label: 'Copy link', icon: 'fa-solid fa-link' },
-];
+/**
+ * The absolute, canonical URL of this article, for the share row and the canonical link.
+ *
+ * Built from `page.url` rather than `location`, so it is correct during SSR and is the
+ * same string a crawler resolves. Behind Cloudflare `page.url.origin` is already the
+ * public host, so nothing here hardcodes a domain — the request knows.
+ *
+ * Query and fragment are dropped: `?utm_source=…` is how a link arrives, not where it
+ * points, and a canonical URL that varies per campaign is not canonical.
+ */
+const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 </script>
 
 <svelte:head>
@@ -140,18 +147,11 @@ const shares = [
 				</div>
 			</div>
 
-			<div class="flex items-center gap-2 text-xs font-medium text-stone-500">
-				<span class="mr-1 hidden sm:inline">Share:</span>
-				{#each shares as share (share.label)}
-					<button
-						type="button"
-						class="flex size-8 items-center justify-center rounded-full border border-stone-200 transition-colors hover:bg-stone-100 hover:text-stone-900"
-						aria-label={share.label}
-					>
-						<i class="{share.icon} text-xs"></i>
-					</button>
-				{/each}
-			</div>
+			<ShareRow
+				url={canonicalUrl}
+				title={post.title}
+				description={post.excerpt}
+			/>
 		</div>
 	</div>
 </section>

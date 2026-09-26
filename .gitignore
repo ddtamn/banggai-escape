@@ -32,7 +32,20 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Stitch
-/.stitch
+#
+# The design exports are 50 MB of vendor HTML and stay out. The generator and the substitution
+# map do not: `media.ts` is a committed artefact that now contains R2 URLs, and those two
+# files are the only way to reproduce it. Without them, re-running the generator on a fresh
+# clone silently reverts every migrated image to the demo host it came from — a 4.28 MB home
+# page again, with no error to say so.
+#
+# Note the contents are excluded rather than the directory: git cannot re-include a file whose
+# parent directory is excluded, so `/.stitch` here would make the two negations below dead.
+# The two are kept small on purpose. `designs/`, `outline.mjs`, `metadata.json` and
+# `fetch-screens.sh` are inputs to *authoring* new designs, not to regenerating this one.
+/.stitch/*
+!/.stitch/gen-media.mjs
+!/.stitch/media-substitutions.json
 
 # Neon CLI link state (org/project/branch IDs)
 .neon

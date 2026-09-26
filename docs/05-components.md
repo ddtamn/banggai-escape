@@ -97,10 +97,24 @@ type Props = {
 	subtitle?: string;
 	crumbs?: Crumb[];              // optional breadcrumb trail
 	image: string;                 // full URL — build with img(...)
+	imageSrcset?: string | null;   // resized variants, or null; see below
 	height?: string;               // default 'py-24 md:py-32'
 	align?: 'center' | 'left';     // default 'center'
 };
 ```
+
+The photograph is an `<img>`, not a CSS `background-image`. That is the whole point of the
+component: a browser cannot preload a background, cannot give it a `fetchpriority` hint, and
+cannot offer it a resized candidate, so three page heroes were the Largest Contentful Paint
+element *by construction*. The scrim is a sibling layer rather than a gradient baked into a
+`style` attribute, which is also what keeps this component free of `style={...}`.
+
+`imageSrcset` is **passed in, not derived here**, because a component cannot read the layout's
+`data`. The page already holds `data.imageTransforms`, so it computes the value with
+`imageSrcset()` from `$lib/images` and hands it over — which keeps this component free of the
+read layer, as every other component is. Omit it for a page whose hero is not owned media
+(the blog and destinations heroes are Unsplash URLs, so there is nothing for the edge to
+resize).
 
 - Builds a green-tinted veil inline: `linear-gradient(rgba(12,37,28,.45),
   rgba(12,37,28,.55))` over the image, `background-size: cover`.

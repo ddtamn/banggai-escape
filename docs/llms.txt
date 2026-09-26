@@ -30,14 +30,14 @@ illustrative — when a snippet and the source disagree, the source wins.
 - [06 Styling](./06-styling.md): Tailwind v4 setup, the @theme token table, the component/utility class layer, the filter-bar pattern, styling conventions
 - [07 Design system](./07-design-system.md): A developer's map of DESIGN.md — where each rule is implemented, the non-negotiables, mobile patterns
 - [08 Content data layer](./08-content-data-layer.md): The read layer and its exports, the payload contracts, the five-minute edge cache, recipes for adding packages/destinations/articles/images, invariants
-- [09 SEO, metadata and accessibility](./09-seo-and-metadata.md): Document shell, per-page head tags, image conventions, a11y patterns, crawling, roadmap
+- [09 SEO, metadata and accessibility](./09-seo-and-metadata.md): Document shell, the Seo component and what it owns, JSON-LD per page type, image conventions, a11y patterns, crawling, and what is still on the roadmap
 - [10 Tooling](./10-tooling.md): pnpm workspace, Biome config, svelte-check and tsconfig, skipLibCheck, Vite/SvelteKit config, wrangler types, admin-only tooling
 - [11 Deployment](./11-deployment.md): Build output, wrangler.jsonc, build/preview/deploy, environment and secrets, the admin Worker, deploy checklist
 - [12 Troubleshooting](./12-troubleshooting.md): The wrangler types trap and 20 more known failure modes with causes and fixes
 - [13 Contributing](./13-contributing.md): Workflow, definition of done, Conventional Commits, code style, task checklists, first contributions
 - [14 Admin app](./14-admin-app.md): The apps/admin scaffold — stack, better-auth, Drizzle/Neon, shadcn-svelte, scripts, testing, gaps and next steps
 - [15 Admin dashboard plan](./15-admin-dashboard-plan.md): Phased product and engineering plan for the CMS, Neon-backed publishing, R2 media, secure administration, and Cloudflare Workers Analytics Engine on the free tier
-- [16 Web polish plan](./16-web-polish-plan.md): Measured gaps in apps/web — the contact form that sends nothing, the inert hero booking bar, 5.2 MB of images, absent security headers and social metadata — with a phased plan for trust, real controls, type scale, page weight, SEO, and moving hardcoded copy into the CMS. Language/i18n explicitly deferred
+- [16 Web polish plan](./16-web-polish-plan.md): Measured gaps in apps/web — the contact form that sends nothing, the inert hero booking bar, 5.2 MB of images, absent security headers and social metadata — with a phased plan for trust, real controls, type scale, page weight, SEO, and moving hardcoded copy into the CMS. Phases 1-5 are done and record where the plan was wrong; Phase 6 (copy into the CMS) is not. Language/i18n explicitly deferred
 
 ## Key facts an agent must not get wrong
 

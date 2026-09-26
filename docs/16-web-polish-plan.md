@@ -37,7 +37,7 @@ redesign the brand.
 
 ---
 
-## Phase 1 — Trust and safety
+## Phase 1 — Trust and safety — **done**
 
 ### The contact form has to actually reach someone
 
@@ -114,7 +114,7 @@ icons that do nothing in the footer of every page is worse than no social row at
 
 ---
 
-## Phase 2 — Real controls
+## Phase 2 — Real controls — **done**
 
 ### The hero booking bar
 
@@ -176,7 +176,7 @@ and no handlers. Implement:
 
 ---
 
-## Phase 3 — Craft
+## Phase 3 — Craft — **done**
 
 ### The type scale
 
@@ -216,7 +216,7 @@ stays; the tells go.
 
 ---
 
-## Phase 4 — Weight
+## Phase 4 — Weight — **done**
 
 ### Third-party stylesheets
 
@@ -234,7 +234,7 @@ an icon picker. Instead, install `@fortawesome/fontawesome-free` and import only
 actually used: that removes the cdnjs origin and cuts the payload to a fraction of the full
 library while leaving the CMS's icon vocabulary intact.
 
-### Images: 5.2 MB to under 1 MB
+### Images: 5.2 MB to under 1 MB — **done, by a different route than planned**
 
 **The storage design needs no migration.** With a fixed width set (400/900/2000) and
 deterministic keys (`{uuid}-{width}.webp`), `RenderedMedia` can build a `srcset` from the
@@ -258,27 +258,89 @@ done — or through Cloudflare's transform API. Storage and URL scheme are settl
 transform step is the open question, and it carries a cost implication worth deciding
 deliberately.
 
+#### What was actually built, and the measured result
+
+**Cloudflare Image Resizing, not `sharp`-generated R2 variants.** The open question above
+resolved in favour of `/cdn-cgi/image/`. It needs no column on `media_assets` recording which
+widths exist, and no step to run after every upload, because a Worker cannot execute `sharp` and
+there is therefore no stored state to fall out of sync. `onerror=redirect` covers the failure
+case that made the database column necessary in the first place.
+
+Widths are 400/800/1600 — exactly 2x steps, so a high-DPI screen always has a candidate worth
+fetching and no step sits close enough to another to be redundant. `CARD_SIZES` holds one entry
+per *grid*, because a `srcset` resolves against `sizes` and not against the viewport: a browser
+told "the viewport is 1280px" picks the 1600w candidate for a card that renders 384px wide, and
+the saving is thrown away.
+
+| | Before | After |
+| --- | --- | --- |
+| Home page, phone | 4.28 MB | 245 KB |
+| The 7 migrated placeholders, 400w | 1,986 KB | 128 KB |
+
+A 400w request against a 217 KB JPEG original returns a 16 KB AVIF; 800w returns 42 KB. Costs
+are effectively nil: Cloudflare bills *unique* transformations, the width set is fixed, so the
+count is bounded by images × widths — roughly 90 here, against a 5,000/month free allowance —
+and does not grow with traffic.
+
+**The placeholders turned out to be the interesting part.** The edge gets a **403** from
+`lh3.googleusercontent.com` where a browser gets 200, which is why these seven were the last
+unresized images on the site: they could not carry a `srcset` at all. They are now in the media
+library, with a substitution map the generator applies so a regeneration cannot re-introduce the
+dependency. Two consequences followed, and both are recorded in `419a812`:
+
+- `PageHero` was a CSS `background-image`, so three page heroes were the Largest Contentful Paint
+  element *by construction* — a browser cannot preload, prioritise or offer resized candidates
+  for a background. It is an `<img>` with a sibling scrim now.
+- The migration only pays off if the images have a `srcset` to land in, so the about hero, the
+  contact lake and the two home-page body photographs were converted too. Two new `CARD_SIZES`
+  entries exist because two of those grids have no equivalent among the old names; reusing
+  `twoUp` would have had a browser fetch the 800w candidate for a 360px slot. The two author
+  avatars are deliberately left without one — the smallest candidate is 400w, larger than their
+  own source, so a `srcset` there could only make a browser pick the bigger file.
+
 ---
 
-## Phase 5 — Discoverability
+## Phase 5 — Discoverability — **done**
 
-Everything on the [09 roadmap](./09-seo-and-metadata.md#missing-seo-pieces-roadmap) is
-still outstanding and was re-verified against the live site on 2026-09-26.
+Everything on the [09 roadmap](./09-seo-and-metadata.md#missing-seo-pieces-roadmap) was
+outstanding and was re-verified against the live site on 2026-09-26. All of it now ships.
 
 | Piece | Where |
 | --- | --- |
-| `og:title`, `og:description`, `og:image`, `og:type`, `twitter:card` | `+layout.svelte` defaults plus per-page overrides |
-| `<link rel="canonical">` | built from `page.url` |
-| `sitemap.xml` | a new route, plus a `Sitemap:` line in `static/robots.txt` |
-| JSON-LD | `TravelAgency`/`LocalBusiness`, `TouristTrip`/`Product` for packages, `BlogPosting`, `BreadcrumbList` |
+| `og:*`, `twitter:*`, canonical, description | `lib/seo.ts` builds them; `components/Seo.svelte` renders them |
+| `<link rel="canonical">` | built from `page.url`, so no domain is hardcoded |
+| `sitemap.xml` | `routes/sitemap.xml/+server.ts`, plus a `Sitemap:` line in `static/robots.txt` |
+| JSON-LD | `TravelAgency` (home/about/contact), `TouristTrip`+`Product` (package), `TouristAttraction` (destination), `BlogPosting` (article), `BreadcrumbList` (every page) |
+| Fallback share card | `static/og-default.png`, generated by `apps/admin/scripts/build-og-image.ts` |
 
-The loaders already return the right shapes to serialise, so this is mostly presentation.
-Titles and descriptions are currently hardcoded per page (see Phase 6), which is the one
-thing that will limit how far this can go.
+Four decisions the plan did not foresee:
+
+- **`Seo` owns `og:image` as the only writer**, falling back to the site card. A layout-level
+  default would emit a *second* `og:image` on every page that has its own, and a consumer
+  picking between two candidates picks non-deterministically — so the page's photograph would
+  sometimes lose to the logo, with nothing on the page to show why.
+- **Dates come from the revision, not the payload.** `articlePayload.date` and `.updated` are
+  display strings an editor typed for a human reader ("March 12, 2026"). Structured data cannot
+  parse them, so `PublishedEntry` now carries `publishedAt` and `updatedAt` from
+  `content_revisions` and `content_entries`.
+- **A destination is a `TouristAttraction`, not a product.** It has no price and no
+  availability, and putting an `Offer` on it is exactly the kind of claim that earns a
+  structured-data penalty.
+- **No `sameAs` while the social links are `href="#"`.** A placeholder would assert an identity
+  the business has not claimed, and it is the kind of claim a consumer cannot check but will
+  publish. `lib/site-seo.ts` filters to real `http(s)` URLs so an editor cannot reintroduce one.
+
+This phase also **fixed a real blind spot in `csp.spec.ts`**. That test reads origins out of the
+source and asserts the policy allows them; it failed on three origins introduced here — all from
+test fixtures and a JSON-LD `@context`. Widening `img-src` to satisfy it would have been a real
+security regression made to appease a string in a test, so the scanner was corrected instead: a
+`.spec.ts` file never renders, and a `@context` is a vocabulary identifier nothing ever
+requests. A test now asserts both exclusions stay narrow, so they cannot decay into a blanket
+escape hatch.
 
 ---
 
-## Phase 6 — Copy into the CMS
+## Phase 6 — Copy into the CMS — **not started**
 
 The home page hardcodes the h1, the hero paragraph, the badge text, all six section
 headings and subtitles, both About paragraphs, and the action labels. `AGENTS.md` is
@@ -294,6 +356,11 @@ and a deploy.
 
 This also gives per-locale copy a home if multilingual support is ever picked up.
 
+**Phase 5 did not depend on it, and this is now the only thing still making the titles fixed
+strings.** `Seo` takes its title and description as props, so moving a page's copy into the CMS
+is a change to what a page *passes in* — no change to `Seo`, no change to the tag shape, no
+re-testing of the head.
+
 ---
 
 ## Decisions and their reasons
@@ -307,6 +374,39 @@ This also gives per-locale copy a home if multilingual support is ever picked up
 | Fixed width set with deterministic keys | Lets `srcset` be derived from the base URL with **no** database change |
 | Hero as `<img fetchpriority="high">` | A CSS background cannot be preloaded, so as written the LCP element is unpreloadable |
 | Language / i18n deferred | Explicitly out of scope for now. The switcher stays as it is, which leaves it inert — a known trade-off, not an oversight |
+
+### Two claims above that did not survive contact
+
+Recorded because a plan that quietly drops its own reasoning is worse than one that never made
+it.
+
+- **"No database change" held for the edge route but not for the placeholders.** The width
+  variants genuinely need no column — the edge route has no stored state to fall out of sync.
+  But the seven design-tool placeholders on `lh3.googleusercontent.com` turned out to be
+  unreachable *by the edge*, which get a 403 where a browser gets 200, so they could carry no
+  `srcset` and were never resized. Fixing that needed `media_assets` rows and a substitution map
+  the generator applies, not a schema change. See `419a812`.
+- **"Subset Font Awesome rather than replace it" is still right, and the Phase 4 work went
+  further than the plan said.** The `fa-*` strings are CMS-authored data, so the icons are now
+  inline SVG generated by `apps/web/scripts/generate-icons.ts` — 15 KB against Font Awesome's
+  365 KB — while the data contract stays exactly as it was. That keeps the decision and its
+  reason intact.
+
+### Not finished, and deliberately
+
+- **The 65 unreachable placeholder references in `media.ts`.** The generator emits 72; seven are
+  reachable from a template and were migrated, and the rest are dead weight in a generated file
+  no page renders. Migrating them would mean paying storage for images nothing can display.
+- **A Core Web Vitals reading against the p75 thresholds.** The image work was verified by
+  measured bytes (4.28 MB → 245 KB on a phone, and 1,986 KB → 128 KB for the migrated
+  placeholders at 400w), which is the part that was under this plan's control. The field data
+  the thresholds ask for is not something this repository can produce.
+- **The 7 `media_assets` rows exist only in the development database.** The R2 objects are
+  shared, so the site is correct in production either way — `media.ts` is a build artefact and
+  does not read the table. What is missing in production is the admin's *media library* listing
+  for those seven. Running `apps/admin/scripts/replace-placeholder-media.ts` against the
+  production `DATABASE_URL` creates them; it is idempotent, and the substitution map means it
+  will skip the download and only insert what is missing.
 
 ---
 

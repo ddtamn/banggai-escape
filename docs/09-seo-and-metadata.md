@@ -31,48 +31,62 @@ its data — the site feels instant at the cost of a few extra requests.
 
 ## The layout defaults: `src/routes/+layout.svelte`
 
-Every page inherits these from the single layout:
+The layout carries **icons only**:
 
 ```svelte
 <svelte:head>
 	<link rel="icon" href="/favicon.png" type="image/png" />
-	<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-	<meta
-		name="description"
-		content="Banggai Escape designs seamless island journeys across the Banggai Archipelago in Central Sulawesi — mirror lakes, reef sanctuaries, and authentic local hospitality."
-	/>
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png" type="image/png" />
 </svelte:head>
 ```
 
 - **Icons** come from `apps/web/static/`: `favicon.png` and `apple-touch-icon.png`.
-- **The default description** is a fallback. A page that sets its own
-  `<meta name="description">` overrides it, because SvelteKit merges head content
-  and the more specific tag wins.
+- **Nothing else, deliberately.** No default `description`, no `og:image`.
+
+Both used to be here and both were removed. A layout `description` meant every page carried two
+unless it remembered to override one. A layout `og:image` was worse: a page with its own
+photograph would emit a *second* `og:image`, and a consumer choosing between two candidates
+chooses non-deterministically — so the page's own picture would sometimes lose to the logo, with
+nothing on the page to show why. `Seo` is now the only thing that writes either.
 
 ## Per-page metadata
 
-Every route sets its own `<title>` and `description` in `<svelte:head>`. The two
-shapes in use:
+Every route renders a `<Seo>` component instead of a hand-written `<svelte:head>`. It emits the
+`<title>`, the description, the canonical link, the Open Graph and Twitter tags, and any JSON-LD.
 
 **Static pages** — interpolate the brand and a hand-written description:
 
 ```svelte
-<svelte:head>
-	<title>Tour Packages — {site.name}</title>
-	<meta name="description" content="Choose from our all-inclusive…" />
-</svelte:head>
+<Seo
+	title="Tour Packages — {site.name}"
+	description="Choose from our all-inclusive…"
+	canonical={canonicalUrl}
+	siteName={site.name}
+	locale={site.locale}
+	image={{ url: heroImage, alt: 'A tropical island coastline in the Banggai Archipelago' }}
+	structuredData={structuredData}
+/>
 ```
 
-**Detail pages** — derive from the loaded content:
+**Detail pages** — same component, with the values derived from the loaded content:
 
-| Route | Title | Description |
-| --- | --- | --- |
-| `/packages/:slug` | `{pkg.title} — {site.name}` | `{pkg.overview.slice(0, 155)}` |
-| `/destinations/:slug` | `{destination.name} — {site.name}` | `{destination.tagline}` |
-| `/blog/:slug` | `{post.title} — {site.name}` | `{post.excerpt}` |
+| Route | Title | Description | JSON-LD |
+| --- | --- | --- | --- |
+| `/packages/:slug` | `{pkg.title} — {site.name}` | `{pkg.overview.slice(0, 155)}` | `TouristTrip`+`Product`, `BreadcrumbList` |
+| `/destinations/:slug` | `{destination.name} — {site.name}` | `{destination.tagline}` | `TouristAttraction`, `BreadcrumbList` |
+| `/blog/:slug` | `{post.title} — {site.name}` | `{post.excerpt}` | `BlogPosting`, `BreadcrumbList` |
 
 The title separator is an em dash with spaces — `X — Banggai Escape` — across every
 page. Match it.
+
+`canonical` is always built from `page.url`, never a hardcoded domain:
+
+```ts
+const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
+```
+
+Query and fragment are dropped, because `?utm_source=…` is how a link arrives rather than where
+it points, and a canonical URL that varies per campaign is not canonical.
 
 ### Writing descriptions
 
@@ -82,6 +96,9 @@ page. Match it.
   to…".
 - Put the human value in `excerpt` / `tagline` / `overview` — those fields are the
   description, so write them as if they were.
+- **Write it once.** `Seo` derives `description`, `og:description` and
+  `twitter:description` from the one string you pass, so they cannot disagree. That is the
+  whole reason a page no longer writes a `<svelte:head>`.
 
 ## Content that maps to SEO fields
 
@@ -113,15 +130,25 @@ Conventions the codebase follows, worth keeping:
 
 ## Crawling
 
-`apps/web/static/robots.txt` currently allows everything:
+`apps/web/static/robots.txt` allows everything and points at the sitemap:
 
 ```
-# allow crawling everything by default
 User-agent: *
 Disallow:
+Sitemap: https://banggaiescape.com/sitemap.xml
 ```
 
-There is no `sitemap.xml` and no `Sitemap:` directive.
+`Disallow:` with an empty value is the explicit form of "nothing is off-limits", which is clearer
+than an absent line in the one file a crawler looks for permission in. The `Sitemap:` line is the
+only place a domain is written down — `robots.txt` is a static file, so it has no request to
+derive an origin from. It has to be edited if the domain ever changes.
+
+`sitemap.xml` is a **route**, not a file: `routes/sitemap.xml/+server.ts`. Every URL it lists
+lives in the database, so a static file goes stale the moment an editor publishes something — and
+a sitemap that lies about what exists is worse than none, because a crawler follows it, finds a
+404, and spends crawl budget on a URL the site already told it not to expect. It emits the six
+fixed routes plus every published package, destination and article, with `lastmod` only where
+there is a real edit or publish time to state.
 
 **Error pages are marked `noindex`.** `routes/+error.svelte` sets
 `<meta name="robots" content="noindex" />` and titles itself with the HTTP status
@@ -160,18 +187,38 @@ a regression. Patterns the code uses:
 
 ## Missing SEO pieces (roadmap)
 
-Not bugs at this stage, but the obvious next steps, roughly in priority order:
+**Items 1–4 shipped on 2026-09-26.** See [16-web-polish-plan.md](./16-web-polish-plan.md#phase-5--discoverability--done)
+for what was built and why, and `docs/09` below for how it hangs together. In short: one
+component (`src/lib/components/Seo.svelte`) driven by pure builders in `src/lib/seo.ts`, a
+generated `sitemap.xml` route, and JSON-LD per page type.
 
-1. **Open Graph and Twitter Card tags** — `og:title`, `og:description`, `og:image`,
-   `og:type`, `twitter:card`. Every page already has the values; it is a
-   `<svelte:head>` addition in the layout plus per-page overrides.
-2. **`sitemap.xml`** and a `Sitemap:` line in `robots.txt`.
-3. **Canonical URLs** — `<link rel="canonical">` using `page.url` from `$app/state`.
-4. **Structured data (JSON-LD)** — `TravelAgency`/`LocalBusiness` for the brand,
-   `BlogPosting` for articles, `Product`/`TouristTrip` for packages. The parsed
-   payloads the loaders return are already the right shape to serialise.
-5. **`lang` per locale** once the language switcher does something — `<html lang="en">`
-   is hardcoded in `app.html`.
+What is left:
+
+1. ~~**Open Graph and Twitter Card tags**~~ — done. `Seo` is the only writer of `og:*`,
+   `twitter:*`, the canonical link and the description, so the document title and `og:title`
+   are the same string by construction. A page no longer hand-writes a `<svelte:head>`.
+2. ~~**`sitemap.xml`**~~ — done. A route rather than a file, because every URL it lists lives in
+   the database and a static list goes stale the moment an editor publishes.
+3. ~~**Canonical URLs**~~ — done. Built from `page.url`, so nothing hardcodes a domain.
+4. ~~**Structured data (JSON-LD)**~~ — done. `TravelAgency` on home/about/contact,
+   `TouristTrip`+`Product` on packages, `TouristAttraction` on destinations, `BlogPosting` on
+   articles, `BreadcrumbList` on every page.
+5. **`lang` per locale** — still open, and blocked on the language switcher doing something.
+   `<html lang="en">` is hardcoded in `app.html`. The i18n work was explicitly deferred; see
+   the decisions table in the polish plan.
+6. **Titles and descriptions in the CMS** — still open, and now the only thing making them
+   fixed strings. `Seo` takes them as props, so this is a change to what a page passes in. That
+   is Phase 6 of the polish plan.
+
+Two things that are deliberately *not* on this list, recorded so their absence reads as a
+decision rather than an oversight:
+
+- **`keywords` meta and per-page `robots` meta.** Both stopped being ranking signals years ago.
+  `robots.txt` and the sitemap express crawl policy better than a per-page tag.
+- **`sameAs` in the organisation JSON-LD.** Every social link in the CMS is currently `href="#"`.
+  Emitting a placeholder would assert an identity the business has not claimed, in a field a
+  consumer cannot check but will publish. `src/lib/site-seo.ts` filters to real `http(s)` URLs,
+  so the field appears by itself once real profiles are configured.
 
 ## Related
 

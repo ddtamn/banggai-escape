@@ -146,7 +146,11 @@ These are non-negotiable; they exist because each one has already caused a real 
    - See [docs/12-troubleshooting.md](./docs/12-troubleshooting.md#the-wrangler-types--svelte-check-trap).
 5. **Do not edit generated files by hand:**
    - `apps/web/worker-configuration.d.ts` — regenerate with `pnpm gen`
-   - `apps/web/src/lib/data/media.ts` — regenerate with `.stitch/gen-media.mjs`
+   - `apps/web/src/lib/data/media.ts` — regenerate with `node .stitch/gen-media.mjs`. That
+    generator and `.stitch/media-substitutions.json` are tracked for this reason: `media.ts`
+    contains media-library URLs, and the map is the only record of which asset id became
+    which. Without them a regeneration silently points every migrated image back at the
+    design tool's demo host.
   - `apps/admin/src/lib/server/db/auth.schema.ts` — regenerate with
     `pnpm --filter @banggai/admin auth:schema`
   - `apps/admin/drizzle/*.sql` and `apps/admin/drizzle/meta/**` — regenerate with

@@ -44,8 +44,9 @@
  * The size every major consumer crops to. A card authored at any other size gets centre-cropped
  * by at least one of them, and a wide, short lockup is exactly the artwork that crops worst.
  */
-import { createRequire } from 'node:module';
+
 import { readFile, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 

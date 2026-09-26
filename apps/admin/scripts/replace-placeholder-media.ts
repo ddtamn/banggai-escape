@@ -45,7 +45,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { neon } from '@neondatabase/serverless';
@@ -59,22 +59,36 @@ const MEDIA_BASE = 'https://media.banggaiescape.com';
 const SUBSTITUTIONS = resolve(repoRoot, '.stitch/media-substitutions.json');
 const WORK = resolve(repoRoot, 'node_modules/.cache/placeholder-media');
 
+/** What a reachable key currently points at, and therefore what still needs doing to it. */
+type Reachable = {
+	/** The `media.ts` key. */
+	key: string;
+	/** The bare `aida-public` id, when it is still one. */
+	aidaId: string | null;
+	/** True when `media.ts` already holds a media-library URL for this key. */
+	migrated: boolean;
+};
+
 /**
- * The `media.ts` keys a template actually reaches, and the AIDA id behind each.
+ * Every `media.ts` key a template actually reaches, and the state each is in.
  *
  * Derived by scanning the source rather than transcribed. An earlier hand-written version of
  * this list was wrong in a way that would have been very hard to see: a mistyped base64 id is
  * still a plausible-looking string, and it would have quietly pointed at the wrong picture.
+ *
+ * Both states are reported, which matters more than it sounds. Once a key has been migrated its
+ * value in `media.ts` is a URL rather than an `AB6…` id, so a scan that only recognises ids
+ * finds *nothing* to do and reports "0 reachable" — indistinguishable from a run that had
+ * genuinely found no reachable placeholders. That is the wrong answer stated confidently, and
+ * it is the answer this script gives about itself immediately after it succeeds.
  */
-function reachablePlaceholders(): Map<string, string> {
-	const mediaSource = readFileSync(
-		resolve(repoRoot, 'apps/web/src/lib/data/media.ts'),
-		'utf8',
-	);
+function reachablePlaceholders(): Reachable[] {
+	const mediaSource = readFileSync(resolve(repoRoot, 'apps/web/src/lib/data/media.ts'), 'utf8');
 
-	// key -> aida id, from the generator's own output shape.
+	// key -> current value, from the generator's own output shape. The value is either an
+	// `AB6…` id or a full media-library URL, and which one it is *is* the migration state.
 	const byKey = new Map<string, string>();
-	for (const match of mediaSource.matchAll(/'([a-z0-9-]+)':\s*'(AB6[A-Za-z0-9_-]+)'/g)) {
+	for (const match of mediaSource.matchAll(/'([a-z0-9-]+)':\s*'([^']+)'/g)) {
 		byKey.set(match[1], match[2]);
 	}
 
@@ -91,13 +105,17 @@ function reachablePlaceholders(): Map<string, string> {
 		}
 	}
 
-	const wanted = new Map<string, string>();
-	for (const key of reached) {
-		const id = byKey.get(key);
-		if (id) wanted.set(id, key);
-	}
+	return [...reached]
+		.map((key) => {
+			const value = byKey.get(key);
 
-	return wanted;
+			if (value === undefined) return null;
+			if (value.startsWith('http')) return { key, aidaId: null, migrated: true };
+
+			return { key, aidaId: value, migrated: false };
+		})
+		.filter((entry): entry is Reachable => entry !== null)
+		.sort((a, b) => a.key.localeCompare(b.key));
 }
 
 function walk(dir: string): string[] {
@@ -162,18 +180,31 @@ async function main() {
 
 	const sql = neon(databaseUrl);
 	const existing = loadSubstitutions();
-	const wanted = reachablePlaceholders();
+	const reachable = reachablePlaceholders();
 
 	mkdirSync(WORK, { recursive: true });
 
 	const next: Record<string, Substitution> = { ...existing };
+	// Counted up front so the summary can say what it found as well as what it did. A report
+	// that only counts changes cannot distinguish "nothing to do because it is all done" from
+	// "nothing to do because the scan found nothing", and those need different reactions.
+	const alreadyMigrated = reachable.filter((entry) => entry.migrated).length;
+	const pending = reachable.filter((entry) => !entry.migrated);
+
 	let added = 0;
 	let skipped = 0;
 	let bytes = 0;
 
-	for (const [aidaId, key] of wanted) {
+	for (const { key, aidaId } of pending) {
+		// `aidaId` is non-null for every pending entry; the filter above is what guarantees it,
+		// and an assertion is cheaper than a `!` on a type the compiler cannot see.
+		if (!aidaId) continue;
+
 		if (existing[aidaId]) {
+			// In the map but not yet applied to `media.ts`, which happens when a run was
+			// interrupted between writing the map and regenerating.
 			skipped += 1;
+			console.log(`  ${key}: already in the map, regenerate media.ts to apply it`);
 			continue;
 		}
 
@@ -236,11 +267,14 @@ async function main() {
 	writeFileSync(SUBSTITUTIONS, `${JSON.stringify(next, null, '\t')}\n`);
 
 	console.log(
-		`\n${added} migrated, ${skipped} already done, ${Math.round(bytes / 1024)} KB moved into R2.`,
+		`\n${reachable.length} placeholder(s) a template can reach: ` +
+			`${alreadyMigrated} already migrated, ${added} migrated now, ${skipped} awaiting a regenerate.`,
 	);
+	if (added > 0) console.log(`  ${Math.round(bytes / 1024)} KB moved into R2.`);
 	console.log(
-		`${wanted.size} of the generator's placeholders are reachable from a template; the rest ` +
-			'are left alone deliberately.',
+		`The generator's other placeholders are unreachable from any template and are left ` +
+			'alone deliberately: migrating them would mean paying storage for images no page ' +
+			'can display.',
 	);
 	console.log('\nNow run:  node .stitch/gen-media.mjs');
 }

@@ -309,25 +309,45 @@ exception for anything to catch.
 ## `apps/web/src/lib/data/media.ts` — page decoration only
 
 > **Generated file. Do not edit by hand.** Regenerate with
-> `node .stitch/gen-media.mjs` after re-exporting designs from Stitch.
+> `node .stitch/gen-media.mjs` after re-exporting designs from Stitch. The generator resolves
+> its paths from its own location, so it can be run from anywhere.
 
 This is what is left of the static data layer, and it keeps only the images the *design*
-owns rather than the editors: full-bleed hero backgrounds, the About photographs, the
-package-detail mosaic, the decorative arc clips. All of it is still on the AIDA CDN.
+owns rather than the editors: the About photograph, the package-detail mosaic, the decorative
+arc clips, and the page-hero images.
+
+**Values are one of two things**, and `img()` accepts both:
 
 ```ts
 const AIDA = 'https://lh3.googleusercontent.com/aida-public/';
 
-/** Full URL for an asset id, resized to `width`. */
+/** An asset's URL at `width`. Already-absolute values (owned media) are passed through. */
 export const img = (id: string, width = 1200): string =>
 	/^https?:/.test(id) ? id : `${AIDA}${id}=w${width}`;
 
 export const media = { /* page-scoped, `as const` */ } as const;
-export const backgrounds = { /* page-scoped CSS background URLs */ } as const;
+export const backgrounds = { /* page-scoped hero images */ } as const;
 ```
 
+- A **migrated** asset is a full `https://media.banggaiescape.com/<uuid>.jpg` URL. Seven are:
+  the ones a template can actually reach. They came out of the design tool's demo host and now
+  live in the media library with `media_assets` rows, which is what lets the edge resize them
+  and an editor replace them.
+- An **unmigrated** asset is a bare `aida-public` id. The generator emits 72 references and 65
+  are unreachable from any template, so they are left as ids — inert, because nothing renders
+  them, and not worth paying storage for.
+
+`img()` passing absolute values through is load-bearing. The `=w<width>` suffix is the
+`aida-public` resize parameter; appending it to an R2 key would 404. Keeping the two forms
+distinct is what stops that.
+
 - `media` is keyed **by page**, then by a slugified description of the image's alt text.
-- `backgrounds` holds full URLs (mostly Unsplash) for CSS `background-image` use.
+- `backgrounds` holds full URLs (mostly Unsplash) for the page-hero images.
+
+**To migrate a placeholder**, run `apps/admin/scripts/replace-placeholder-media.ts`. It
+downloads, uploads to R2, inserts the `media_assets` row and writes
+`.stitch/media-substitutions.json`; the generator applies that map on the next run. It is
+idempotent, so a re-run after a partial failure resumes rather than duplicating.
 - **`img()` is idempotent**: an id that already starts with `http(s)` is returned
   untouched.
 - Keys are `as const`, so `media.home['banggai-escape-team-at-sea']` is compile-time

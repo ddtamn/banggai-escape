@@ -61,7 +61,7 @@ There is exactly one layout, and it wraps every route:
 ```
 src/routes/+layout.svelte
 ├─ imports './layout.css'        → Tailwind + design tokens are applied globally
-├─ <svelte:head>                 → favicon, apple-touch-icon, default description
+├─ <svelte:head>                 → favicon, apple-touch-icon (and nothing else)
 ├─ <Header />                    → sticky forest bar, z-50
 ├─ <main>{@render children()}</main>
 └─ <Footer />                    → forest footer
@@ -71,13 +71,13 @@ Practical consequences:
 
 - **No route needs to render a header or footer.** Doing so would duplicate them —
   and the same applies to `+error.svelte`, which is why the error page needs neither.
-- **The default meta description lives here.** Individual pages override `<title>`
-  and `<meta name="description">` in their own `<svelte:head>` — a page-level
-  `description` replaces the layout default.
-- **The `<main>` element is provided by the layout.** Some pages additionally nest
-  their own `<main>` element (e.g. `packages/+page.svelte`), which renders `<main>`
-  inside `<main>`. It is harmless in practice but technically invalid HTML — worth
-  fixing if you touch those files.
+- **No meta tags live here.** The layout used to carry a default `description`, which every
+  page then had to remember to override — and an `og:image` default, which produced a *second*
+  `og:image` on any page with its own photograph. `src/lib/components/Seo.svelte` is now the
+  only thing that writes a title, description, canonical link, `og:*` or `twitter:*` tag.
+- **The `<main>` element is provided by the layout**, and pages do not add a second one.
+  Six pages used to nest their own `<main>` inside the layout's, which is invalid HTML; that
+  was fixed alongside the accessibility pass. Keep it that way.
 
 ## The error page
 
@@ -323,7 +323,7 @@ layout loaded are merged into the same `data`, so a page gets `data.settings` fo
 and because `data` is reactive state, every value taken from it is declared with
 `$derived` (a plain destructure would capture the first value and warn).
 
-**`+page.svelte`** — renders from `data` and sets its own `<svelte:head>`. It never
+**`+page.svelte`** — renders from `data` and renders a `<Seo>` component. It never
 imports content, and it never reaches for a loader.
 
 Conventions to keep:
@@ -340,18 +340,23 @@ Conventions to keep:
 
 ## SEO habits per page
 
-Each page sets its own title and description in `<svelte:head>`. The pattern is:
+Each page renders `<Seo>` rather than a hand-written `<svelte:head>`. The pattern is:
 
 ```svelte
-<svelte:head>
-	<title>{Page Name} — {site.name}</title>
-	<meta name="description" content="…" />
-</svelte:head>
+<Seo
+	title="{Page Name} — {site.name}"
+	description="…"
+	canonical={canonicalUrl}
+	siteName={site.name}
+	locale={site.locale}
+	structuredData={structuredData}
+/>
 ```
 
-Detail pages derive it instead: `<title>{pkg.title} — {site.name}</title>` and
-`content={pkg.overview.slice(0, 155)}` (packages), `content={destination.tagline}`
-(destinations), `content={post.excerpt}` (articles). See
+`canonicalUrl` is always `new URL(page.url.pathname, page.url.origin).href` — never a
+hardcoded domain. Detail pages derive the title and description instead: `{pkg.title}` and
+`{pkg.overview.slice(0, 155)}` (packages), `{destination.name}` and `{destination.tagline}`
+(destinations), `{post.title}` and `{post.excerpt}` (articles). See
 [09-seo-and-metadata](./09-seo-and-metadata.md).
 
 ## Gaps
@@ -359,15 +364,21 @@ Detail pages derive it instead: `<title>{pkg.title} — {site.name}</title>` and
 Known missing pieces, in rough priority order:
 
 - **No central error logging.** `+error.svelte` renders errors, but nothing reports
-  them: `hooks.server.ts` sets one cache header and does nothing else. Add a `handleError`
-  when error visibility matters — and note that a 500 from a bad payload already names the
-  item and the offending fields in its message.
-- **No `sitemap.xml`.** `static/robots.txt` allows everything but does not point at
-  a sitemap. Now that slugs can move, the redirect table would be a natural input to one.
+  them: `hooks.server.ts` sets security headers, the cache header and nothing else. Add a
+  `handleError` when error visibility matters — and note that a 500 from a bad payload already
+  names the item and the offending fields in its message.
 - **No trailing-slash or redirect policy beyond SvelteKit defaults.** Slug renames are
   handled (a 301 from the old URL); anything else is not.
 - **The listings filter client-side.** Filtering and search are `$state`; a page reload
   does not preserve them and there are no shareable filtered URLs. The rows themselves
   come from the loader, so a server-side filter would be a small change.
-- **`svelte:head` has no Open Graph or Twitter Card tags** on any page.
-- **Nested `<main>` elements** on several pages (the layout already provides one).
+
+Closed since this section was written:
+
+- ~~**No `sitemap.xml`.**~~ `routes/sitemap.xml/+server.ts` generates one from published
+  content, and `robots.txt` points at it. The redirect table is deliberately *not* an input:
+  a 301 target is the same page, and listing both would tell a crawler to spend budget on the
+  old URL.
+- ~~**`svelte:head` has no Open Graph or Twitter Card tags.**~~ `src/lib/components/Seo.svelte`
+  emits them, plus canonicals and JSON-LD, from `src/lib/seo.ts`.
+- ~~**Nested `<main>` elements.**~~ Fixed; pages no longer add a second one.

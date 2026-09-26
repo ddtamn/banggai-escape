@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { RenderedDestination } from '@banggai/content-model';
+import { CARD_SIZES } from '$lib/card-sizes';
 import Icon from '$lib/components/Icon.svelte';
 
 type Props = { destination: RenderedDestination; href?: string };
@@ -15,6 +16,8 @@ let { destination, href = `/destinations/${destination.slug}` }: Props = $props(
 	<img
 		class="size-full object-cover transition-transform duration-500 group-hover:scale-105"
 		src={destination.image.src}
+		srcset={destination.image.srcset}
+		sizes={CARD_SIZES.twoUp}
 		alt={destination.image.alt ?? destination.name}
 		loading="lazy"
 		width="1200"

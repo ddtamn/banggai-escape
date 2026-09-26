@@ -20,7 +20,20 @@
 
 import type { RenderedMedia } from '@banggai/content-model';
 import { env } from '$env/dynamic/private';
+import { imageSrcset, type TransformConfig, transformConfig } from '$lib/images';
 import { database } from '$lib/server/db';
+
+/**
+ * Where the edge resizes images, and which images this site owns.
+ *
+ * Read here rather than inside `$lib/images` because server env is only reachable through
+ * `$env/dynamic/private`, which a component cannot import — and the hero needs to ask the
+ * same question from a component. Keeping `$lib/images` free of `$env` also leaves it pure,
+ * and therefore testable in plain Node.
+ */
+function transforms(): TransformConfig {
+	return transformConfig(env.IMAGE_TRANSFORM_BASE, env.MEDIA_PUBLIC_URL);
+}
 
 export type MediaRow = {
 	id: string;
@@ -65,12 +78,17 @@ export type MediaLookup = {
 	/** The URL for one of the ids this lookup was asked for. Throws if it was not one. */
 	url(id: string): string;
 	/**
-	 * The same reference as an `<img>` needs it: the URL, plus the description the
-	 * administrator wrote in the library.
+	 * The same reference as an `<img>` needs it: the URL, the description the
+	 * administrator wrote in the library, and the `srcset` the edge can resize it to.
 	 *
 	 * `alt` is null for an asset nobody has described, which is every one of the 29 the
 	 * import brought in. The caller decides what to render then, because the honest fallback
 	 * depends on where the image sits — see `RenderedMedia`.
+	 *
+	 * `srcset` is null wherever the edge cannot resize the image: in development, and for
+	 * any source outside this site's own media library. A `srcset` of URLs that all fail is
+	 * worse than no `srcset`, so the omission is deliberate and the caller can render
+	 * `src` alone without checking.
 	 */
 	image(id: string): RenderedMedia;
 };
@@ -140,7 +158,8 @@ export async function loadMedia(ids: readonly string[]): Promise<MediaLookup> {
 		image(id) {
 			const { url, alt } = asset(id);
 
-			return { src: url, alt };
+			// Null unless the edge can actually resize this one — see `MediaLookup.image`.
+			return { src: url, alt, srcset: imageSrcset(url, transforms()) };
 		},
 	};
 }

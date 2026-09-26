@@ -1,4 +1,5 @@
 <script lang="ts">
+import { CARD_SIZES } from '$lib/card-sizes';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import Icon from '$lib/components/Icon.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
@@ -119,6 +120,8 @@ const related = $derived(data.related);
 					<img
 						class="size-full object-cover object-center transition duration-500 hover:scale-105"
 						src={image.src}
+						srcset={image.srcset}
+						sizes={CARD_SIZES.twoUp}
 						alt={image.alt ?? `${destination.name} — view ${index + 1}`}
 						loading="lazy"
 						width="1200"

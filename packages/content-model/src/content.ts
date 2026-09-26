@@ -44,6 +44,17 @@ export const mediaIdSchema = z.uuid();
 export type RenderedMedia = {
 	src: string;
 	alt: string | null;
+	/**
+	 * Resized variants of `src`, as an `<img srcset>` value, or null where the edge cannot
+	 * produce them.
+	 *
+	 * Null is a real state rather than a gap: in development there is no edge, and the
+	 * design-tool placeholder images on `lh3.googleusercontent.com` are refused by
+	 * Cloudflare's fetcher. A `srcset` of URLs that all fail would be worse than no `srcset`
+	 * at all, so those images render from `src` alone. Callers pass it straight through and
+	 * do not need to branch.
+	 */
+	srcset: string | null;
 };
 
 /**

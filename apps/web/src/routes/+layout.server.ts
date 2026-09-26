@@ -16,9 +16,23 @@
  * month-old copy is worse than an error that says which setting is wrong.
  */
 
+import { env } from '$env/dynamic/private';
+import { type TransformConfig, transformConfig } from '$lib/images';
 import { loadSiteSettings } from '$lib/server/content';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async () => {
-	return { settings: await loadSiteSettings() };
+	return {
+		settings: await loadSiteSettings(),
+		/**
+		 * Handed down rather than read in the component, because `IMAGE_TRANSFORM_BASE` is a
+		 * private env var and only a server module can see one. The hero photograph is the
+		 * one image on the site that is not a media-library reference, so it cannot pick up a
+		 * `srcset` from the read layer the way every other image does.
+		 */
+		imageTransforms: transformConfig(env.IMAGE_TRANSFORM_BASE, env.MEDIA_PUBLIC_URL),
+	} satisfies {
+		settings: Awaited<ReturnType<typeof loadSiteSettings>>;
+		imageTransforms: TransformConfig;
+	};
 };

@@ -17,7 +17,17 @@
 	// DATABASE_URL is deliberately absent: it is a secret, set with `wrangler secret put` in
 	// production and supplied by .env / .dev.vars locally.
 	"vars": {
-		"MEDIA_PUBLIC_URL": "https://media.banggaiescape.com"
+		"MEDIA_PUBLIC_URL": "https://media.banggaiescape.com",
+		// Where Cloudflare Image Resizing is mounted, and so where resized variants of the
+		// images above are requested from. A var rather than a constant so a deployment can
+		// point at a different zone, and so it can be *absent*: `vite dev` has no edge in
+		// front of it, and `$lib/images` returns no `srcset` when this is missing rather
+		// than emitting a row of URLs that all fail.
+		//
+		// The source stays on the media host. The transform endpoint takes an absolute URL,
+		// and `onerror=redirect` only works when the original is in the same zone — which a
+		// subdomain is. Both live on one zone for exactly that reason.
+		"IMAGE_TRANSFORM_BASE": "https://banggaiescape.com/cdn-cgi/image"
 	},
 	// One data point per navigation and per tracked click, written here rather than by the
 	// browser so that a blocked beacon cannot silently hide a page view. Cloudflare creates

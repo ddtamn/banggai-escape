@@ -1,6 +1,7 @@
 <script lang="ts">
 import { fly } from 'svelte/transition';
 import { page } from '$app/state';
+import { CARD_SIZES } from '$lib/card-sizes';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import Icon from '$lib/components/Icon.svelte';
 import PostCard from '$lib/components/PostCard.svelte';
@@ -104,6 +105,18 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 <svelte:head>
 	<title>{post.title} — {site.name}</title>
 	<meta name="description" content={post.excerpt} />
+	<!--
+		The article's own photograph, preloaded.
+
+		It is the Largest Contentful Paint element on this page and `fetchpriority="high"`
+		tells the browser to start it early, but a preload is stronger still: it puts the
+		request in the queue before the parser has finished the head. Only the largest
+		candidate is preloaded, because a browser ignores a second image preload and the
+		bytes would be wasted.
+	-->
+	{#if post.hero.srcset}
+		<link rel="preload" as="image" href={post.hero.src} fetchpriority="high" />
+	{/if}
 </svelte:head>
 
 <svelte:window
@@ -163,9 +176,13 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 		<img
 			class="h-auto max-h-[540px] w-full object-cover object-center transition-transform duration-500 hover:scale-[1.01]"
 			src={post.hero.src}
+			srcset={post.hero.srcset}
+			sizes={CARD_SIZES.full}
 			alt={post.hero.alt ?? post.title}
 			width="2000"
 			height="1100"
+			fetchpriority="high"
+			decoding="async"
 		/>
 	</div>
 	<p class="mt-3 text-center text-base text-stone-500 italic">{post.excerpt}</p>
@@ -317,6 +334,8 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 						<img
 							class="h-44 w-full object-cover"
 							src={popular.image.src}
+							srcset={popular.image.srcset}
+							sizes={CARD_SIZES.threeUp}
 							alt={popular.image.alt ?? popular.title}
 							loading="lazy"
 							width="900"

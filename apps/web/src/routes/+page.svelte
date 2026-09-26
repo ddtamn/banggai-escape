@@ -1,4 +1,5 @@
 <script lang="ts">
+import { CARD_SIZES } from '$lib/card-sizes';
 import BookingBar from '$lib/components/BookingBar.svelte';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import DestinationCard from '$lib/components/DestinationCard.svelte';
@@ -8,6 +9,7 @@ import PackageCard from '$lib/components/PackageCard.svelte';
 import PostCard from '$lib/components/PostCard.svelte';
 import SectionHeader from '$lib/components/SectionHeader.svelte';
 import { img, media } from '$lib/data/media';
+import { imageSrcset } from '$lib/images';
 
 let { data } = $props();
 
@@ -24,11 +26,18 @@ const posts = $derived(data.posts);
 
 const stars = [1, 2, 3, 4, 5];
 
+/**
+ * The hero photograph, as a URL and — where the edge can resize it — a `srcset`.
+ *
+ * `alt=""` is deliberate and not an oversight: the image is decorative here, the page's
+ * subject is the `h1` beneath it, and describing the photograph would be noise for anyone
+ * listening to the page.
+ */
 const heroImage = img(
 	media['package-details-untouched-banggai-discovery']['turquoise-lagoon-paisu-pok'],
 	2000,
 );
-const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgba(6, 20, 16, 0.82)), url('${heroImage}'); background-size: cover; background-position: center;`;
+const heroSrcset = $derived(imageSrcset(heroImage, data.imageTransforms));
 </script>
 
 <svelte:head>
@@ -37,13 +46,48 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 		name="description"
 		content="Banggai Escape designs seamless island journeys across the Banggai Archipelago in Central Sulawesi — mirror lakes, reef sanctuaries, and authentic local hospitality."
 	/>
+	<!--
+		The hero photograph, preloaded.
+
+		It is the Largest Contentful Paint element on this page — the largest thing above the
+		fold — and a preload puts the request in the queue before the parser has finished the
+		head, which `fetchpriority` alone cannot do. Only one image is preloaded: a browser
+		ignores a second, and the bytes would be wasted on something that was never the
+		bottleneck.
+	-->
+	{#if heroSrcset}
+		<link rel="preload" as="image" href={heroImage} fetchpriority="high" />
+	{/if}
 </svelte:head>
 
 <!-- Hero -->
-<section
-	class="relative overflow-hidden px-6 pt-12 pb-20 text-white md:pt-20 md:pb-28"
-	style={heroStyle}
->
+<!--
+	The hero photograph is an `<img>`, not a CSS `background-image`, and that is the whole
+	point.
+
+	A background cannot be preloaded and cannot carry a `fetchpriority` hint, so as a
+	background this image was the Largest Contentful Paint element *by construction* — the
+	one thing on the page a browser is structurally unable to start early. An `<img>` can be
+	preloaded, prioritised, and offered resized variants, so the hero is now the fastest
+	thing on the page rather than the slowest.
+
+	The scrim is a sibling layer rather than a gradient baked into a `style` attribute, which
+	is what lets the `style-src-attr` permission in the CSP exist at all: this removes the
+	last `style={...}` on the page.
+-->
+<section class="relative overflow-hidden px-6 pt-12 pb-20 text-white md:pt-20 md:pb-28">
+	<img
+		class="absolute inset-0 size-full object-cover object-center"
+		src={heroImage}
+		srcset={heroSrcset}
+		sizes={CARD_SIZES.full}
+		alt=""
+		width="2000"
+		height="1100"
+		fetchpriority="high"
+		decoding="async"
+	/>
+	<div class="absolute inset-0 bg-forest-abyss/70"></div>
 	<div
 		class="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center"
 	>
@@ -231,6 +275,8 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 						<img
 							class="size-9 rounded-full object-cover"
 							src={testimonial.avatar.src}
+							srcset={testimonial.avatar.srcset}
+							sizes={CARD_SIZES.avatar}
 							alt={testimonial.avatar.alt ?? testimonial.name}
 							loading="lazy"
 							width="72"

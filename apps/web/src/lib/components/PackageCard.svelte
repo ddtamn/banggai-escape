@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { RenderedPackage } from '@banggai/content-model';
+import { CARD_SIZES } from '$lib/card-sizes';
 import Icon from '$lib/components/Icon.svelte';
 import { badgeDays, durationLabel, formatPrice } from '$lib/content';
 
@@ -12,6 +13,8 @@ let { pkg }: Props = $props();
 	<div class="card-img">
 		<img
 			src={pkg.image.src}
+			srcset={pkg.image.srcset}
+			sizes={CARD_SIZES.fourUp}
 			alt={pkg.image.alt ?? pkg.title}
 			loading="lazy"
 			width="900"

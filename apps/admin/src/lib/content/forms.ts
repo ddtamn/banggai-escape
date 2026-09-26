@@ -300,6 +300,78 @@ export const kinds: readonly ContentKind[] = ['package', 'destination', 'article
  * A text input that submits `''` would fail `z.string().min(1).optional()` — `.optional()`
  * permits absence, not emptiness — so a blank optional field has to parse to absent.
  */
+/**
+ * One titled band on the home page.
+ *
+ * Every band offers the same three fields, and that is a decision rather than laziness. The
+ * contract has `subtitle` and `actionLabel` optional on all of them, and a form that offered
+ * them on some bands but not others would mean an editor could never add a standfirst to the
+ * band that happens not to have one today — the capability would exist in the data and be
+ * unreachable from the screen. Bands that have no standfirst simply leave it empty, and the
+ * page renders nothing.
+ */
+function homeSection(name: string, label: string, extra: readonly FieldSpec[] = []): FieldSpec {
+	return {
+		type: 'object',
+		name,
+		label,
+		fields: [
+			{ type: 'words', name: 'title', label: 'Heading', hint: 'Use \\n for a line break' },
+			{ type: 'words', name: 'subtitle', label: 'Standfirst', optional: true },
+			{ type: 'text', name: 'actionLabel', label: 'Link label', optional: true },
+			...extra,
+		],
+	};
+}
+
+/**
+ * The five inner pages share one spec.
+ *
+ * A function rather than one written out five times, because five near-identical literals
+ * drift: someone adds a field to one of them, forgets the other four, and the pages disagree
+ * about what they can say. Each is still a *separate* key — one row in `site_settings`, one
+ * entry in the editor's index — so a page can be edited without touching the others.
+ */
+function innerPageSpec(
+	key: 'packagesPage' | 'destinationsPage' | 'blogPage' | 'aboutPage' | 'contactPage',
+	label: string,
+): FieldSpec {
+	return {
+		type: 'object',
+		name: key,
+		label,
+		fields: [
+			{
+				type: 'text',
+				name: 'seoTitle',
+				label: 'Page title',
+				hint: 'The browser tab and the share card',
+			},
+			{
+				type: 'words',
+				name: 'seoDescription',
+				label: 'Page description',
+				hint: 'About 150–160 characters',
+			},
+			{
+				type: 'words',
+				name: 'heroTitle',
+				label: 'Hero heading',
+				hint: 'Use \\n for a line break',
+			},
+			{
+				type: 'words',
+				name: 'heroSubtitle',
+				label: 'Hero standfirst',
+				// Optional, and marked as such, because a page whose hero is a photograph and a
+				// heading has no standfirst. Absent renders nothing; `''` would render an
+				// empty paragraph with its margin.
+				optional: true,
+			},
+		],
+	};
+}
+
 export const settingSpecs: Record<SiteSettingKey, FieldSpec> = {
 	site: {
 		type: 'object',
@@ -326,6 +398,48 @@ export const settingSpecs: Record<SiteSettingKey, FieldSpec> = {
 				atLeastOne: true,
 			},
 			{ type: 'number', name: 'reviewCount', label: 'Review count', min: 0 },
+		],
+	},
+	siteCta: {
+		type: 'object',
+		name: 'siteCta',
+		label: 'Closing banner',
+		fields: [
+			{ type: 'words', name: 'title', label: 'Heading', hint: 'Use \\n for a line break' },
+			{ type: 'words', name: 'text', label: 'Text' },
+			{ type: 'text', name: 'ctaLabel', label: 'Button label' },
+		],
+	},
+	homePage: {
+		type: 'object',
+		name: 'homePage',
+		label: 'Home page',
+		fields: [
+			{
+				type: 'text',
+				name: 'seoTitle',
+				label: 'Page title',
+				hint: 'The browser tab and the share card',
+			},
+			{
+				type: 'words',
+				name: 'seoDescription',
+				label: 'Page description',
+				hint: 'About 150–160 characters',
+			},
+			{ type: 'text', name: 'badge', label: 'Hero badge' },
+			{ type: 'words', name: 'heading', label: 'Hero heading', hint: 'Use \\n for a line break' },
+			{ type: 'words', name: 'intro', label: 'Hero text' },
+			homeSection('packages', 'Packages band'),
+			homeSection('destinations', 'Destinations band'),
+			homeSection('features', 'Reasons band'),
+			homeSection('about', 'About band', [
+				{ type: 'list', name: 'body', label: 'Paragraphs', item: 'text', atLeastOne: true },
+			]),
+			homeSection('testimonials', 'Reviews band'),
+			homeSection('faqs', 'Questions band'),
+			homeSection('insights', 'Journal band'),
+			{ type: 'text', name: 'reviewsLabel', label: 'Reviews link label' },
 		],
 	},
 	nav: {
@@ -425,7 +539,12 @@ export const settingSpecs: Record<SiteSettingKey, FieldSpec> = {
 		name: 'ctaBackground',
 		label: 'CTA banner background',
 	},
-};
+	packagesPage: innerPageSpec('packagesPage', 'Packages page'),
+	destinationsPage: innerPageSpec('destinationsPage', 'Destinations page'),
+	blogPage: innerPageSpec('blogPage', 'Blog page'),
+	aboutPage: innerPageSpec('aboutPage', 'About page'),
+	contactPage: innerPageSpec('contactPage', 'Contact page'),
+} as const;
 
 /** The order the settings screen lists them in. Every key must appear exactly once. */
 export const settingGroups: readonly {
@@ -443,6 +562,18 @@ export const settingGroups: readonly {
 	},
 	{ title: 'Contact page', keys: ['contactChannels', 'faqs'] },
 	{ title: 'Blog', keys: ['blogCategories'] },
+	{
+		title: 'Page copy',
+		keys: [
+			'siteCta',
+			'homePage',
+			'packagesPage',
+			'destinationsPage',
+			'blogPage',
+			'aboutPage',
+			'contactPage',
+		],
+	},
 ];
 
 /** One line per key for the index, where there is no room for the whole form. */
@@ -460,6 +591,13 @@ export const settingNotes: Record<SiteSettingKey, string> = {
 	faqs: 'The questions and answers shared by the home, about and contact pages.',
 	blogCategories: 'The filter chips above the blog listing.',
 	ctaBackground: 'The image behind the “plan your trip” banner on every page.',
+	siteCta: 'The closing invitation at the foot of every page.',
+	homePage: 'The home page’s hero, its six section headings, and its About text.',
+	packagesPage: 'The packages listing page — its hero, and how it describes itself.',
+	destinationsPage: 'The destinations listing page — its hero, and how it describes itself.',
+	blogPage: 'The blog listing page — its hero, and how it describes itself.',
+	aboutPage: 'The about page — its hero, and how it describes itself.',
+	contactPage: 'The contact page — its hero, and how it describes itself.',
 };
 
 /**

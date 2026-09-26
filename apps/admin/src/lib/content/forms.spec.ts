@@ -1,4 +1,9 @@
-import { parseSiteSetting, siteProfileSchema, siteSettingKeys } from '@banggai/content-model';
+import {
+	parseSiteSetting,
+	type SiteSettingKey,
+	siteSettingKeys,
+	siteSettingSchemas,
+} from '@banggai/content-model';
 import { describe, expect, it } from 'vitest';
 import {
 	countsFor,
@@ -178,61 +183,133 @@ describe('seeding a form', () => {
 
 describe('the site form and the site contract cannot drift apart', () => {
 	/**
-	 * Every field name a spec *contains*, at any depth.
+	 * The object schema underneath a setting, however it is wrapped.
 	 *
-	 * A `FieldSpec` is a recursive union — `object` and `rows` own nested `fields` — so the
-	 * site profile is one spec with a tree inside it. Two things follow: the root's own name is
-	 * the setting key (`site`), not a field of the profile, and comparing the contract to the
-	 * root would compare a list of leaves to a list of branches and find everything missing.
+	 * Three shapes have to be peeled: a `ZodArray` (the `rows` settings hold a list of items,
+	 * so the fields to compare are the *item*'s), a `ZodPrefault` (the page-copy settings are
+	 * `.prefault({})` at the root), and a plain object. Returns undefined for anything else —
+	 * a list of plain strings has no fields, and there is nothing to compare.
 	 */
-	function containedNames(spec: FieldSpec): string[] {
-		if (!('fields' in spec)) return [];
+	function objectSchema(schema: unknown): { shape: Record<string, unknown> } | undefined {
+		const node = schema as {
+			shape?: Record<string, unknown>;
+			def?: Record<string, unknown>;
+			element?: unknown;
+		};
 
-		return spec.fields.flatMap((child) => [child.name, ...containedNames(child)]);
+		if (node?.shape) return { shape: node.shape };
+		if (node?.element) return objectSchema(node.element);
+
+		// `def.innerType` is the wrapped schema; `def.type` names it. Two hops rather than
+		// `.unwrap()` because the wrapper differs between the array and the object case.
+		const inner = node?.def?.innerType;
+		if (inner) return objectSchema(inner);
+
+		return undefined;
 	}
 
+	/** Both directions of the disagreement, as `contract path → what the form does with it`. */
+	type Drift = { path: string; missing: string[]; extra: string[] };
+
 	/**
-	 * Contract keys an editor cannot leave out.
+	 * Walks the contract and the form spec in parallel, comparing children at each object level.
 	 *
-	 * Asked of the schema rather than read from a list, so adding a required field to
-	 * `siteProfileSchema` makes this test demand a form field without anyone editing a second
-	 * thing. `safeParse(undefined)` is how a Zod field is asked whether absence is allowed,
-	 * which works whether the field is `.optional()`, has a default, or is simply required.
+	 * Parallel rather than a flat list of names on purpose. A flattened comparison cannot see
+	 * a nested object at all — `homePage`'s seven bands are children of the root, so a flat
+	 * check would confirm the bands *exist* and never look inside them, which is where the
+	 * About paragraphs and their `min(2)` live.
 	 */
-	const requiredKeys = Object.entries(siteProfileSchema.shape)
-		.filter(([, schema]) => !schema.safeParse(undefined).success)
-		.map(([key]) => key)
-		.sort();
+	function compare(
+		schema: unknown,
+		fields: readonly FieldSpec[],
+		path: string,
+		into: Drift[],
+	): void {
+		const object = objectSchema(schema);
+		if (!object) return;
 
-	const formFields = new Set(containedNames(settingSpecs.site));
-	const contractFields = new Set(Object.keys(siteProfileSchema.shape));
+		const contract = Object.keys(object.shape).sort();
+		const byName = new Map(fields.map((field) => [field.name, field]));
 
-	it('finds the required keys, so the rest of this file is not vacuous', () => {
-		// A schema change that made everything optional would otherwise turn the test below
-		// into a loop over nothing, which passes.
-		expect(requiredKeys.length).toBeGreaterThan(3);
+		const missing = contract.filter((name) => !byName.has(name));
+		const extra = fields.map((field) => field.name).filter((name) => !contract.includes(name));
+
+		if (missing.length > 0 || extra.length > 0) into.push({ path, missing, extra });
+
+		for (const [name, childSchema] of Object.entries(object.shape)) {
+			const field = byName.get(name);
+
+			// Only `object` and `rows` own nested fields. A `list` holds scalars, so there is
+			// nothing below it to compare.
+			if (field && (field.type === 'object' || field.type === 'rows')) {
+				compare(childSchema, field.fields, `${path}.${name}`, into);
+			}
+		}
+	}
+
+	function driftFor(key: SiteSettingKey): Drift[] {
+		const found: Drift[] = [];
+
+		const spec = settingSpecs[key] as Extract<FieldSpec, { type: 'object' | 'rows' }>;
+
+		compare(siteSettingSchemas[key], spec.fields, key, found);
+
+		return found;
+	}
+
+	/** The settings whose value is a list of objects or an object — the ones with fields. */
+	const objectSettings = settingKeys.filter(
+		(key) => settingSpecs[key].type === 'object' || settingSpecs[key].type === 'rows',
+	);
+
+	it('covers every object setting, so a new one is checked the day it is added', () => {
+		// The page-copy settings were added after this test was first written, and it did not
+		// notice them. That is the failure mode of a test scoped to one key: it protects the key
+		// it names and is silent about every key added since.
+		expect(objectSettings).toContain('site');
+		expect(objectSettings).toContain('homePage');
+		expect(objectSettings).toContain('siteCta');
+		expect(objectSettings).toContain('packagesPage');
+		expect(objectSettings).toContain('nav');
 	});
 
-	it('finds the form fields, so a spec that stopped nesting would not pass by finding none', () => {
-		expect(formFields.has('whatsapp')).toBe(true);
-	});
-
-	it('gives every required contract key a field in the form', () => {
-		// The failure this prevents is silent and total. A required key with no field is not
-		// something the type checker or the build notices: the form compiles, the page renders,
-		// and an editor filling in every field they can see still cannot save — because
-		// `parseSiteSetting` rejects the result. The only symptom is a save that fails with a
-		// message naming a field that does not exist on the screen.
+	it.each(objectSettings)('%s: the form and the contract declare the same fields', (key) => {
+		// The failure this prevents is silent and total. A key with no field is not something
+		// the type checker or the build notices: the form compiles, the page renders, and an
+		// editor filling in every field they can see still cannot save — because
+		// `parseSiteSetting` rejects the result. The only symptom is a save that fails naming a
+		// field that is not on the screen.
 		//
 		// That is not hypothetical. `whatsapp` was added to the contract and to the form, and
 		// nothing checked that the two agreed, so the site-profile fixtures in this file and in
 		// `validate.spec.ts` drifted and CI caught it a session later.
-		expect(requiredKeys.filter((key) => !formFields.has(key))).toEqual([]);
+		const drift = driftFor(key);
+
+		// Each disagreement is reported with its path, so a failure names the band and the field
+		// rather than two bare lists.
+		expect(
+			drift.map((entry) => `${entry.path}: missing [${entry.missing}], extra [${entry.extra}]`),
+		).toEqual([]);
 	});
 
-	it('has no form field the contract does not define', () => {
-		// The other direction. A stray field is an input the editor can fill in and the
-		// contract will then reject the whole record for, which is the same silent trap.
-		expect([...formFields].filter((name) => !contractFields.has(name))).toEqual([]);
+	it('looks inside nested objects, not just at their existence', () => {
+		// The walk has to recurse for this file to be worth anything on `homePage`: its seven
+		// bands are children of the root, so a flat comparison would confirm they exist and
+		// never look at what is inside them.
+		expect(driftFor('homePage')).toEqual([]);
+
+		// Proven by handing it a contract with a gap one level down and seeing the path arrive
+		// with that level's name in it. `root` is absent from the result because its own
+		// children agree — only `root.outer` is missing `inner`.
+		const found: Drift[] = [];
+
+		compare(
+			{ shape: { outer: { shape: { inner: {} } } } },
+			[{ type: 'object', name: 'outer', label: 'Outer', fields: [] }],
+			'root',
+			found,
+		);
+
+		expect(found).toEqual([{ path: 'root.outer', missing: ['inner'], extra: [] }]);
 	});
 });

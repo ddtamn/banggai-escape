@@ -278,7 +278,7 @@ unique and URL-safe**. The scroll spy depends on those ids existing in the DOM.
 | `blogCategories` | `string[]` | Blog filter pills |
 | `ctaBackground` | media id | The image used by **every** `CtaBanner` |
 
-`icon` is a full Font Awesome class string (e.g. `'fa-regular fa-compass'`).
+`icon` is a full Font Awesome class string (e.g. `'fa-regular fa-compass'`), resolved by `$lib/components/Icon.svelte` against the generated `src/lib/icons`. An icon added here that is not in that map renders nothing in production, so re-run `pnpm --filter @banggai/web exec tsx scripts/generate-icons.ts` after changing it.
 
 ---
 

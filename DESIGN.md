@@ -267,7 +267,7 @@ Tokens live in `src/routes/layout.css` (`@theme`) and are consumed directly by t
   },
   "typography": {
     "fontSans":  "Plus Jakarta Sans, sans-serif",
-    "icons":     "Font Awesome 6.7.2",
+    "icons":     "Font Awesome glyphs as inline SVG (generated)",
     "weights": { "body": 400, "medium": 500, "semibold": 600, "bold": 700, "extrabold": 800 },
     "scale": {
       "heroH1":   "30–60px / 1.15 / 800 / tracking-tight",

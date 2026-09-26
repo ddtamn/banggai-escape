@@ -190,22 +190,38 @@ whitelists every dependency's scripts.
 
 ---
 
-## A Font Awesome icon renders as a box or blank
+## An icon renders as a box, or as nothing at all
 
-**Symptom:** a missing glyph, most famously the X/Twitter share icon.
+**Symptom:** a missing glyph, or an element that occupies no space.
 
-**Cause:** the icon does not exist in the loaded Font Awesome version. Brand icons
-in particular were added over time — `fa-x-twitter` needs **≥ 6.4.2**.
+**Cause:** the icon is not in the generated `apps/web/src/lib/icons.ts`. That map is built
+from the `@fortawesome/fontawesome-free` package and committed, so it only learns about an
+icon when the generator is run. Two cases:
 
-**Fix:** check the CDN link in `apps/web/src/app.html`. It should be **6.7.2**:
+- **Named in a template** — `icons.spec.ts` fails the build naming the icon and the files
+  that use it. That is the intended outcome; run the generator.
+- **Named only in the database** — an `icon` field on socials, features, visionMission or
+  contactChannels. A source scan cannot see these, so nothing fails. In development
+  `Icon.svelte` draws a red placeholder and logs `[icons] "<name>" is not in
+  src/lib/icons.ts`; in production it draws a neutral placeholder of the right size.
 
-```html
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+**Fix:**
+
+```sh
+pnpm --filter @banggai/web exec tsx scripts/generate-icons.ts
 ```
 
-Bump the version rather than substituting a different icon.
+The generator exits non-zero and names every icon it cannot resolve, so a typo fails loudly
+rather than rendering blank. It reads the templates *and* an explicit list of the
+database-held icons; that list is maintained by hand and is the honest cost of letting the
+CMS hold the icon vocabulary instead of a fixed enum.
+
+**If the name does not exist in Font Awesome at all** — brand glyphs were added over time,
+and `fa-x-twitter` needs **≥ 6.4.2** — pick a different icon rather than substituting a
+similar-looking one.
 
 ---
+
 
 ## A Tailwind class has no effect
 

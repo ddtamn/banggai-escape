@@ -18,7 +18,7 @@ Every component in this folder follows the same shape:
 5. **No slots.** Parent content is passed as props (`title`, `text`, `items`,
    typed content objects). None of these components use `{@render children()}` —
    only `+layout.svelte` does.
-6. Icons are Font Awesome `<i>` elements, `text-[10px]`–`text-sm`, tinted with a
+6. Icons are `<Icon icon="fa-solid fa-star" size={12} class="…" />`, tinted with a
    design token.
 
 ---

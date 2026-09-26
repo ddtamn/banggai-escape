@@ -43,7 +43,7 @@ to disagree, **§7 wins**, because it describes what ships.
 | Colour tokens (§2, App.) | `src/routes/layout.css` → `@theme` |
 | Warm Sand as the only light surface (§2, §7) | `--color-white: #f7f3ed` in `@theme`, applied via `bg-white` |
 | Typography scale and weights (§3) | `--font-sans` in `@theme`; utility classes per component |
-| Font Awesome iconography (§3) | `src/app.html` — CDN `font-awesome/6.7.2` |
+| Iconography (§3) | `src/lib/icons.ts` (generated) + `src/lib/components/Icon.svelte` |
 | Button / card / input styling (§4) | `.btn-*`, `.card*`, `.badge`, `.chip`, `.field*`, `.scrim` in `@layer components` |
 | Layout frame and grids (§5) | `.shell` + `px-6`; per-page grid classes |
 | Section rhythm 64/80/96/112 px (§5) | `.section` (`py-16 md:py-20`) and `.section-wide` (`py-20 md:py-28`) |

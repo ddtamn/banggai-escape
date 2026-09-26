@@ -18,8 +18,8 @@ Set once for the whole app:
 | `<meta name="viewport">` | `width=device-width, initial-scale=1` |
 | `<meta name="text-scale">` | `scale` |
 | `<meta name="theme-color">` | `#18342a` (forest deep — tints mobile browser chrome) |
-| Fonts | Google Fonts, Plus Jakarta Sans 300–800 + 400 italic, with `preconnect` to `fonts.googleapis.com` and `fonts.gstatic.com` |
-| Icons | Font Awesome **6.7.2** from cdnjs |
+| Fonts | **Self-hosted** Plus Jakarta Sans as a variable font (200–800 plus italic), imported in `+layout.svelte` from `@fontsource-variable/plus-jakarta-sans`. No `preconnect` is needed: the `@font-face` lives in this app's own stylesheet, so the font is discovered with the render-blocking CSS. |
+| Icons | **Inline SVG**, generated into `src/lib/icons.ts` from the `@fortawesome/fontawesome-free` package. No stylesheet and no webfont. |
 | Injection | `%sveltekit.head%` and `%sveltekit.body%` placeholders |
 
 `<body>` carries `data-sveltekit-preload-data="hover"`, so hovering a link prefetches

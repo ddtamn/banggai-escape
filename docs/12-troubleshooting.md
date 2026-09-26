@@ -251,8 +251,14 @@ complete strings, so constructed names are never generated.
 
 The site has **two** sources of images, and the checks differ. Work out which one the
 broken slot uses first: content images come from the database and are served from
-`media.banggaiescape.com`; decoration images (hero bands, the About photographs, the
-package mosaic) still come from the AIDA CDN and live in `lib/data/media.ts`.
+`media.banggaiescape.com`; decoration images (hero bands, the About photograph, the package
+mosaic) live in `lib/data/media.ts`, which is generated.
+
+**Which host a decoration image is on matters**, because it decides whether it can be resized.
+A value in `media.ts` is either a full `media.banggaiescape.com` URL — migrated, so it carries
+a `srcset` — or a bare `aida-public` id, which Cloudflare's image transformer refuses with a
+403 where a browser gets 200, so it renders unresized. A decoration image that is suddenly
+large and has no `srcset` is very likely an unmigrated one.
 
 **If it is a content image** — a package card, a destination gallery, a testimonial
 avatar, the shared CTA background:
@@ -282,7 +288,14 @@ avatar, the shared CTA background:
    with the AIDA base. Put local files in `apps/web/static/` and either use an absolute
    URL or change the `AIDA` base.
 4. **The AIDA CDN rejected the width.** `img()` appends `=w<width>`; extremely large
-   widths can fail. Match the width to the slot.
+   widths can fail. Match the width to the slot. This entry only applies to an
+   **unmigrated** value — a `media.banggaiescape.com` URL is returned by `img()` verbatim
+   and never gets the suffix, because appending it to an R2 key would 404.
+5. **A value is still a bare `aida-public` id.** Run
+   `pnpm --filter @banggai/admin exec tsx scripts/replace-placeholder-media.ts` followed by
+   `node .stitch/gen-media.mjs`. Until it does, the image cannot be resized, because
+   Cloudflare's image transformer gets a 403 from that host where a browser gets 200 — so
+   `$lib/images` deliberately emits no `srcset` for it and it is served at full size.
 
 ---
 

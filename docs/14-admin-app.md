@@ -1295,8 +1295,9 @@ description as well as the URL, documented in
 [08-content-data-layer](./08-content-data-layer.md#mediats--ids-to-images). Phase 5 has
 landed too: the public Worker records validated page views and
 clicks, and the admin reads them back from Cloudflare's SQL API. The database no longer
-references the design-tool host; only the site's page-decoration images still come from the
-AIDA CDN. **Both Workers are deployed** — `admin.banggaiescape.com` and
+references the design-tool host. The site's page-decoration images have since been migrated
+too — the seven a template can reach now live in the media library, so both Workers' images
+are owned and resizable. **Both Workers are deployed** — `admin.banggaiescape.com` and
 `banggaiescape.com`, each on its own custom domain, which `wrangler deploy` created the DNS
 records for — and both read the **production** Neon branch, the public one as the read-only
 `banggai_web` role — and the analytics dashboard reads back real aggregates from the dataset

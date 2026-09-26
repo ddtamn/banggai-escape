@@ -401,12 +401,26 @@ it.
   measured bytes (4.28 MB → 245 KB on a phone, and 1,986 KB → 128 KB for the migrated
   placeholders at 400w), which is the part that was under this plan's control. The field data
   the thresholds ask for is not something this repository can produce.
-- **The 7 `media_assets` rows exist only in the development database.** The R2 objects are
-  shared, so the site is correct in production either way — `media.ts` is a build artefact and
-  does not read the table. What is missing in production is the admin's *media library* listing
-  for those seven. Running `apps/admin/scripts/replace-placeholder-media.ts` against the
-  production `DATABASE_URL` creates them; it is idempotent, and the substitution map means it
-  will skip the download and only insert what is missing.
+- **The language switcher is still inert.** Phase 7 was deferred; the decision and its reason
+  are in the table above. It is a visible affordance that does nothing, which is a trade-off
+  rather than an oversight, and the only thing on this list a visitor can see.
+
+### Closed after the phases above
+
+- ~~**The 7 `media_assets` rows exist only in the development database.**~~ Both branches now
+  have all seven, with real dimensions and byte sizes. This needed a second pass at the
+  migration script: its idempotency check was "is this asset already in the map?", which is true
+  whether or not *the database in front of it* knows the asset exists — so one run left every
+  other branch's library short. It now splits into a fetch half that happens once per image
+  ever, and a register half that runs once per database, keyed on the R2 object key (the one
+  identity branches share) with `on conflict do nothing`. Pointing `DATABASE_URL` at a branch
+  and re-running is the whole procedure; a re-run there reports `0 added, 7 already present`.
+
+  Worth noting what this says about the R2 objects and the substitution map: both are shared
+  across branches, so neither carries a database's identity. An earlier version of the map
+  recorded a `media_assets` **uuid**, which was correct in exactly one database and misleading
+  in every other — and read by nothing, which is what made it look like bookkeeping rather than
+  a claim that could not be true. It is gone.
 
 ---
 

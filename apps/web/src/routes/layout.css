@@ -211,4 +211,21 @@
 	.shell {
 		@apply mx-auto max-w-7xl;
 	}
+
+	/*
+	 * A recessed band: one step deeper than the warm-sand page ground, so a section can
+	 * separate itself without a rule.
+	 *
+	 * The page used to run every section on `bg-white` and separate them with eight ad-hoc
+	 * `border-y border-stone-100` dividers, which gave the home page four consecutive bands
+	 * of the same colour and no rhythm at all. A hairline reads as a seam; a ground change
+	 * reads as a section.
+	 *
+	 * `--color-hairline` is an existing token one step below warm sand, so this introduces
+	 * no new colour — it uses the palette DESIGN.md already defines. Applied to the two
+	 * card-grid sections, where the extra contrast is what makes the cards read as cards.
+	 */
+	.band-recessed {
+		@apply bg-hairline;
+	}
 }

@@ -87,7 +87,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 </section>
 
 <!-- Curated Destinations -->
-<section class="section bg-white">
+<section class="section band-recessed">
 	<div class="shell">
 		<SectionHeader
 			title={"Curated Destinations\nby Banggai Escape"}
@@ -102,7 +102,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 </section>
 
 <!-- Why travelers choose us -->
-<section class="section bg-white border-y border-stone-100">
+<section class="section bg-white">
 	<div class="shell">
 		<div class="mx-auto mb-14 max-w-2xl text-center">
 			<h2 class="text-2xl font-extrabold text-stone-900 md:text-3xl">
@@ -111,18 +111,27 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 		</div>
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
 			{#each features as feature (feature.title)}
-				<div
-					class="rounded-2xl border border-stone-100 bg-white p-6 text-center shadow-xs sm:p-8"
-				>
+				<!--
+					`card-interactive` rather than a hand-rolled border. The old
+					`border-stone-100` sat #f5f5f4 against the warm-sand ground of #f7f3ed,
+					which is close enough to invisible that the row read as loose text rather
+					than as three cards. `.card` uses the `hairline` token, which is a real
+					step darker and does read.
+
+					The text is left-aligned, not centred: DESIGN.md asks for left-aligned
+					content grids and reserves centring for banners, and a centred body
+					paragraph has no consistent left edge to read down.
+				-->
+				<div class="card card-interactive p-6 sm:p-8">
 					<div
-						class="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl border border-stone-100 bg-white text-xl text-stone-700"
+						class="mb-4 flex size-12 items-center justify-center rounded-xl bg-hairline text-xl text-forest-deep"
 					>
-						<i class={feature.icon}></i>
+						<i class={feature.icon} aria-hidden="true"></i>
 					</div>
 					<h3 class="mb-2.5 text-lg font-bold text-stone-900">
 						{feature.title}
 					</h3>
-					<p class="text-sm leading-relaxed text-stone-500">{feature.text}</p>
+					<p class="text-sm leading-relaxed text-stone-600">{feature.text}</p>
 				</div>
 			{/each}
 		</div>
@@ -184,7 +193,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 </section>
 
 <!-- Testimonials -->
-<section class="section-wide border-t border-stone-100 bg-white">
+<section class="section-wide band-recessed">
 	<div class="shell">
 		<div class="mx-auto mb-14 max-w-xl text-center">
 			<h2 class="text-2xl font-extrabold text-stone-900 md:text-3xl">
@@ -278,7 +287,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 </section>
 
 <!-- Travel Insights -->
-<section class="section bg-white border-t border-stone-200/60">
+<section class="section bg-white">
 	<div class="shell">
 		<SectionHeader
 			title="Travel Insights"

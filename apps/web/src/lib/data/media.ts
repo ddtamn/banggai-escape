@@ -2,24 +2,25 @@
  * Image manifest — AUTO-GENERATED from .stitch/designs by .stitch/gen-media.mjs.
  * Do not edit by hand; re-run `node .stitch/gen-media.mjs` after re-exporting the designs.
  *
- * Keys are slugs of the design's alt text (page-scoped). Values are asset ids, not full
- * URLs — build one with `img()`. Swap `AIDA` for a local path once assets are self-hosted.
+ * Keys are slugs of the design's alt text (page-scoped). Values are either a full media-library
+ * URL, for an asset that has been migrated out of the design tool, or a bare `aida-public`
+ * id for one that has not. `img()` accepts both.
  */
 const AIDA = 'https://lh3.googleusercontent.com/aida-public/';
 
-/** Full URL for an asset id, resized to `width`. */
+/** An asset's URL at `width`. Already-absolute values (owned media) are passed through. */
 export const img = (id: string, width = 1200): string =>
 	/^https?:/.test(id) ? id : `${AIDA}${id}=w${width}`;
 
 /** Page-scoped `<img>` assets, keyed by slugified alt text. */
 export const media = {
 		'about-us': {
-			'travelers-joyfully-cheering-outdoors-in-nature': 'AB6AXuBxNNTsqx2myZMp_qjznaQSjuSZrr6k4z-VYhPN6YGX7QqJx2vYRsuHNp9qEeVpFCE-RtTXa4IU15ocK-wpxhIQSCbqeS3IP_c2QeWzKvFEguGtNmRbATxf9642TxK75R2TrRCT_k6HOpU36r7qtfOqZjbvzOrRuGMknDS0WrKWkgzrsX4kQngJq0EXrqLyk57uFv-rTxQCOpIvOvA2u3pU7oKb-soZMuexgBDlzVU75Iym2B-rNToxDg',
+			'travelers-joyfully-cheering-outdoors-in-nature': 'https://media.banggaiescape.com/f16c25ce-d14b-47e8-8fc3-4f8cd85484f0.jpg',
 			'diverse-expedition-team-members-happily-bonding-in-mountain-hiking-gear': 'AB6AXuCZse9XT3jzUvLP8LbfCu9nqA4Y6LKWD1oXJv2P3Zi9rhhvhXx4gOyZnuypvV8628gR3sfqXMB-qCaskdRCfhM_wJ3DpRDFxtQHJNc_6O94qpUkJ6pwpzCJQFUqA67PIIBPHuZ4_lPolTM9vcZd8aOZY8d6PiQkS4jjhlCalYUoegP-Tt8I4CTle8rPNehs5IlMWuGyTPPAEw0eSaM5mtrSCrJeC6rDWFxsK-SHpTVTA9lUf25NVFEAzg',
 			'clear-crystal-turquoise-ocean-water-of-banggai': 'AB6AXuAc8ZLrpQG7_wcPfWqH2gxmDgJh7DAgw0v484L79zYpFmb9J9bLXd6dU5lrlmv-mBNqOXcyFXApvXixtLdeVw00iZpgWqtG3Wg2ucYa6V7CRuCzpicp-Stb9b_4nareagkecw02q3Lr8lYFIa2ohIP3skRJW3bQ5tkdn8rh1ER4mQA1So7zcTRtCSPIkLXtd4gDpWAl0uBE7Tab95e2VVPh_YMmWSw25jOMTrgQXSe5iJ2rmIxJHgNdrQ'
 		},
 		'blog-details-how-to-get-to-banggai-islands': {
-			'lush-cascades-and-untouched-karst-valleys-across-banggai-kepulauan-central-sulawesi': 'AB6AXuDL-NuJ2Q88Lt7Wig95xYcLRcFdi5MhfFUczJP_CdZTEY9l0g61AkjrcIzjk_4Ecy1vpiyM9-7sflg-E0VMGa_y_z4ewaY9IyTbB4jgB1VE8AE_ImM06xNhE3MA8oDCpzLorN49uJYTRqgqWcwtBgc-nXUWto5Ug35-cSxiU6_0PI_40N9hO8n-RYpK8ihPq2bSs8Lgq0Dw6d4bGXLAdOaTQoUu-lhA9gdMIVlsVvkVuwDfL0DswSQlWQ',
+			'lush-cascades-and-untouched-karst-valleys-across-banggai-kepulauan-central-sulawesi': 'https://media.banggaiescape.com/34c846ab-5bce-42f7-a434-23d622087ee1.jpg',
 			'4d3n-banggai-island-odyssey': 'AB6AXuAim6WkXtDECdgEohk8THwtaBaHFgyIXIHvGgMGwIoiBQioFnGgwAzLE3bbWdDLX8RYpWogWa-Rpp5YxvJ6NPHRde7hkDJTfXsv3sDVbTZDa6RXM1M8L5S6rVTO2oXgBTNXIBELxdSvIkxxUBabt7KHfUR6lABQFji4vrI7RyhyhIZ2Gw6_ZQQ1fKZOr4_EIgCoMhoSrc8hzNJ8WAnCx4vMDYReo_VTKKeooMQVWwhZ8agx1H3T6jB7rg',
 			'10-must-visit-destinations-in-banggai': 'AB6AXuAAy52PmOFiq8ryBCIBTqe0E9uRSNcnjw4Xl1AipNk3KB_5UeUaTf1VJiQK6vo_rC9WH5jYCOSXUCFmdQMiXL3b1eZGtQ3JOlyo0x8jw8ptfnLutM4ZZYwdROVat48zLJfbAqg1x12ouYbll3qXHqnhyWWN9jCk0m0cnU_fik5EfkXpygpWsQLrL2muRmnYjjOiLiIqTwmo80yGM9Kjq9sxCw5Fcy4XwgzO8vyYzknFGOlLlbg-0c0Cmw',
 			'how-to-get-to-banggai-islands': 'AB6AXuCkqBGCsXsU7j4LCOxtIcUgOoAka2rPDDvLFJLHhxWZu5QN9d6O7BQMvp0v4e7lg1rAIxEoH1oIU8eZjwDM5SiMUhc9mQar3VrarZglzMjUOh952aj8iD4ee94tbnVWQG0qX_vkHTEwXSaGkPk3NEOQb5w6k_QLEx8Kpkpx7mnyA0t2OVjPUqWv0sSABaTxDs1oEDe3IdxQ2PV-HI9AvDywfvmDwT-l6yjP6b9pwNVF2c7TY3cyj1nlUA',
@@ -34,7 +35,7 @@ export const media = {
 		},
 		contact: {
 			'us-flag': 'AB6AXuD7U2JqVGiUkqttKEGuohu5PuwHB0BZjU-dq2XYQ6zHCToPuoZRWA9Si3hVKA1t68kvgGLsFzaSww9qbnfunnL3q6eeBvoyrHWTWZL14bpWfRSF1JZsQLrBpSuq7d1NvCvg3v-2eSi-APvj20lTn2jN26O56Ecmk5Jm_2AtH4XXrqCB8_Cd-v3D0OLgLao4yX8OKBL29baBui0EhLB_ZAFx3uyIHq-5E83hBvG-uHSvM_BOOncl5cjSgg',
-			'paisu-pok-lake-with-canoe-floating-on-clear-water': 'AB6AXuDkvLAaPZCMSsH32PkdYMmGeFRr_vGuzPNu9TrjGVv5Dd7Lwk87HgyCLYEY7aTb_PPNYWTxR_M1RsWpaigPil8dmTVYJ7-RxlwoxsgOWKMuUa2KMe21wVzQlgBbvgTjwbCT31LD0L8Gp_mLbQKUx4bBm8tNbeMzlM6dm_R8Yv4oU6HpRLnv2vU3FlHbMSqnuiJhcjprLq61QNLjTDuIoNnFIlmzhOEADyCL__a6Jw5A3fkvLuKrrlhPaA',
+			'paisu-pok-lake-with-canoe-floating-on-clear-water': 'https://media.banggaiescape.com/0e9ed762-4b0d-43a3-a4cc-c14f1f7adb7e.jpg',
 			'us-flag-2': 'AB6AXuCEisNF_VjrmtN1nnRGDzZ56bALKAjO7cXaOFtNWCWZo-TwUezeeFQe-9I9oXNYLW8EfB6nM1wcu7rSeI7dqB2Lrh6ZhQFMdCbl-SF71oGxKwrRhw4uzgeQI2yxU92t92UzGYhOy2KJyAZ7CwN95l1kERjlp-yOGDSZc2dR59ZYcT31ZCWW0s1ZoLTFOodo0gnXEKS5P6nwkfHAy-Go4fqlolSHwZkaG2Kd7Z-ozt8ZubXhURO8pvo7WA',
 			'turquoise-ocean-water-background': 'AB6AXuBP2DfT5IdIXTSMVmTuRbsjnCrLUg0RZIUAWDchwyX4r2NGzhBMxRkFRmfoa10tv4ECgSw0h9_UeY2lJe8Cmn80sC5h5HZQtSpXHKrU5SUmvEB01L8zHbvb_huPJDbZHwxJspLjr9DsrHXYTdf9ONBME_wA4-mA-dGIXTlZ8Z1o2XKJ6_7aXPXrXjUuONlpTLM9sN1vLwlS856LR_bAClV-ltDW7_Rz0cdHUc2t5OTPJIYGfzUmb1KV0g'
 		},
@@ -74,19 +75,19 @@ export const media = {
 			'pulau-dua': 'AB6AXuBlnTBSWN-OwLZxtkYL_6rgIxqJKOWGktM3AkkrGPbh3jgCFbaeosL5YfP3D5nkQeyWTOG6FBQIcAVbmNvcrZ16ZdA4lihpF0pj02QNxQNgeJC8MREBhRXtYTRGedUFrk-SS6ph8n3FWYC2MKQ0drwyhnn5YmuugfMdhVrzAlaqJwX3k-_Y77JxuBdhNT9m6x-MEzf3eOjXlfGoWnDpUKLIkdQLZyWDkZb-7Vopn4zWk7DREBti0XUvYQ',
 			'piala-waterfall': 'AB6AXuCJj9nvhpsRKFNb8e3TCTHIP6CC3znmHJmt0pSRUoDRM1bXxT0jONQ2JCSXEtFT7jIwPvfwLg_IyiyZwdavoBgY4OcNJmvL5wIW-31OK7vCYeNevXRCntcEmuUZJHvMIYDhwQtx6pDMFtkkuHTAsThBL7jBmJMqq7nZBCdXzkMxWml1P57HXh3dT3fy6KiWZZEhsxdyurjKlgpTNwLkZEH0I671t69Z72hAfl8KBWKTZO4oj5raUMTINA',
 			'mokokawa-waterfall': 'AB6AXuDJWfa1uuCV-vu7iap2teyDDM1MdB7az9FdhVpxT7TssD43aMldVvJdQ3H7SK2P62otesobG9o6IhJ-9jlhOF5ytzCuhVBntxKyWbrCR331SlVUeVeNf58VN83ac7iKgPXFdsriOQwkMzpRVEzCOxGDfK8nv41OmpJvJ4K9-VbHK6iwdwpBN_9_ZjCOMgdrGzlgPOdQcFPjOWn0_hnTPq4vOTpjg16k52qa0w5oZohT_JdLH8mD0Caq_w',
-			'banggai-escape-team-at-sea': 'AB6AXuCLYLNIpz7YmmLhsBJmkmVBVO8lgxKGd09z-BzSIqBLg2XfCTi1uuTI76TAYZATgvljdGtyXTSzQuS8sWOTQW59VRmNqmJQSeqGL41Pq1AdEgOAM2dVNmDwvPqz5_bjJu7PSG_NpFrVlidAKmattnEKnRqt4GOg6pOZicPHAWnOf5XBprsJGuMw1ujL_zLfjqN_Vg67ERqqsG3IJbgmumwDv0QeqAWdzyIeUUsDvHYXc8DwROvRVmecjg',
+			'banggai-escape-team-at-sea': 'https://media.banggaiescape.com/e4a8e823-0a63-4849-8651-c817245174f8.jpg',
 			'elena-rostova': 'AB6AXuA8yKUDlFxRPzEyubSbmm_SRvdGIsdrs8x3_FvK-6diLtQLxFSWdDlqU9SCgNsHw36RUHlhUnd2bKHcwip5PpJkwIYlTUMRf7m6quJwFdN3IEJT2R4YJKGrMR-Tcorjzcnqs6v-5TTYCQYYCL24Hf-VqqvMIP4sUXLnC00aZbhmqKzlj1F6UJkCm7jmYpeSV17UbMNI_h51zZmywA2FQh7PpVXvOOefnXRRMzHRzGHNLPRzPvumB-kE1Q',
 			'marcus-tan': 'AB6AXuB7ukZy5OGap77akrG0MQCf9FjiomJ01KU1X7Y3yNsJuhXf_XSvvcq0v6OxHwZDdlNJ8HG85AXKJsDu7vGgcxhFsxEAuFXM8zu6zyQ07WzICSHRiJWksppIPKSucDrBH6KAiMHeKdrZ-WTBY8qrcRbsXhii_hBGYqiQ3IfWwY4_bf-V4yXiKn8CAdigyrf3YrBKszoTOgl7mgZxjl5NghzlJ0lJCVBx-zwlAc3b6SxXAAADq-ElY27pAQ',
 			'sofia-almeida': 'AB6AXuAixMG8wK_H3WQqx-yGSlrVJ38zh_5-cL9RIzsUla_N3RMxC3io5EhksSdP1wn4QTGBsz-BY54Iagsf3KnoqpXNz3loiZNr702EVLaYOwlu9HmaUVEW0DssnI0Buk21nKIFtppwoK5_1LbaEB7AOdUo6YUBSVXzRkeve7s4vut3nA6FGSrk8YdmDq09pqtZEsNeuNd4F6xMSL4am5MQSyg_7t9efsuq7_3JN5VvUWRV2LakF78SIyUL8A',
 			'marcus-and-sarah-chen': 'AB6AXuDPgY51LcL3Rdccx1Bo1FRXvE-65PCs7zTczMLg4LYQXlTqSFalB9c6bMGrf4X85NVEr5DYzTdWas16WRPduPVim8RtANiX-M787VmhqHfT6q53WdLd96grqMpt_6MXYdw2EX05U5Attw_IaPmedstKOdn0H-ui34KKkoJLdibcwYTy37iZGzpH0QMkxdvbRIAknY0EQ6BG6x0G6vXMEsXGYO4U1BSdGEQ-e5j6qqM2H-TeYrccbEgEMw',
 			'hannah-and-david-miller': 'AB6AXuBT1kOjYZ30WNWxR2dgRCQJgAOA2db3ZtIGSDbkXQzG1FUUfHgVbd-r1VdGYKpH9scyhmcx5Yl26ah3Qpx02wMTkaO7Ik7sg1t8hh7w5vHM9dHstDBoy4eP9xynDbwSF3RyX-citWpGWlJ1PqEm4Q_zJUjv2mFclM1FnnixY1tENAoqCVd-_4l6AYjJKVMO0wThfXThtaBofWHxkmXMBx0nflTK3dgh7EyIjoWX-QmWfcthlCHu4G3S6A',
-			'scenic-waterfall-in-banggai': 'AB6AXuDNn1LJpfq02Qlswg3enauIatR1kCpgPYfbY-pv1wQjznt_N7ZD82NqKEhnGeBbHaYCZIgP5dPQy_PMtv9jeNWfpSwBlpsnAsF75P1wFJ0ta3L1v6TcpiRK4RQ4liAmrXYu99a2lTFiW_ANExovF15JT2Zhn2XUiFjntE4qmowstJHfnmCB5U7O803uIOS4p8rchH5LFrNX5NW9L3ZzOkbW7pcGUau8fIxHeciO7y9LY2zEmeXWf9qUHA',
+			'scenic-waterfall-in-banggai': 'https://media.banggaiescape.com/26159b1e-13e8-4d4b-ae1e-ce7ac3337b16.jpg',
 			'destinations-in-banggai': 'AB6AXuCSE_LoA_LPuIIZ-UGXtCK_pmVyNwQettKWk9QH8vjn3lr4v5V751lYQvXSKACpHBm26_Ed2E_0Jf9cp80iauHl6IkyhN73vR5i3tKbHu-elv3LiLTRzDI99b3E_8WvAzcrQnubprAy3lpnPrxPIp18EVyj_EIvLXYP90SSF0qwmpXwLB7y0kf6WGDF57pNhyJPJoCa3Z_LdorbSuI64a1oOyxtMrSWlRGrsrX601soQ0gxfeJ9b4bgDw',
 			'how-to-get-to-banggai': 'AB6AXuAbBdnN2Wcna3WZ7N5fhKvDaXNuKD0emBIjWgny_uqMIOxIvl-vwdkZi74R1OJNy1yaeyI254pYDXgIxXwex7uIGpxhfu-8H9-f9I9-rRfDcGVG8Sb3wAmaEMqgvODFMouo3Qv1OudpRU5juhKqF5Xt_QfFvz0aqnavRkdoYZ-4bFXvSJ9YW6MUeLX7dMY9YRbsuE4RMzaAHxrbaeLMlgQmkhfVgNUNS5tpa76Yjud9AY0DrUbZT4Ht0w',
 			'best-time-to-visit': 'AB6AXuDye-s7tChdcg1UV0ouAz5fQuPIo03Y7BJmA89XbIGaj0ZP-IpNqq9JYClc1Xs8PFWL1mOFV8RXc_bd_U2VjpFhupCx38pu_yoJOf0iu6zn0mWGozrhS6wWmBWDaYgZouSwEHHsi8WhD2WoFUxqQOkoObhB5oCfR53fGgbTaItgjF1RTumG7vmTSRxIvp_VwnGPXlgqKHeojDTJhs_M796cFzFrWN4MYtuSHwIlDbFvRsRnqddWKkK06w'
 		},
 		'package-details-untouched-banggai-discovery': {
-			'turquoise-lagoon-paisu-pok': 'AB6AXuA-ceEEGDEcJ369af8jWL_XzCVXwyVA9oDB_8hohc2qom88PRt410bOeptf0D2oVQJepn1KEywB_wHj_opMx55bXlMP6-Oh1fK6pH7nLQ5zGuLAzVHrSy_Qv34DGsU1v8ikpWv1KbcMaE7BM9dKUECbtt6s4vllNyNmSlCUOHBS2NsGTN_-V4T80VdzptUvfA-2_ahSoa2Oq8tv-7JPv0nto6O1z_5GsYk_bV2BOFlt5KSL-PcfxMPhlA',
+			'turquoise-lagoon-paisu-pok': 'https://media.banggaiescape.com/6c39cf57-1bf3-4322-9fa1-9cec31a3c509.jpg',
 			'alpine-valley-and-serene-lake': 'AB6AXuCfe7rSeyQyRPQOaK0Q9cMdaMlbc6i22TIK5wDkNl2lc-bF0axb9anqxrQ0Z9Qu3Vo31lH9k8cqR4ZTiN4njdotEzMikprH4zOi671WukZO9yyhEy-JIyK13EOOx7KcaZt8veBO7nerGEUpUT9lAsBQZFKFNSvhltXBwFq2BKkboc8FU6nPyvVnaaIj7gStK7QG773s8yvH5hafP9XYacbGtelB29NZRaiVNoIy14RHZXIW-86eUilVLA',
 			'scenic-mountain-chalet-and-flower-meadows': 'AB6AXuA-xR7H8Hs4zxsGlfcHf7XKYHVBNfIfA_2_eiaT7biX_rHPPC0wydx_rJWbc-yKuW2s2MqAOR-v-GONTGkOPhRYTy81ny6Fak7Ug0WDT84cHo2OErsTXZavr9Bv8HFQLgRK3hOB73Ml0r_30Uu6q1GSMJiqNnBnKQdMI90n8GFrOu390sQVLa8D4BbGKhWwytY4uNX_aWW51zrbNuqBb_B2P6T0SXW8lczI9DXvNhV0ajwa6hzwejDrQg',
 			'tropical-white-sand-beach-and-crystal-waters': 'AB6AXuDG_jJ1T4BhXlWKvOcDiNJ-nWY3gheCqxhHtLW5P701xysipNu5h9zZtZ2bndprTd7u48BIb8K0WFkv6r-FxjY6aVb3aoGDC9MrLsSNYIUzKDZ7b92w94KemwSruh5MPpFwm-CRW9U3EgNspWRNvfR4JOTcZhewASpdvSr2eDci4RIZbjs2HlYdaLf10OIJxOp8g2gJvU8OrEh1yU3fj0j4LK_beoFCfPTpKRoZkN1yl0OuPe7VnIyjpw',
@@ -95,7 +96,7 @@ export const media = {
 			'traditional-boat-ride': 'AB6AXuA1phDsvJ6T4HXkzeB3iRfL6clz53db9ENf8jWqQPAWbG8YURF7QPZrmFyL9TVnYXXoKWKj8uZGBm3LAzbCfUbA5vWffiB5uqIQjNrbUaCy6BTUMokftXWTVTyyV3-zLyF2PJrSc9RFR_k-wWgJRrdY2nmjtBjkgaAsEekWE1OeqflqoVAyI55vgowRsFyrFH5-r45v57xWqfjljEBxkBrrw9Uj9b_YOhESdQ8UxHFMpdsnTUpLNpYFwg',
 			'sunset-coastal-hills': 'AB6AXuCCqWUbaV0VMyF7mZzgxdD-bvnN8UUa0pHZFqoGOAiLCfLwtsHU8ykvPKsNXfqiKaRBvjTRfTXO4nHKXq-GIhmU9OYG5kSNM34D-EM64T5Ho9S8b2aXkREh-8luapfPjNYa8UFjKLAlM1XDULuUOFhKquT6979PLAw8Rwf5mRhjAinAjwFKThI-eHefrFFtx5Dl7x0NSmI76Hpz1nxjYoyFmdbRdTzP7u59lMhKllFhEXIahHe9rJ2G-w',
 			'banggai-ultimate-expedition': 'AB6AXuDxoUHNJBDipznmJ16qovAnX-Vksa7be52S_su6v5AzXvAZQVvoXX9wL76FqjYhaMLZ20HebDrK-CGKG_eLh-OIhOF3Zy_egawISRNgNrsXGCCmob7uHlZGEKFjHsF9qZcN5yU-fABaVzDDQCeicYEQ_b9dy-xkB_ahk3ILuovfQUqVcEYmKmaUgraH__1adf03nUfLACx-rt0evhKHvCSeUNohQ-Cve1kNc05-y8GKXlJfnnYzVK5qOg',
-			'island-hopping-and-coral-sanctuary': 'AB6AXuCpdsnwgssuGs4p81oRqRmeffhp-EGhbjFeh8-zOByRyqcrk9XJOgY1x3SfZ2XIEGvcSofClH-D-Q5FkKGkQHF5vj2NicFfT_PoOvDC_MG__XK9EZLOfhMAHB6xJ7Q3xouGVAWeTahBtzkDiqH5E0uEVPU5AZkyKQvrKNfeZD_VGiOtG44gQOxxJTqUsq9bWZqVDLao1KmQu_0qL8fhJdbEgLLgnoQtF-feHJsbcHfVGLQ98TqtJ-OO8w',
+			'island-hopping-and-coral-sanctuary': 'https://media.banggaiescape.com/439827f6-fe61-4036-af8c-0c655437f451.jpg',
 			'ocean-crystal-water-ripples': 'AB6AXuAlwgWGYuiuguzUQznoNPONZS2yIpiSYJNDA6Ag7W7HU-Hg6EBJ0lzSICe-rIeq4F1sE7_EAPKxW07ib7Tqpxmb9o5AUQHs74--ZtxkIirr45yctQDA2U9PBvrX6sla-guYXbJU7aY4rQpcv_B8cfnGyBbtRIMPJBHcDdT_wx_h3XgCZK5PuwB_ac7HH_HZcmV8FP57h04StCGZY0SuLb4bTQFKZHG4OYiZh4QzIzL2w8lbFLwIpgrsJg'
 		},
 		packages: {

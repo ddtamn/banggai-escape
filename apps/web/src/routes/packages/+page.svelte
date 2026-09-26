@@ -5,6 +5,7 @@ import Icon from '$lib/components/Icon.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
 import PageHero from '$lib/components/PageHero.svelte';
 import { img, media } from '$lib/data/media';
+import { imageSrcset } from '$lib/images';
 
 let { data } = $props();
 
@@ -26,6 +27,19 @@ const visible = $derived(
 		return matchesType && haystack.includes(query.trim().toLowerCase());
 	}),
 );
+
+/**
+ * The hero photograph, and its resized variants where the edge can produce them.
+ *
+ * Held in a constant rather than inlined at the call site because the URL is needed twice — as
+ * the `src` fallback and as the thing `imageSrcset` builds candidates from — and writing it
+ * out twice is how the two drift apart.
+ */
+const heroImage = img(
+	media['package-details-untouched-banggai-discovery']['island-hopping-and-coral-sanctuary'],
+	2000,
+);
+const heroSrcset = $derived(imageSrcset(heroImage, data.imageTransforms));
 </script>
 
 <svelte:head>
@@ -43,10 +57,8 @@ const visible = $derived(
 <PageHero
 	title={'Find Your Perfect\nBanggai Escape'}
 	subtitle="Choose from our all-inclusive, fully customizable tour packages designed by local experts to showcase the very best of Central Sulawesi's hidden gems."
-	image={img(
-		media['package-details-untouched-banggai-discovery']['island-hopping-and-coral-sanctuary'],
-		2000
-	)}
+	image={heroImage}
+	imageSrcset={heroSrcset}
 />
 
 <div class="section">

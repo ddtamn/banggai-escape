@@ -1,7 +1,9 @@
 <script lang="ts">
+import { CARD_SIZES } from '$lib/card-sizes';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import Icon from '$lib/components/Icon.svelte';
 import { img, media } from '$lib/data/media';
+import { imageSrcset } from '$lib/images';
 
 let { data } = $props();
 
@@ -11,6 +13,10 @@ const features = $derived(data.settings.features);
 const site = $derived(data.settings.site);
 const stats = $derived(data.settings.stats);
 const visionMission = $derived(data.settings.visionMission);
+
+/** The hero photograph, and the resized variants the edge can produce from it. */
+const heroImage = img(media['about-us']['travelers-joyfully-cheering-outdoors-in-nature'], 2000);
+const heroSrcset = $derived(imageSrcset(heroImage, data.imageTransforms));
 </script>
 
 <svelte:head>
@@ -25,10 +31,14 @@ const visionMission = $derived(data.settings.visionMission);
 <section class="relative flex min-h-[460px] items-center justify-center overflow-hidden bg-forest-deep sm:min-h-[520px]">
 	<img
 		class="absolute inset-0 size-full object-cover object-center brightness-[0.70]"
-		src={img(media['about-us']['travelers-joyfully-cheering-outdoors-in-nature'], 2000)}
+		src={heroImage}
+		srcset={heroSrcset}
+		sizes={CARD_SIZES.full}
 		alt="Travelers joyfully cheering outdoors in nature"
 		width="2000"
 		height="1200"
+		fetchpriority="high"
+		decoding="async"
 	/>
 	<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-black/50"></div>
 

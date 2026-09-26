@@ -38,6 +38,19 @@ const heroImage = img(
 	2000,
 );
 const heroSrcset = $derived(imageSrcset(heroImage, data.imageTransforms));
+
+/**
+ * The two photographs inside the page body, with their resized variants.
+ *
+ * Both sit well below the fold, so both are lazy-loaded and neither competes with the hero for
+ * bandwidth. Held as constants because each URL is needed twice — as the `src` fallback and as
+ * what `imageSrcset` builds from — and writing it out twice is how the two drift apart.
+ */
+const teamImage = img(media.home['banggai-escape-team-at-sea']);
+const teamSrcset = $derived(imageSrcset(teamImage, data.imageTransforms));
+
+const waterfallImage = img(media.home['scenic-waterfall-in-banggai']);
+const waterfallSrcset = $derived(imageSrcset(waterfallImage, data.imageTransforms));
 </script>
 
 <svelte:head>
@@ -201,11 +214,14 @@ const heroSrcset = $derived(imageSrcset(heroImage, data.imageTransforms));
 			>
 				<img
 					class="size-full object-cover"
-					src={img(media.home["banggai-escape-team-at-sea"])}
+					src={teamImage}
+					srcset={teamSrcset}
+					sizes={CARD_SIZES.halfShell}
 					alt="Banggai Escape team at sea"
 					loading="lazy"
 					width="1200"
 					height="900"
+					decoding="async"
 				/>
 			</div>
 			<div
@@ -322,11 +338,14 @@ const heroSrcset = $derived(imageSrcset(heroImage, data.imageTransforms));
 			>
 				<img
 					class="size-full object-cover"
-					src={img(media.home["scenic-waterfall-in-banggai"])}
+					src={waterfallImage}
+					srcset={waterfallSrcset}
+					sizes={CARD_SIZES.fiveTwelfths}
 					alt="Scenic waterfall in Banggai"
 					loading="lazy"
 					width="900"
 					height="1200"
+					decoding="async"
 				/>
 			</div>
 		</div>

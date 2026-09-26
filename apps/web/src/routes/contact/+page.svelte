@@ -1,14 +1,25 @@
 <script lang="ts">
+import { CARD_SIZES } from '$lib/card-sizes';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import EnquiryPanel from '$lib/components/EnquiryPanel.svelte';
 import Icon from '$lib/components/Icon.svelte';
 import { img, media } from '$lib/data/media';
+import { imageSrcset } from '$lib/images';
 
 let { data } = $props();
 
 const contactChannels = $derived(data.settings.contactChannels);
 const ctaBackground = $derived(data.settings.ctaBackground);
 const site = $derived(data.settings.site);
+
+/**
+ * The lake photograph beside the form, and the resized variants the edge can produce.
+ *
+ * Lazy-loaded: it sits below the fold on every viewport, and it is decorative framing for a
+ * form, so it must never compete with the controls above it for bandwidth.
+ */
+const lakeImage = img(media.contact['paisu-pok-lake-with-canoe-floating-on-clear-water'], 1400);
+const lakeSrcset = $derived(imageSrcset(lakeImage, data.imageTransforms));
 
 let name = $state('');
 let email = $state('');
@@ -52,10 +63,14 @@ function keepOnPage(event: SubmitEvent) {
 				<div class="relative h-[480px] w-full overflow-hidden rounded-3xl bg-white shadow-2xl sm:h-[640px]">
 					<img
 						class="size-full object-cover object-center"
-						src={img(media.contact['paisu-pok-lake-with-canoe-floating-on-clear-water'], 1400)}
+						src={lakeImage}
+						srcset={lakeSrcset}
+						sizes={CARD_SIZES.sixTwelfths}
 						alt="Paisu Pok Lake with canoe floating on clear water"
 						width="1400"
 						height="1400"
+						loading="lazy"
+						decoding="async"
 					/>
 				</div>
 			</div>

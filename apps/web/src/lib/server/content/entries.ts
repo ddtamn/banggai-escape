@@ -18,7 +18,7 @@
  *   the revision the pointer names, and a revision that is not the pointer's target is
  *   history. Selecting "the newest revision" would leak drafts onto the live site.
  * - **Validation runs before resolution, not after.** Stored media fields hold `media_assets`
- *   ids, which the contract checks as uuids; rendered ones hold URLs. Resolving first would
+ *   ids, which the contract checks as uuids; rendered ones hold images. Resolving first would
  *   hand `z.uuid()` a URL and fail every page on the site.
  */
 import {
@@ -26,19 +26,20 @@ import {
 	collectMediaIds,
 	type PayloadFor,
 	parsePayload,
+	type RenderedPayloadFor,
 	rewriteMediaRefs,
 } from '@banggai/content-model';
 import { database } from '$lib/server/db';
 import { describeIssues } from './issues';
 import { loadMedia } from './media';
 
-/** One published page, ready to render: the payload with its media ids resolved to URLs. */
+/** One published page, ready to render: the payload with its media ids resolved to images. */
 export type PublishedEntry<Kind extends ContentKind> = {
 	slug: string;
 	/** Position within its kind, as the admin ordered it. Lower comes first. */
 	sortOrder: number;
 	featured: boolean;
-	payload: PayloadFor<Kind>;
+	payload: RenderedPayloadFor<Kind>;
 };
 
 /** Every published, unarchived entry of one kind, in the order the admin put them. */
@@ -133,8 +134,8 @@ async function hydrate<Kind extends ContentKind>(
 
 	return entries.map((entry) => ({
 		...entry,
-		payload: rewriteMediaRefs(kind, entry.payload, (id) => media.url(id))
-			.payload as PayloadFor<Kind>,
+		payload: rewriteMediaRefs(kind, entry.payload, (id) => media.image(id))
+			.payload as RenderedPayloadFor<Kind>,
 	}));
 }
 

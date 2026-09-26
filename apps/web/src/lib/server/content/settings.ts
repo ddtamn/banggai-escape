@@ -14,15 +14,17 @@
  * data problem. So it is reported as one.
  *
  * The stored value is validated **before** its media is resolved, for the reason set out in
- * `entries.ts`: a stored avatar is a `media_assets` id and a rendered one is a URL, and
+ * `entries.ts`: a stored avatar is a `media_assets` id and a rendered one is an image, and
  * `mediaIdSchema` only accepts the first.
  */
 import {
 	collectSettingMediaIds,
+	isMediaSettingKey,
 	parseSiteSetting,
+	type RenderedMedia,
+	type RenderedSiteSettingValue,
 	rewriteSettingMediaRefs,
 	type SiteSettingKey,
-	type SiteSettingValue,
 	siteSettingKeys,
 } from '@banggai/content-model';
 import { database } from '$lib/server/db';
@@ -33,10 +35,11 @@ import { loadMedia } from './media';
  * Every setting a page can render, keyed as `site_settings.key`.
  *
  * The mapped type is what makes a new key in the contract a type error here until it is
- * read: `SiteSettingValue<K>` resolves each key to its own value shape, so `settings.nav` is
- * `NavItem[]` and `settings.faqs` is `FaqItem[]` rather than a union of everything.
+ * read: the value type resolves each key to its own shape, so `settings.nav` is `NavItem[]`
+ * and `settings.faqs` is `FaqItem[]` rather than a union of everything. It is the *rendered*
+ * value type, because by the time this returns every media field has been resolved.
  */
-export type SiteSettings = { [Key in SiteSettingKey]: SiteSettingValue<Key> };
+export type SiteSettings = { [Key in SiteSettingKey]: RenderedSiteSettingValue<Key> };
 
 export async function loadSiteSettings(): Promise<SiteSettings> {
 	const rows = await database()`select key, value from site_settings`;
@@ -67,7 +70,15 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
 			);
 		}
 
-		const { value } = rewriteSettingMediaRefs(key, parsed.data, (id) => media.url(id));
+		// `ctaBackground` is the one media setting that is not an image in the page: it is a
+		// CSS background, so it resolves to a bare URL and has no description to carry. Every
+		// other media field here is an `<img>`, so it resolves to the image the library
+		// describes. See `RenderedSiteSettingValue` for why the two differ.
+		const resolve: (id: string) => string | RenderedMedia = isMediaSettingKey(key)
+			? (id) => media.url(id)
+			: (id) => media.image(id);
+
+		const { value } = rewriteSettingMediaRefs(key, parsed.data, resolve);
 
 		return [key, value] as const;
 	});

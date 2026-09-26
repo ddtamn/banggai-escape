@@ -161,8 +161,8 @@ const shares = [
 	<div class="overflow-hidden rounded-xl border border-stone-100 bg-white shadow-lg">
 		<img
 			class="h-auto max-h-[540px] w-full object-cover object-center transition-transform duration-500 hover:scale-[1.01]"
-			src={post.hero}
-			alt={post.title}
+			src={post.hero.src}
+			alt={post.hero.alt ?? post.title}
 			width="2000"
 			height="1100"
 		/>
@@ -315,8 +315,8 @@ const shares = [
 						</span>
 						<img
 							class="h-44 w-full object-cover"
-							src={popular.image}
-							alt={popular.title}
+							src={popular.image.src}
+							alt={popular.image.alt ?? popular.title}
 							loading="lazy"
 							width="900"
 							height="560"

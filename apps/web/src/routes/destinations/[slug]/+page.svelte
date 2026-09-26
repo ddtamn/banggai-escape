@@ -30,8 +30,8 @@ const related = $derived(data.related);
 <section class="relative flex h-[480px] items-center justify-center overflow-hidden sm:h-[560px] lg:h-[640px]">
 	<img
 		class="absolute inset-0 size-full object-cover object-center"
-		src={destination.image}
-		alt={destination.name}
+		src={destination.image.src}
+		alt={destination.image.alt ?? destination.name}
 		width="2000"
 		height="1200"
 	/>
@@ -109,7 +109,7 @@ const related = $derived(data.related);
 	<section>
 		<h2 class="mb-6 text-xl font-bold text-forest-deep sm:text-2xl">Captured Moments in Paradise</h2>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-			{#each mosaic as src, index (src)}
+			{#each mosaic as image, index (image.src)}
 				<div
 					class="overflow-hidden rounded-2xl shadow-sm {index < 2
 						? 'h-64 sm:h-80 md:col-span-2 md:h-96'
@@ -117,8 +117,8 @@ const related = $derived(data.related);
 				>
 					<img
 						class="size-full object-cover object-center transition duration-500 hover:scale-105"
-						{src}
-						alt="{destination.name} — view {index + 1}"
+						src={image.src}
+						alt={image.alt ?? `${destination.name} — view ${index + 1}`}
 						loading="lazy"
 						width="1200"
 						height="800"

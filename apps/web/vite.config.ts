@@ -1,7 +1,7 @@
 import adapter from '@sveltejs/adapter-cloudflare';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
 	plugins: [
@@ -22,4 +22,24 @@ export default defineConfig({
 			},
 		}),
 	],
+	test: {
+		/**
+		 * One project, on Node, and only for the parts of this app that are pure.
+		 *
+		 * The read layer under `src/lib/server/content/` is where a mistake reaches a
+		 * visitor, and the parts of it that can be tested without a database are the ones
+		 * with the most interesting rules: the presenters that put a price and a duration on
+		 * the page, and the slug-redirect chain that decides a 301. A module that opens a
+		 * Neon connection is tested with the connection stubbed, the way `authz.spec.ts`
+		 * does it in the admin — importing it must not be able to reach the network.
+		 *
+		 * There is no browser project here. The admin has one because it renders forms with
+		 * a dozen field types; this app's components are presentational and its logic lives
+		 * in loaders, and a component test here would be testing the browser.
+		 */
+		environment: 'node',
+		include: ['src/**/*.{test,spec}.{js,ts}'],
+		exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+		expect: { requireAssertions: true },
+	},
 });

@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { ArticlePayload } from '@banggai/content-model';
+import type { RenderedArticle } from '@banggai/content-model';
 
-type Props = { post: ArticlePayload };
+type Props = { post: RenderedArticle };
 
 let { post }: Props = $props();
 </script>
@@ -13,8 +13,8 @@ let { post }: Props = $props();
 		<a class="block h-44 overflow-hidden" href="/blog/{post.slug}">
 			<img
 				class="size-full object-cover transition-transform duration-300 hover:scale-105"
-				src={post.image}
-				alt={post.title}
+				src={post.image.src}
+				alt={post.image.alt ?? post.title}
 				loading="lazy"
 				width="900"
 				height="600"

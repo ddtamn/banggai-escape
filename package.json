@@ -12,6 +12,7 @@
 		"build": "pnpm --filter @banggai/web build",
 		"preview": "pnpm --filter @banggai/web preview",
 		"check": "pnpm --filter @banggai/web check",
+		"test": "pnpm --filter @banggai/web test",
 		"gen": "pnpm --filter @banggai/web gen",
 		"admin:dev": "pnpm --filter @banggai/admin dev",
 		"admin:build": "pnpm --filter @banggai/admin build",

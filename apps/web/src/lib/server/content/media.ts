@@ -1,8 +1,10 @@
 /**
- * Turning stored media references into URLs the browser can load.
+ * Turning stored media references into what the browser can load.
  *
- * A payload stores a `media_assets` id; a page renders a URL. That swap is the whole job of
- * this module, and it is the reason the site cannot simply render what the admin published.
+ * A payload stores a `media_assets` id; a page renders a URL, and — since the library began
+ * carrying the description an editor writes — the `alt` text to go with it. That swap is the
+ * whole job of this module, and it is the reason the site cannot simply render what the admin
+ * published.
  *
  * The two shapes a row can have are both real: rows imported from the old site may carry an
  * `external_url`, and everything uploaded through the admin carries an `object_key`. Unlike
@@ -15,6 +17,8 @@
  * fields, so a miss here can only mean the two have drifted apart, and rendering
  * `<img src="6f3609ec-…">` is the failure that must never reach a visitor.
  */
+
+import type { RenderedMedia } from '@banggai/content-model';
 import { env } from '$env/dynamic/private';
 import { database } from '$lib/server/db';
 
@@ -22,6 +26,7 @@ export type MediaRow = {
 	id: string;
 	objectKey: string | null;
 	externalUrl: string | null;
+	altText: string | null;
 };
 
 /** The public base URL for stored objects, or null when the environment does not set one. */
@@ -59,6 +64,15 @@ function mediaUrl(asset: MediaRow): string {
 export type MediaLookup = {
 	/** The URL for one of the ids this lookup was asked for. Throws if it was not one. */
 	url(id: string): string;
+	/**
+	 * The same reference as an `<img>` needs it: the URL, plus the description the
+	 * administrator wrote in the library.
+	 *
+	 * `alt` is null for an asset nobody has described, which is every one of the 29 the
+	 * import brought in. The caller decides what to render then, because the honest fallback
+	 * depends on where the image sits — see `RenderedMedia`.
+	 */
+	image(id: string): RenderedMedia;
 };
 
 /**
@@ -75,23 +89,25 @@ export type MediaLookup = {
 export async function loadMedia(ids: readonly string[]): Promise<MediaLookup> {
 	const unique = [...new Set(ids.filter((id) => id.length > 0))];
 	const urls = new Map<string, string>();
+	const alts = new Map<string, string | null>();
 
 	if (unique.length > 0) {
 		const rows = await database()`
-			select id, object_key, external_url
+			select id, object_key, external_url, alt_text
 			from media_assets
 			where id = any(${unique}::uuid[])
 		`;
 
 		for (const row of rows) {
-			urls.set(
-				String(row.id),
-				mediaUrl({
-					id: String(row.id),
-					objectKey: row.object_key === null ? null : String(row.object_key),
-					externalUrl: row.external_url === null ? null : String(row.external_url),
-				}),
-			);
+			const asset: MediaRow = {
+				id: String(row.id),
+				objectKey: row.object_key === null ? null : String(row.object_key),
+				externalUrl: row.external_url === null ? null : String(row.external_url),
+				altText: row.alt_text === null ? null : String(row.alt_text),
+			};
+
+			urls.set(asset.id, mediaUrl(asset));
+			alts.set(asset.id, asset.altText);
 		}
 
 		const missing = unique.filter((id) => !urls.has(id));
@@ -104,17 +120,27 @@ export async function loadMedia(ids: readonly string[]): Promise<MediaLookup> {
 		}
 	}
 
+	/** One asset's row, as the two accessors below need it. Throws if it was not asked for. */
+	function asset(id: string): { url: string; alt: string | null } {
+		const url = urls.get(id);
+
+		if (url === undefined) {
+			throw new Error(
+				`media asset ${id} was not part of this lookup, so nothing resolved it to a URL.`,
+			);
+		}
+
+		return { url, alt: alts.get(id) ?? null };
+	}
+
 	return {
 		url(id) {
-			const url = urls.get(id);
+			return asset(id).url;
+		},
+		image(id) {
+			const { url, alt } = asset(id);
 
-			if (url === undefined) {
-				throw new Error(
-					`media asset ${id} was not part of this lookup, so nothing resolved it to a URL.`,
-				);
-			}
-
-			return url;
+			return { src: url, alt };
 		},
 	};
 }

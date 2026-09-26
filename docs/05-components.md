@@ -171,10 +171,17 @@ type Props = { items: FaqItem[]; openIndex?: number /* default 0 */ };
 All three cards are presentational: they take one typed content object and render
 themselves, including their own link to a detail route.
 
+Each takes a **rendered** payload (`RenderedPackage` / `RenderedArticle` /
+`RenderedDestination`), not the stored one, so its image field is a `RenderedMedia` rather
+than a `media_assets` id. The `alt` is the media library's description when the asset has
+one and the content text otherwise — `alt={pkg.image.alt ?? pkg.title}` — because an
+undescribed asset must not lose the description the page already had. See
+[08-content-data-layer](./08-content-data-layer.md#mediats--ids-to-images).
+
 ### `PackageCard.svelte`
 
 ```ts
-type Props = { pkg: Package };
+type Props = { pkg: RenderedPackage };
 ```
 
 - Uses the `.card card-interactive` classes (hairline border, near-flat at rest,
@@ -190,7 +197,7 @@ type Props = { pkg: Package };
 ### `PostCard.svelte`
 
 ```ts
-type Props = { post: Post };
+type Props = { post: RenderedArticle };
 ```
 
 - Its **own** markup rather than the `.card` classes: `rounded-2xl border
@@ -203,7 +210,7 @@ type Props = { post: Post };
 
 ```ts
 type Props = {
-	destination: Destination;
+	destination: RenderedDestination;
 	href?: string;                 // default `/destinations/${destination.slug}`
 };
 ```

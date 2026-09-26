@@ -1,15 +1,21 @@
 <script lang="ts">
-import type { PackagePayload } from '@banggai/content-model';
+import type { RenderedPackage } from '@banggai/content-model';
 import { badgeDays, durationLabel, formatPrice } from '$lib/content';
 
-type Props = { pkg: PackagePayload };
+type Props = { pkg: RenderedPackage };
 
 let { pkg }: Props = $props();
 </script>
 
 <article class="card card-interactive">
 	<div class="card-img">
-		<img src={pkg.image} alt={pkg.title} loading="lazy" width="900" height="600" />
+		<img
+			src={pkg.image.src}
+			alt={pkg.image.alt ?? pkg.title}
+			loading="lazy"
+			width="900"
+			height="600"
+		/>
 		<span class="badge top-3 left-3">{badgeDays(pkg)}</span>
 		<span class="badge top-3 right-3">{pkg.groupSize.replace('Min ', '').replace(', Max ', ' - ')}</span>
 	</div>

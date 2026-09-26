@@ -262,8 +262,8 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 					<div class="flex items-center gap-3 border-t border-stone-100 pt-3">
 						<img
 							class="size-9 rounded-full object-cover"
-							src={testimonial.avatar}
-							alt={testimonial.name}
+							src={testimonial.avatar.src}
+							alt={testimonial.avatar.alt ?? testimonial.name}
 							loading="lazy"
 							width="72"
 							height="72"

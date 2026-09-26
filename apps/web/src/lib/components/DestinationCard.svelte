@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { DestinationPayload } from '@banggai/content-model';
+import type { RenderedDestination } from '@banggai/content-model';
 
-type Props = { destination: DestinationPayload; href?: string };
+type Props = { destination: RenderedDestination; href?: string };
 
 let { destination, href = `/destinations/${destination.slug}` }: Props = $props();
 </script>
@@ -13,8 +13,8 @@ let { destination, href = `/destinations/${destination.slug}` }: Props = $props(
 >
 	<img
 		class="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-		src={destination.image}
-		alt={destination.name}
+		src={destination.image.src}
+		alt={destination.image.alt ?? destination.name}
 		loading="lazy"
 		width="1200"
 		height="800"

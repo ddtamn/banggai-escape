@@ -36,7 +36,7 @@ biome.json  # workspace lint + format config
 | App | Purpose | Status |
 | --- | --- | --- |
 | `apps/web` | The public site: packages, destinations, blog, about, contact | **Deployed** at `banggaiescape.com`; reads published content from Neon as the read-only `banggai_web` role, records analytics events; Vitest covers the presenters and the slug-redirect walk |
-| `apps/admin` | Content management + analytics back-office | **Deployed** at `admin.banggaiescape.com`; sign-in, the route guard, the content screens (draft → publish), the **media library**, settings, the **analytics dashboard** and the **overview** all work; only its analytics read token is unset |
+| `apps/admin` | Content management + analytics back-office | **Deployed** at `admin.banggaiescape.com`; sign-in, the route guard, the content screens (draft → publish), the **media library**, settings, the **analytics dashboard** and the **overview** all work and are verified against production |
 
 ## Commands
 

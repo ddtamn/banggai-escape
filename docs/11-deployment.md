@@ -193,7 +193,7 @@ references; zero entries whose pointer fails to resolve. A re-run reported every
 | `DATABASE_URL` | web | Worker secret | `banggai_web` on the **production** branch |
 | `MEDIA_PUBLIC_URL` | both | var | `https://media.banggaiescape.com` |
 | `CLOUDFLARE_ACCOUNT_ID` | admin | var | the account that owns the zone and the bucket |
-| `CLOUDFLARE_ANALYTICS_TOKEN` | admin | Worker secret | **not set** — see [Analytics](#analytics-the-one-thing-left) |
+| `CLOUDFLARE_ANALYTICS_TOKEN` | admin | Worker secret | Read-only Account Analytics token; never client-visible. Set — see [Analytics](#analytics) |
 
 `ADMIN_DB_PASSWORD` and `WEB_DB_PASSWORD` are read only by `db:roles`. They are not Worker
 secrets and never leave the shell that ran it.
@@ -341,27 +341,55 @@ Then verify the deployed URL: the home page renders styled (not unstyled HTML �
 sign the CSS bundle is missing), an article and a package detail page load, and a
 bogus slug shows the branded error page with the header and footer intact.
 
-## Analytics: the one thing left
+## Analytics
 
-Everything else about the two Workers is deployed and verified. **The admin's analytics
-dashboard is the exception, and it needs a credential that cannot be created from here.**
+The admin's analytics dashboard is **live and reading real data**. The write path needed
+nothing — the public Worker creates the `BANGGAI_SITE_EVENTS` dataset on its first event — and
+the read path is `CLOUDFLARE_ANALYTICS_TOKEN`, a token with **Account → Account Analytics →
+Read** on the one account. It is read per request from `$env/dynamic/private`, so setting it
+takes effect on the next request with no redeploy.
 
-`CLOUDFLARE_ANALYTICS_TOKEN` is an API token with **Account → Account Analytics → Read**,
-scoped to this account. Minting one requires a token that carries *token-write* permission;
-the token this repository was given cannot (`403`, `9109 Unauthorized to access requested
-resource`), which is the correct answer from a credential that is not itself an admin.
+Verified against the live API with the exact statement shapes `queries.ts` issues:
 
-Until it is set, the dashboard shows its **"Not configured yet"** card, which names the
-missing setting and the exact scope to grant — an unconfigured dashboard is a described
-state, not an error. The write path needs nothing: the public Worker creates the
-`BANGGAI_SITE_EVENTS` dataset on its first event, and a same-origin `POST /api/events`
-already returns `204` in production.
-
-To finish it:
-
-```sh
-pnpm --filter @banggai/admin exec wrangler secret put CLOUDFLARE_ANALYTICS_TOKEN
 ```
+30-day totals:  page_view 26, booking_cta_click 1
+daily series:   2026-09-26 -> 27
+SHOW TABLES:    BANGGAI_SITE_EVENTS
+```
+
+`COUNT()` is not a valid aggregate on this endpoint (`COUNT() function must have 0
+arguments`), which is the reason every count in `queries.ts` is `SUM(_sample_interval)`.
+
+### The credential is currently broader than it needs to be
+
+**Rotate this one when convenient.** The value stored in
+`CLOUDFLARE_ANALYTICS_TOKEN` is the same token this repository deploys with, and that token
+can do more than read analytics: it created both Workers and their DNS records, so it carries
+Workers Scripts edit and DNS edit on the account.
+
+That is a wider blast radius than the dashboard asks for. If the back-office were ever
+compromised — a leaked session, a bad dependency, an XSS in a content field — a token limited
+to `Account Analytics: Read` would cost an attacker a page-view count, whereas this one could
+deploy a Worker and repoint a hostname. The dashboard only ever *reads*.
+
+To narrow it:
+
+1. Create a token at <https://dash.cloudflare.com/profile/api-tokens> → **Create Custom
+   Token**, permission `Account | Account Analytics | Read`, **Account Resources** set to this
+   account alone.
+2. ```sh
+   pnpm --filter @banggai/admin exec wrangler secret put CLOUDFLARE_ANALYTICS_TOKEN
+   ```
+3. Revoke the old one. Nothing else changes; the dashboard reads whichever token is in the
+   secret.
+
+A Worker secret is not readable back, so this cannot be verified by reading the value — sign
+in and confirm the dashboard still renders rather than falling back to its "Not configured
+yet" card.
+
+The Free-tier allowance should be reconfirmed before release: 100,000 data points written per
+day and 10,000 read queries per day, with three months of retention. The dashboard issues five
+read queries per page load, and it never polls.
 
 ## The admin Worker
 

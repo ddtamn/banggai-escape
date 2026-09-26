@@ -1285,21 +1285,20 @@ references the design-tool host; only the site's page-decoration images still co
 AIDA CDN. **Both Workers are deployed** — `admin.banggaiescape.com` and
 `banggaiescape.com`, each on its own custom domain, which `wrangler deploy` created the DNS
 records for — and both read the **production** Neon branch, the public one as the read-only
-`banggai_web` role. The dashboard has still never been seen against real aggregates, because
-its read token is the one setting that could not be created from here.
+`banggai_web` role — and the analytics dashboard reads back real aggregates from the dataset
+the public Worker created.
 
 1. **Component tests: started, not finished.** The `client` Vitest project now holds one
    spec — `FieldControl`, the form renderer, which is where the branching is. The screens
    themselves (the overview's three states, the list's empty and filtered states, the publish
    panel) are covered only by the browser checks, which is a reasonable place to stop, but
    a second component spec would confirm the project is usable for whoever comes next.
-2. **The analytics read token.** Everything else is deployed. The dashboard needs
-   `CLOUDFLARE_ANALYTICS_TOKEN` — Account → Account Analytics → Read — and it cannot be
-   minted from the token this repository holds, which lacks token-write permission. Until
-   it is set the dashboard shows its "Not configured yet" card, which names the setting and
-   the scope. The write path needs nothing: the deployed public Worker already created the
-   dataset. See
-   [11-deployment](./11-deployment.md#analytics-the-one-thing-left).
+2. **Rotate the analytics token.** The dashboard works and reads real aggregates, but the value
+   currently in `CLOUDFLARE_ANALYTICS_TOKEN` is the same credential this repository deploys
+   with, which also carries Workers Scripts and DNS edit. The dashboard only ever reads, so a
+   purpose-made `Account | Account Analytics | Read` token scoped to the one account is the
+   right long-term value; see
+   [Analytics](./11-deployment.md#the-credential-is-currently-broader-than-it-needs-to-be).
 3. **There is no staging environment.** The `dev` Neon branch is where the work was
    rehearsed, and it still holds a copy of the content; the deployed Workers read
    `production`. A staging branch with its own Workers is the remaining part of Phase 6 and

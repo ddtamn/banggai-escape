@@ -833,17 +833,12 @@ path against the live SQL API **cannot** be verified from here — neither Worke
 and no token exists — so the dashboard has been exercised in its unconfigured state and
 through those tests, which is the limit the phase ships with.
 
-**Still open, and it is one credential.** The write path is live: the deployed public Worker
-accepts a same-origin `POST /api/events` with a `204`, which created the `BANGGAI_SITE_EVENTS`
-dataset. The read path needs `CLOUDFLARE_ANALYTICS_TOKEN` — an Account Analytics **Read**
-token — and it **cannot be minted from the token this repository holds**, which lacks
-token-write permission (`403`, `9109`). Until it is set the dashboard shows its
-"Not configured yet" card, which is the described state rather than an error.
-
-A browser test for the dashboard is still not worth writing: it would need that credential
-and a dataset with traffic in it. The account's published Free-tier limits (100,000
-writes/day, 10,000 read queries/day) should be reconfirmed before release, as the plan
-notes.
+**Closed.** Both Workers are live, the read token is set, and the dashboard reads real
+aggregates. The deployed public Worker accepts a same-origin `POST /api/events` with a `204`,
+which created the `BANGGAI_SITE_EVENTS` dataset on its first write; the admin's five
+statements — `SUM(_sample_interval)`, never `COUNT()` — return rows for a 30-day window. The
+Free-tier limits (100,000 writes/day, 10,000 read queries/day, three months of retention)
+should still be reconfirmed before release, as the plan notes.
 
 ### Phase 6 — hardening and release
 
@@ -882,7 +877,7 @@ notes.
 | `MEDIA_PUBLIC_URL` | admin + web | config | Public custom-domain base URL for published media. |
 | `ANALYTICS` | web | Analytics Engine binding | WAE dataset used for validated event writes. |
 | `CLOUDFLARE_ACCOUNT_ID` | admin | non-secret config | Account identifier used to query the SQL API. |
-| `CLOUDFLARE_ANALYTICS_TOKEN` | admin | secret | Read-only Account Analytics API token; never client-visible. **Not set** — it cannot be minted from the token this repository holds, which lacks token-write permission. See [11-deployment](./11-deployment.md#analytics-the-one-thing-left). |
+| `CLOUDFLARE_ANALYTICS_TOKEN` | admin | secret | Read-only Account Analytics API token; never client-visible. Set, though the value is currently the broader deploy token — see [Analytics](./11-deployment.md#analytics). |
 
 Set production values as Cloudflare Worker secrets/vars/bindings and local development
 values in ignored `.env` files. Do not write actual secrets in this plan or commit

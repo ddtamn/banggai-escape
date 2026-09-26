@@ -414,7 +414,7 @@ const shares = [
 {/if}
 
 <CtaBanner
-	title={'Ready To Begin Your\nNext Adventure ?'}
+	title={'Ready To Begin Your\nNext Adventure?'}
 	text="Let Banggai Escape design your perfect journey today."
 	ctaLabel="Book your trip"
 	image={img(media['blog-details-how-to-get-to-banggai-islands']['lush-cascades-and-untouched-karst-valleys-across-banggai-kepulauan-central-sulawesi'], 2000)}

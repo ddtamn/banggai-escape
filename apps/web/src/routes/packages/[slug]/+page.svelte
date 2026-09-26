@@ -73,7 +73,7 @@ $effect(() => {
 	<meta name="description" content={pkg.overview.slice(0, 155)} />
 </svelte:head>
 
-<main>
+<div>
 	<!--
 		Photo gallery. On phones it is one snap-scrolling strip (CSS scroll snap, so
 		no carousel JS) with a peek of the next photo as the swipe affordance; from
@@ -304,7 +304,7 @@ $effect(() => {
 			{/each}
 		</div>
 	</section>
-</main>
+</div>
 
 <!--
 	Mobile booking bar — the booking card pinned to the bottom of small screens:
@@ -333,7 +333,7 @@ $effect(() => {
 {/if}
 
 <CtaBanner
-	title={'Ready To Begin Your\nNext Adventure ?'}
+	title={'Ready To Begin Your\nNext Adventure?'}
 	text="Let Banggai Escape design your perfect journey today."
 	ctaLabel="Book your trip"
 	image={ctaBackground}

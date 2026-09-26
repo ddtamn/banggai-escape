@@ -24,7 +24,7 @@ function handleSubmit(event: SubmitEvent) {
 	/>
 </svelte:head>
 
-<main>
+<div>
 	<!-- Top: image + form -->
 	<section class="mx-auto max-w-7xl px-6 pt-12 pb-20">
 		<div class="grid grid-cols-1 items-start gap-12 lg:grid-cols-12">
@@ -173,10 +173,10 @@ function handleSubmit(event: SubmitEvent) {
 
 	<!-- Pre-footer banner -->
 	<CtaBanner
-		title="Ready To Begin Your Next Adventure ?"
+		title="Ready To Begin Your Next Adventure?"
 		text="Let Banggai Escape design your perfect journey today."
 		ctaLabel="Book your trip"
 		ctaHref="#contact-section"
 		image={ctaBackground}
 	/>
-</main>
+</div>

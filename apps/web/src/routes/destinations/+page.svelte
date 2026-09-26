@@ -35,7 +35,7 @@ const visible = $derived(
 	image={img(backgrounds.destinations['hero-bg'], 2000)}
 />
 
-<main class="section-wide">
+<div class="section-wide">
 	<div class="shell">
 		<div class="mb-8 flex justify-end md:mb-10">
 			<div class="relative w-full max-w-xs sm:max-w-sm">
@@ -65,10 +65,10 @@ const visible = $derived(
 			</p>
 		{/if}
 	</div>
-</main>
+</div>
 
 <CtaBanner
-	title={'Ready To Begin Your\nNext Adventure ?'}
+	title={'Ready To Begin Your\nNext Adventure?'}
 	image={ctaBackground}
 	ctaHref="/contact"
 />

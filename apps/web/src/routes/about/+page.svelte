@@ -161,7 +161,7 @@ const visionMission = $derived(data.settings.visionMission);
 </section>
 
 <CtaBanner
-	title="Ready To Begin Your Next Adventure ?"
+	title="Ready To Begin Your Next Adventure?"
 	text="Let Banggai Escape design your perfect journey today."
 	ctaLabel="Book your trip"
 	image={ctaBackground}

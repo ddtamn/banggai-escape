@@ -250,9 +250,19 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 					class="flex flex-col justify-between rounded-2xl border border-stone-200/70 bg-white p-6 shadow-xs"
 				>
 					<div>
-						<div class="mb-3 flex gap-1 text-xs text-yellow-400">
+						<!--
+							Five icon elements read as "star star star star star". The row carries
+							the rating as text for a screen reader and the icons are hidden from it,
+							because five decorative glyphs and the sentence "Rated 5 out of 5" are not
+							the same information.
+						-->
+						<div
+							class="mb-3 flex gap-1 text-xs text-yellow-400"
+							role="img"
+							aria-label="Rated 5 out of 5"
+						>
 							{#each stars as star (star)}
-								<i class="fa-solid fa-star"></i>
+								<i class="fa-solid fa-star" aria-hidden="true"></i>
 							{/each}
 						</div>
 						<p class="mb-6 text-xs leading-relaxed text-stone-600 italic">
@@ -325,7 +335,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 		<SectionHeader
 			title="Travel Insights"
 			subtitle="Explore our curated journal for local secrets, travel inspiration, and practical tips for your next escape."
-			action={{ label: "View All Articles", href: "/blog" }}
+			action={{ label: "View all articles", href: "/blog" }}
 		/>
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
 			{#each posts as post (post.slug)}
@@ -336,7 +346,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 </section>
 
 <CtaBanner
-	title={"Ready To Begin Your\nNext Adventure ?"}
+	title={"Ready To Begin Your\nNext Adventure?"}
 	image={ctaBackground}
 	ctaHref="/contact"
 />

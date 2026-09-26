@@ -10,6 +10,19 @@ type Props = {
 
 let { site, nav, socials, footerDestinations }: Props = $props();
 
+/**
+ * Only the social profiles that are actually filled in. A stored `"#"` is an editor's
+ * "not yet", and a link to `#` re-scrolls the page to the top while looking exactly like
+ * a real profile link — so it is dropped rather than rendered.
+ */
+const linkedSocials = $derived(
+	socials.filter((social) => {
+		const href = social.href.trim();
+
+		return href !== '' && href !== '#' && /^https?:\/\//.test(href);
+	}),
+);
+
 const year = 2026;
 </script>
 
@@ -27,17 +40,33 @@ const year = 2026;
 					height="56"
 				/>
 				<p class="max-w-xs text-stone-300">{site.tagline}</p>
-				<div class="flex items-center space-x-3 pt-2">
-					{#each socials as social (social.label)}
-						<a
-							href={social.href}
-							aria-label={social.label}
-							class="flex size-8 items-center justify-center rounded-full border border-stone-600 text-stone-300 transition hover:border-white hover:text-white"
-						>
-							<i class="{social.icon} text-xs"></i>
-						</a>
-					{/each}
-				</div>
+				<!--
+					A social row is rendered only from the profiles that actually have a URL.
+
+					The stored `socials` setting currently carries four entries whose `href` is
+					`"#"`, which is what an editor sees as "not filled in yet". Rendering them
+					produced four icons in the footer of every page that went nowhere, which
+					reads as broken rather than absent — so an unfilled profile is now dropped
+					here, and the row disappears entirely when none are set.
+
+					The data is left as it is: this is a display rule, not a migration, and the
+					admin is where a real URL gets typed.
+				-->
+				{#if linkedSocials.length > 0}
+					<div class="flex items-center space-x-3 pt-2">
+						{#each linkedSocials as social (social.label)}
+							<a
+								href={social.href}
+								aria-label={social.label}
+								rel="me noopener"
+								target="_blank"
+								class="flex size-8 items-center justify-center rounded-full border border-stone-600 text-stone-300 transition hover:border-white hover:text-white"
+							>
+								<i class="{social.icon} text-xs" aria-hidden="true"></i>
+							</a>
+						{/each}
+					</div>
+				{/if}
 			</div>
 
 			<div class="space-y-2.5 sm:col-span-1 lg:col-span-3">

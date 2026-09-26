@@ -52,6 +52,39 @@
 	::selection {
 		@apply bg-gold text-white;
 	}
+
+	/*
+	 * `scroll-behavior: smooth` is a preference, not a behaviour, and for a reader who has
+	 * asked the operating system to reduce motion it is a vestibular trigger: smooth
+	 * scrolling moves the whole viewport past a fixed header, which is exactly the motion
+	 * the setting exists to suppress.
+	 */
+	@media (prefers-reduced-motion: reduce) {
+		html {
+			scroll-behavior: auto;
+		}
+
+		*,
+		*::before,
+		*::after {
+			/*
+			 * `!important` is load-bearing, not lazy. This selector has specificity 0,0,0 and
+			 * every duration being overridden comes from a utility class at 0,1,0
+			 * (`transition-colors`, `duration-200`, and the `fly` transitions' injected
+			 * styles), so without it this rule loses and nothing is reduced. Tailwind's
+			 * `motion-reduce:` variant is the alternative, but applying it to the ~120
+			 * elements that animate is not maintainable and would rot silently.
+			 */
+			/* biome-ignore lint/complexity/noImportantStyles: must outrank utility classes to win */
+			animation-duration: 0.01ms !important;
+			/* biome-ignore lint/complexity/noImportantStyles: must outrank utility classes to win */
+			animation-iteration-count: 1 !important;
+			/* biome-ignore lint/complexity/noImportantStyles: must outrank utility classes to win */
+			transition-duration: 0.01ms !important;
+			/* biome-ignore lint/complexity/noImportantStyles: must outrank utility classes to win */
+			scroll-behavior: auto !important;
+		}
+	}
 }
 
 @layer components {

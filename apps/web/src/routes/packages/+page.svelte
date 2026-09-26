@@ -48,7 +48,7 @@ const visible = $derived(
 	)}
 />
 
-<main class="section">
+<div class="section">
 	<div class="shell">
 		<div class="mb-8 flex flex-col items-center justify-between gap-4 md:flex-row">
 			<div
@@ -98,10 +98,10 @@ const visible = $derived(
 			</p>
 		{/if}
 	</div>
-</main>
+</div>
 
 <CtaBanner
-	title={'Ready To Begin Your\nNext Adventure ?'}
+	title={'Ready To Begin Your\nNext Adventure?'}
 	image={ctaBackground}
 	ctaHref="/contact"
 />

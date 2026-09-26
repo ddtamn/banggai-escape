@@ -33,12 +33,28 @@ afterNavigate(() => {
 
 <svelte:window onclick={trackClick} />
 
+<!--
+	The first thing in the tab order, and invisible until it takes focus. A keyboard user
+	arriving on any page would otherwise tab through the whole header — logo, five nav
+	links, the language switcher — before reaching the content they came for.
+
+	`sr-only` rather than `hidden`, because `display: none` removes an element from the tab
+	order entirely and the link would never be reachable at all. It becomes visible on focus
+	via the `focus:not-sr-only` pair.
+-->
+<a
+	class="sr-only rounded-full bg-forest-deep px-5 py-3 text-sm font-bold text-white focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100]"
+	href="#main"
+>
+	Skip to content
+</a>
+
 <Header
 	site={data.settings.site}
 	nav={data.settings.nav}
 	languages={data.settings.languages}
 />
-<main>
+<main id="main" tabindex="-1">
 	{@render children()}
 </main>
 <Footer

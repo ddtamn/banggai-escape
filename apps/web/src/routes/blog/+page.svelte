@@ -45,7 +45,7 @@ const rest = $derived(visible.slice(2));
 	height="py-28 md:py-36"
 />
 
-<main class="section-wide">
+<div class="section-wide">
 	<div class="shell">
 		<div class="mb-8 flex flex-col items-center justify-between gap-4 md:flex-row">
 			<div
@@ -120,10 +120,10 @@ const rest = $derived(visible.slice(2));
 			</div>
 		{/if}
 	</div>
-</main>
+</div>
 
 <CtaBanner
-	title={'Ready To Begin Your\nNext Adventure ?'}
+	title={'Ready To Begin Your\nNext Adventure?'}
 	text="Let Banggai Escape design your perfect journey today."
 	ctaLabel="Book your trip"
 	image={ctaBackground}

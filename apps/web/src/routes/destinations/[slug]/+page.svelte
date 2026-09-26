@@ -60,7 +60,7 @@ const related = $derived(data.related);
 	</div>
 </section>
 
-<main class="mx-auto max-w-7xl space-y-16 px-6 py-14 sm:py-16">
+<div class="mx-auto max-w-7xl space-y-16 px-6 py-14 sm:py-16">
 	<!-- Overview -->
 	<section>
 		<h2 class="mb-4 text-xl font-bold text-forest-deep sm:text-2xl">Overview</h2>
@@ -137,10 +137,10 @@ const related = $derived(data.related);
 			{/each}
 		</div>
 	</section>
-</main>
+</div>
 
 <CtaBanner
-	title={'Ready To Begin Your\nNext Adventure ?'}
+	title={'Ready To Begin Your\nNext Adventure?'}
 	text="Let Banggai Escape design your perfect journey today."
 	image={ctaBackground}
 	ctaHref="/contact"

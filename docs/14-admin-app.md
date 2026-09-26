@@ -771,16 +771,17 @@ wants to see that they did.
 
 ## Site settings
 
-The thirteen shared values — brand block, navigation, footer links, features, testimonials,
-stats, vision/mission, contact cards, FAQs, blog categories, and the CTA banner image — are
-edited at `src/routes/(dashboard)/settings/` and written to `site_settings`.
+Twenty-four shared values — brand block, navigation, footer links, features, testimonials,
+stats, vision/mission, contact cards, FAQs, blog categories, the CTA banner image, and every
+page's own words — are edited at `src/routes/(dashboard)/settings/` and written to
+`site_settings`.
 
 | Piece | Where |
 | --- | --- |
 | The index (grouped, one card per key) | `src/routes/(dashboard)/settings/+page.svelte` |
 | One setting's form and save action | `src/routes/(dashboard)/settings/[key]/+page.server.ts` |
 | Reads and the validating write | `src/lib/server/settings/service.ts` |
-| The specs for all thirteen keys | `src/lib/content/forms.ts` (`settingSpecs`) |
+| The specs for all twenty-four keys | `src/lib/content/forms.ts` (`settingSpecs`) |
 
 **Saving is the gate, unlike content.** `site_settings` has one row per key, the public site
 reads it directly, and there is no draft or revision to publish — so `saveSetting` validates
@@ -805,6 +806,14 @@ so silently discarding a refused edit is the worst outcome this screen has.
 **Media references are guarded.** `testimonials[].avatar` and `ctaBackground` are the two keys
 holding an image id, and the media library's delete guard walks settings as well as content.
 Only those two keys load the 300-option picker.
+
+**Page copy is three groups, not one.** The settings screen ends with **shared, home, and the
+closing banner** (`siteCta`, `cards`, `homePage`), **listing pages** (the five routes that are a
+hero over a grid) and **detail pages** (the three that are a set of bands). Listing and detail
+are separate keys because they are different shapes — `/packages` renders no "Trip Overview", and
+telling an editor otherwise can only be resolved by publishing and looking. Every field in these
+keys carries a default, so a row that omits one parses; see
+[08](./08-content-data-layer.md#the-settings-keys).
 
 ## Media (R2 and the media library)
 
@@ -1206,7 +1215,7 @@ E2E_WRITE=1 …                                     # also run the one check tha
 | `auth.spec.ts` | The guard redirects an anonymous visitor and preserves where they were going; signing in reaches the shell |
 | `shell.spec.ts` | Every sidebar destination answers 200; the theme toggle flips light↔dark with **no reload** and the choice survives one |
 | `content.spec.ts` | Each kind's list opens with all five status filters; a search narrows it; a published item shows its publish controls, revision history and draft preview; an unknown slug and an unknown kind 404; the new screen has no publish control; a non-URL-safe slug is refused and creates nothing; and the write round trip — create, save a draft with a slug and nothing else, be **refused** a publish with the field named, then delete it again |
-| `settings.spec.ts` | The index links all thirteen keys once and groups them, every form opens, an unknown key 404s, the header and sidebar agree, the form opens with every stored row, and an invalid value is refused without writing |
+| `settings.spec.ts` | The index links all twenty-four keys once and groups them, every form opens, an unknown key 404s, the header and sidebar agree, the form opens with every stored row, and an invalid value is refused without writing |
 | `media.spec.ts` | The filters answer, an unknown key 404s, the cards offer both actions, and a non-image upload is refused before anything is stored |
 
 The content list's status filters carry `aria-current` on the active one. They did not at

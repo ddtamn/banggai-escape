@@ -340,26 +340,70 @@ escape hatch.
 
 ---
 
-## Phase 6 — Copy into the CMS — **not started**
+## Phase 6 — Copy into the CMS — **done**
 
-The home page hardcodes the h1, the hero paragraph, the badge text, all six section
-headings and subtitles, both About paragraphs, and the action labels. `AGENTS.md` is
-explicit that *"pages are presentational and must not hardcode copy"*, so this is a standing
-rule violation as well as an SEO limitation — none of it is editable without a code change
-and a deploy.
+Every page's editorial copy now comes from the CMS. No headline, standfirst, marketing
+paragraph, link label, price prefix or SEO string is written in a template.
 
-- Add the strings as site settings in `packages/content-model/src/settings.ts`.
-- Add the fields to the admin's form spec.
-- Write a reviewable migration with `pnpm --filter @banggai/admin db:generate`, seed from
-  the current copy, and read the SQL before applying it.
-- Validate on write through the existing `assertValidSiteSetting()`.
+The plan scoped this to the home page. It turned out to be roughly forty strings across nine
+routes plus two card components, so the work ran in four commits rather than one, each ending
+at a point that could be verified against the dev server.
 
-This also gives per-locale copy a home if multilingual support is ever picked up.
+### What moved, and where
 
-**Phase 5 did not depend on it, and this is now the only thing still making the titles fixed
-strings.** `Seo` takes its title and description as props, so moving a page's copy into the CMS
-is a change to what a page *passes in* — no change to `Seo`, no change to the tag shape, no
-re-testing of the head.
+| Keys | What |
+| --- | --- |
+| `siteCta` | The closing banner's three strings. It appeared on nine pages with identical wording, and the strings lived in `CtaBanner`'s defaults *and* were passed explicitly at five of them — so editing the default would have left half the site on the old text. Two call sites also passed the title without its line break, so contact and about rendered it on one line while the other seven broke it across two. |
+| `homePage` | The hero, all six section bands, both About paragraphs, the reviews label |
+| `packagesPage` … `contactPage` | Each listing page's hero and SEO metadata |
+| `packageDetail`, `destinationDetail`, `articleDetail` | Band headings, the booking box, the article's closing invitation |
+| `cards` | "Start from", "/Person", "View Details", "Read More" — eight literals across eight call sites |
+
+Listing and detail are **separate keys** because they are different shapes. `/packages` is a
+hero over a grid and has no "Trip Overview"; putting it there would tell an editor the page has
+a section it does not, and the only way to find out otherwise is to publish and look.
+
+### The deploy hazard, and the inversion
+
+The plan's step list said to write a migration and seed the data. Doing that would have walked
+straight into the trap documented in [Phase 1](./08-content-data-layer.md#add-a-required-field-to-a-setting--and-read-this-part):
+**a required setting field deployed before its data is 500 on every page.** The plan was written
+before that lesson was learned in production.
+
+So every page-copy field carries the copy it replaces as a Zod default. A row that omits the
+field parses, the current copy renders, and the migration becomes a convenience rather than a
+precondition for the site existing. `apps/web/src/lib/settings-copy.spec.ts` asserts the
+property the design rests on — that `undefined` and `{}` both parse and that **no leaf is left
+empty** — rather than that the defaults exist, since a default that is never reached is no
+protection at all.
+
+### The line: content or interface
+
+Drawn at *would an editor expect to change it, and does the string still make sense if the
+control's behaviour changed?* Headings, prose, link labels, price prefixes and SEO metadata are
+content. Form labels, placeholders, `aria-label`s, "no results" messages, breadcrumb labels and
+the accessible name of a fieldset are interface, and stay in the component. The booking bar's
+`sr-only` legend is "Plan your trip" — that was in the CMS for a commit and then taken back
+out, because an editor could rename it into something that is not a control.
+
+A field that interpolates a value is stored as the whole sentence with a visible token —
+`Swipe to see all {count} photos` — because two stored fragments would make the grammar a CMS
+field and force the halves to be edited together or not at all.
+
+### Claims above that this phase falsified
+
+- **"Write a reviewable migration with `db:generate`."** There is no DDL here. `site_settings`
+  already has a `key`/`value` pair; the change is an insert, not a migration, so it is a
+  one-shot script like `add-whatsapp-to-site-setting.ts`. `db:generate` is for schema changes.
+- **"Seed from the current copy."** Seeded from `schema.parse({})` rather than transcribed, and
+  the difference mattered twice. A hand-typed copy of the About paragraphs had been written
+  from a truncated `grep` and was a *paraphrase* — seeding it would have replaced live copy with
+  different words, silently, because a substituted string still validates. There is now a test
+  comparing the schema's defaults against the approved words.
+- **"This also gives per-locale copy a home."** It does not, and it is not close. The settings
+  table is keyed by setting, not by locale, so a second language needs a second key per page
+  (`homePageId`) or a locale dimension on the row. Phase 7 is unstarted, so nothing here
+  pre-empts that decision — but this phase is not the head start it looked like.
 
 ---
 

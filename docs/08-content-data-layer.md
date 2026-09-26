@@ -68,13 +68,13 @@ Each entry is `{ slug, sortOrder, featured, payload }`. Three properties matter:
 
 ### `settings.ts` — the site's own content
 
-`loadSiteSettings()` reads all thirteen `site_settings` rows and returns them keyed by
+`loadSiteSettings()` reads every `site_settings` row — twenty-four of them — and returns them keyed by
 `SiteSettingKey`, each validated against its own contract. The mapped return type is
 what makes a new key in the contract a type error here until it is read.
 
 Unlike content, a setting has **no draft and no revision**: the admin validates on save
 and the site reads the row, so a change is live as soon as the edge cache expires. Every
-key must have a row — the settings screen writes all thirteen, and a missing one would
+key must have a row — the settings screen writes all twenty-four, and a missing one would
 render chrome with holes in it (an empty nav, a footer with no address), which looks
 like a CSS bug rather than a data problem.
 
@@ -277,6 +277,46 @@ unique and URL-safe**. The scroll spy depends on those ids existing in the DOM.
 | `contactChannels` | `{ icon, title, text, value, extra?, href }[]` | Contact |
 | `blogCategories` | `string[]` | Blog filter pills |
 | `ctaBackground` | media id | The image used by **every** `CtaBanner` |
+| `siteCta` | `{ title, text, ctaLabel }` | The closing banner, on all nine pages that show one |
+| `cards` | `{ package: { priceFromLabel, perPersonLabel, actionLabel }, post: { actionLabel } }` | `PackageCard` and `PostCard` |
+| `homePage` | hero, six section bands, About text, `reviewsLabel` | `/` |
+| `packagesPage`, `destinationsPage`, `blogPage`, `aboutPage`, `contactPage` | `{ seoTitle, seoDescription, heroTitle, heroSubtitle?, … }` | Each listing page's hero and `<title>` |
+| `packageDetail`, `destinationDetail`, `articleDetail` | band headings, booking box, closing invitation | `/packages/[slug]`, `/destinations/[slug]`, `/blog/[slug]` |
+
+Two conventions hold across the page-copy keys.
+
+**`seoTitle` is the page's own name, not the browser title.** The page composes
+`"{site.name} — {seoTitle}"`, so the brand lives in `site.name` and is not transcribed into
+eleven stored strings that would each need editing on a rename.
+
+**Every page-copy field carries the copy it replaces as a Zod default.** A `strictObject`
+field with no default is a field the stored value must have, so a schema that gains one takes
+the site down from the moment it is deployed until the data catches up — which is what
+`site.whatsapp` did. With a default, a row that omits the field parses and the current copy
+renders, so the seeding migration is a convenience rather than a precondition for the site
+existing. The cost is that nothing forces an editor to fill a field in, which is the right way
+round: the page reads correctly either way, and the schema's job is to reject nonsense rather
+than enforce completeness.
+
+### Content or interface — where the line is
+
+Anything an editor would expect to change when they change the business is **content** and
+lives in the CMS: headings, standfirsts, marketing prose, link and button labels, price
+prefixes, SEO metadata. Anything that describes a *control* stays in the component that
+renders it: a form label, a placeholder, an `aria-label`, a "no results" message, a
+breadcrumb label, the accessible name of a fieldset.
+
+Two tests, and both matter:
+
+- Would an editor expect to change it? "Trip Overview" yes; "Close contents" no.
+- Does the string still make sense if the control's behaviour changed? The booking bar's
+  `sr-only` legend is "Plan your trip" — an editor could rename it into something that is not a
+  control, and a screen reader would then announce a group of inputs under a misleading name.
+
+A field that interpolates a value is stored as **the whole sentence with a visible token** —
+`Swipe to see all {count} photos`, `A perfectly crafted {days}-day expedition…` — and
+substituted at render. The alternative, two stored fragments, makes the grammar a CMS field
+and the halves have to be edited together or not at all.
 
 `icon` is a full Font Awesome class string (e.g. `'fa-regular fa-compass'`), resolved by `$lib/components/Icon.svelte` against the generated `src/lib/icons`. An icon added here that is not in that map renders nothing in production, so re-run `pnpm --filter @banggai/web exec tsx scripts/generate-icons.ts` after changing it.
 
@@ -467,6 +507,25 @@ answers 500 is the signature of a settings-contract failure rather than a broken
 An **optional** field has none of this: `parseSiteSetting` accepts its absence, so a database
 that has never heard of it serves normally.
 
+A **defaulted** field is optional in the same way and needs none of it either — see *The
+settings keys* above. What it does need is a note about correcting one:
+
+> A create-only migration will never push a corrected default to a row that already holds the
+> old value. The row validates perfectly well, and the symptom is a page rendering slightly
+> wrong with nothing failing. This is not hypothetical: `packageDetail.galleryHint` gained a
+> `{count}` token, the seeded row kept the sentence without it, and the live page rendered "Swipe
+> to see all photos" with no number.
+
+So the page-copy migration takes `--force`, which upserts instead of inserting:
+
+```sh
+DATABASE_URL=<branch> pnpm --filter @banggai/admin exec tsx scripts/add-page-copy-settings.ts --force
+```
+
+It is a flag rather than a prompt because it discards any edit made in the admin, and someone
+should have to type that. Reach for it when the *schema* was the thing that was wrong; never as
+part of adding a new key, where the default insert is already correct.
+
 ### Change brand chrome
 
 Everything in the settings table is edited in **Settings** in the admin: phone, email,
@@ -474,12 +533,20 @@ address, review count, the menu, social links, the footer destination column, th
 the testimonials, the categories, the shared CTA background. The contact page's
 channels are stored values, not derived from `site`, so change them in the same screen.
 
+Every page's own words are in the same screen, under three groups: **shared, home, and the
+closing banner** (`siteCta`, `cards`, `homePage`), **listing pages** (the five that are a hero
+over a grid) and **detail pages** (the three that are a set of bands). Listing and detail are
+separate keys because they are different shapes: `/packages` has no "Trip Overview", and an
+editor told otherwise can only find out by publishing.
+
 The footer's copyright year is still a hardcoded `const year = 2026` in `Footer.svelte`.
 
 ### Add an image to a page's decoration
 
-Re-export the designs in Stitch, then run `node .stitch/gen-media.mjs` from the repo
-root. `.stitch/` is git-ignored, so this needs the local folder.
+Re-export the designs in Stitch, then run `node .stitch/gen-media.mjs` from the repo root and
+regenerate `apps/web/src/lib/data/media.ts`. The generator, the designs and the substitution
+map are **tracked** — see the invariants section — so this needs no local folder and no
+design tool.
 
 ---
 

@@ -185,6 +185,18 @@ These are non-negotiable; they exist because each one has already caused a real 
   `apps/web/src/lib/server/content/` — the only code in the app that may touch the
   database. Pages are presentational and must not hardcode copy. See
   [docs/08-content-data-layer.md](./docs/08-content-data-layer.md).
+  - **Content or interface, and the line between them.** Headings, standfirsts, prose,
+    link and button labels, price prefixes and SEO metadata are content: they belong in a
+    setting. Anything describing a *control* is interface and stays in the component —
+    a form label, a placeholder, an `aria-label`, a "no results" message, a breadcrumb
+    label, the accessible name of a fieldset. Two tests: would an editor expect to change
+    it, and does it still make sense if the control's behaviour changed? The booking
+    bar's `sr-only` legend is "Plan your trip"; an editor could rename that into something
+    that is not a control. Do not move interface strings into the CMS.
+  - **A page-copy field carries the copy it replaces as a Zod default**, so a schema that
+    gains one cannot take the site down before its data lands. Add the field *and* the
+    default in the same commit, seed every branch, and note that a create-only migration
+    will never push a *corrected* default — use the script's `--force`.
   - **The shape of each record is not declared in the app.** It comes from
     `@banggai/content-model`, and the read layer validates every payload against it as it
     reads. Adding a field means editing the schema there, then the admin's form spec.

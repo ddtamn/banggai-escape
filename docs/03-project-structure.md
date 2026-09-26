@@ -106,7 +106,7 @@ apps/web/
 │  │     └─ content/                # the read layer (see 08-content-data-layer.md)
 │  │        ├─ index.ts             # the barrel pages import
 │  │        ├─ entries.ts           # published content, validated, media resolved
-│  │        ├─ settings.ts          # all thirteen site_settings rows
+│  │        ├─ settings.ts          # every site_settings row, all twenty-four
 │  │        ├─ redirects.ts         # slug_redirects, chains followed
 │  │        ├─ media.ts             # media_assets ids → URLs
 │  │        └─ issues.ts            # Zod issues → readable lines

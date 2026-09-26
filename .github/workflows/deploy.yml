@@ -1,0 +1,135 @@
+# Deploy both Workers.
+#
+# ## What CI needs, and what it deliberately does not
+#
+# Only two secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. **No database
+# credentials appear in this file, and none are needed.** `DATABASE_URL` and
+# `BETTER_AUTH_SECRET` are already stored as Worker secrets in Cloudflare and are uploaded
+# by `wrangler deploy` from there — a deploy replaces the Worker and leaves its secrets
+# alone. So a green run of this workflow proves nothing about anyone's database access, and a
+# leaked workflow log cannot leak a connection string.
+#
+# ## Why `workflow_run` and not a second trigger on `main`
+#
+# Deploying on the same push that triggers CI would race it: the site could go out while the
+# test job was still red. Waiting for CI to *finish successfully* makes the gate a
+# precondition rather than a parallel wish. The guards below matter — a pull request's CI run
+# also completes successfully, and must never deploy anything.
+#
+# ## The two Workers are independent
+#
+# `admin` and `banggai-escape` are separate Workers on separate schedules, and either can be
+# redeployed without the other. There is no `needs:` between them on purpose: the admin does
+# not have to be healthy for the public site to serve, and coupling them would make a content
+# deploy wait on a CMS deploy.
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Which Worker to deploy
+        required: true
+        default: both
+        type: choice
+        options: [both, admin, web]
+
+permissions:
+  contents: read
+
+concurrency:
+  # Serialised per Worker: two deploys of the same Worker overlapping is how a version gets
+  # half-applied. The two Workers still deploy in parallel with each other.
+  group: deploy-${{ github.event.inputs.app || 'both' }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  admin:
+    name: admin (admin.banggaiescape.com)
+    if: >-
+      github.event_name == 'workflow_dispatch'
+        ? (github.event.inputs.app == 'both' || github.event.inputs.app == 'admin')
+        : github.event.workflow_run.conclusion == 'success'
+          && github.event.workflow_run.event == 'push'
+          && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    # Named so GitHub environment rules can require a manual approval before a deploy.
+    environment: production
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @banggai/admin check
+      - run: pnpm --filter @banggai/admin build
+      - name: deploy
+        working-directory: apps/admin
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # `wrangler deploy` creates or updates the custom domain route declared in
+        # wrangler.jsonc, including the DNS record, so there is no separate DNS step.
+        run: pnpm exec wrangler deploy
+        # Proof the deploy answered, rather than that the command exited zero.
+      - name: check it answers
+        run: |
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -fsS -o /dev/null -w '%{http_code}' https://admin.banggaiescape.com/login | grep -q 200; then
+              echo "admin.banggaiescape.com is serving the sign-in page"
+              exit 0
+            fi
+            sleep 6
+          done
+          echo "::error::admin.banggaiescape.com did not answer after the deploy"
+          exit 1
+
+  web:
+    name: web (banggaiescape.com)
+    if: >-
+      github.event_name == 'workflow_dispatch'
+        ? (github.event.inputs.app == 'both' || github.event.inputs.app == 'web')
+        : github.event.workflow_run.conclusion == 'success'
+          && github.event.workflow_run.event == 'push'
+          && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm build
+      - name: deploy
+        working-directory: apps/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm exec wrangler deploy
+      - name: check it answers
+        run: |
+          # A document request, because the site only caches a document and decides what a
+          # document is from the Accept header.
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -fsS -H 'Accept: text/html' -o /dev/null https://banggaiescape.com/; then
+              echo "banggaiescape.com is serving the home page"
+              exit 0
+            fi
+            sleep 6
+          done
+          echo "::error::banggaiescape.com did not answer after the deploy"
+          exit 1

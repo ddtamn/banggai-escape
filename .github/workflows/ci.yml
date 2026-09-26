@@ -1,0 +1,103 @@
+# The gate every push has to pass.
+#
+# Three jobs, because they fail for different reasons and a red X should say which:
+# `check` is types and accessibility, `lint` is the formatter, `test` is behaviour, and
+# `build` is the thing Cloudflare will actually run. Running them as one job would mean a
+# formatting nit and a type error arriving as the same failure.
+#
+# Two deliberate omissions:
+#
+# - **The browser checks do not run here.** `test:e2e` needs a database and a signed-in
+#   administrator, and a CI runner has neither. Those checks skip themselves without
+#   `ADMIN_EMAIL`/`ADMIN_PASSWORD` rather than failing, which would make this job lie.
+# - **`pnpm check:code` is not run across the whole workspace.** It currently fails on the
+#   unformatted `apps/admin` scaffold, which is pre-existing and documented in AGENTS.md.
+#   Linting the paths this repository actually owns keeps the gate honest instead of
+#   permanently red.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  # One run per branch; a new push supersedes the run in flight rather than queueing behind
+  # it, so a branch that is pushed to twice in a minute does not take twenty minutes to clear.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: types and a11y
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The public site: types, Svelte diagnostics and accessibility warnings.
+      - run: pnpm check
+      # The shared contracts, which both apps depend on and neither typechecks alone.
+      - run: pnpm --filter @banggai/content-model check
+      # The admin. Its own tsconfig, and it holds the project at zero warnings.
+      - run: pnpm --filter @banggai/admin check
+
+  lint:
+    name: biome
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The public site, the shared package, and the admin files this repository writes.
+      # Deliberately not the whole workspace — see the header.
+      - run: npx biome check apps/web packages apps/admin/src apps/admin/e2e
+
+  test:
+    name: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The public read layer: presenters and the slug-redirect walk.
+      - run: pnpm test
+      # The admin's `client` project runs a real browser, so Chromium has to exist **before**
+      # the tests that use it — a missing browser otherwise fails the run for a reason that
+      # has nothing to do with the code.
+      - name: install chromium
+        run: pnpm --filter @banggai/admin exec playwright install --with-deps chromium
+      # Validators, publish atomicity, the form renderer, and the analytics client against a
+      # stubbed API.
+      - run: pnpm --filter @banggai/admin test
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Builds are not advisory: the deploy job runs these same two, and a build that only
+      # passes locally is how a Worker ships broken.
+      - run: pnpm build
+      - run: pnpm --filter @banggai/admin build

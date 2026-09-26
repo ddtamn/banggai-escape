@@ -30,6 +30,15 @@
 			"dataset": "BANGGAI_SITE_EVENTS"
 		}
 	],
-	"workers_dev": true,
+	// The custom domain. Wrangler creates the DNS record and the route together, so the
+	// zone needs no manual record — but the deploying token needs Zone/DNS edit for the
+	// zone, and a Workers Scripts edit for the account.
+	"routes": [
+		{
+			"pattern": "banggaiescape.com",
+			"custom_domain": true
+		}
+	],
+	"workers_dev": false,
 	"preview_urls": true
 }

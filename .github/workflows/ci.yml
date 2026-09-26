@@ -107,6 +107,13 @@ jobs:
   build:
     name: build
     runs-on: ubuntu-latest
+    # better-auth refuses to be constructed with its default secret — it throws while the
+    # bundle is being rendered, so `vite build` fails without this. It is a *placeholder*:
+    # nothing reads it at build time, the real value is a Worker secret in Cloudflare, and
+    # naming it so obviously is the point. Deliberately not `${{ secrets.* }}` — a credential
+    # has no business in a build step, and a leaked log would carry it.
+    env:
+      BETTER_AUTH_SECRET: build-placeholder-not-a-real-secret
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4

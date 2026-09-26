@@ -343,6 +343,36 @@ a pull request's CI run also finishes successfully and must never deploy anythin
 `workflow_dispatch` takes an `app` input (`both` / `admin` / `web`) for redeploying one
 Worker without a code change.
 
+### The admin build needs a secret that is not a secret
+
+`pnpm --filter @banggai/admin build` fails without `BETTER_AUTH_SECRET` in the environment:
+
+```
+[BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` …
+```
+
+better-auth refuses to be constructed with its default, and it does that while the bundle is
+being rendered — so this is a **build-time** failure, not a runtime one. Locally it never
+appears, because `apps/admin/.env` supplies the value. On a runner there is no `.env`, and the
+first CI run failed on it.
+
+Both workflows therefore set an obviously-named placeholder for the build steps:
+
+```yaml
+env:
+  BETTER_AUTH_SECRET: build-placeholder-not-a-real-secret
+```
+
+It is a placeholder and not a credential, deliberately:
+
+- **Nothing reads it at build time.** The real value is a Worker secret in Cloudflare, so the
+  value here has no effect on anything that runs.
+- **It is not `${{ secrets.* }}`.** A credential has no place in a build step, where it would
+  be readable by anyone who can read the run's log and is not needed to build anything.
+
+A deploy with no real secret still fails, on the first request, which is the fail-fast
+behaviour the rest of this app uses and wants.
+
 ### The one secret CI needs, and the ones it must never have
 
 **One: `CLOUDFLARE_API_TOKEN`**, a repository secret.

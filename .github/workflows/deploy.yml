@@ -66,6 +66,11 @@ jobs:
     runs-on: ubuntu-latest
     # Named so GitHub environment rules can require a manual approval before a deploy.
     environment: production
+    # better-auth throws while the bundle renders if it has no secret, so the build needs one
+    # — a placeholder, not a credential. The real value is a Worker secret in Cloudflare and
+    # never appears in this workflow.
+    env:
+      BETTER_AUTH_SECRET: build-placeholder-not-a-real-secret
     steps:
       - uses: actions/checkout@v5
         with:

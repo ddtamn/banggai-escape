@@ -292,6 +292,11 @@ export const aboutPageCopy = innerPageCopy({
 	seoDescription:
 		'Born from a deep passion for sharing the untouched magic and legendary warmth of Banggai.',
 	heroTitle: 'About Us',
+	// Added after assuming this page had no standfirst. It does — the sentence under its
+	// heading — and the assumption was only visible by reading the page, which is the argument
+	// for putting the copy in the CMS rather than reasoning about it in a schema.
+	heroSubtitle:
+		'Born from a deep passion for sharing the untouched magic and legendary warmth of Banggai.',
 });
 
 export const contactPageCopy = innerPageCopy({

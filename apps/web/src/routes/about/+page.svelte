@@ -18,6 +18,9 @@ const ctaBackground = $derived(data.settings.ctaBackground);
 const siteCta = $derived(data.settings.siteCta);
 const features = $derived(data.settings.features);
 const site = $derived(data.settings.site);
+
+/** This page's own words, from the CMS. */
+const copy = $derived(data.settings.aboutPage);
 const stats = $derived(data.settings.stats);
 const visionMission = $derived(data.settings.visionMission);
 
@@ -40,8 +43,8 @@ const structuredData = $derived([
 </script>
 
 <Seo
-	title="About Us — {site.name}"
-	description="Born from a deep passion for sharing the untouched magic and legendary warmth of Banggai."
+	title="{site.name} — {copy.seoTitle}"
+	description={copy.seoDescription}
 	canonical={canonicalUrl}
 	siteName={site.name}
 	locale={site.locale}
@@ -65,11 +68,13 @@ const structuredData = $derived([
 
 	<div class="relative z-10 mx-auto max-w-4xl space-y-4 px-6 text-center text-white">
 		<h1 class="text-3xl font-extrabold tracking-tight drop-shadow-md sm:text-4xl md:text-5xl lg:text-6xl">
-			About Us
+			{copy.heroTitle}
 		</h1>
-		<p class="mx-auto max-w-2xl text-sm leading-relaxed font-normal text-stone-200 drop-shadow sm:text-base">
-			Born from a deep passion for sharing the untouched magic and legendary warmth of Banggai.
-		</p>
+		{#if copy.heroSubtitle}
+			<p class="mx-auto max-w-2xl text-sm leading-relaxed font-normal text-stone-200 drop-shadow sm:text-base">
+				{copy.heroSubtitle}
+			</p>
+		{/if}
 	</div>
 </section>
 

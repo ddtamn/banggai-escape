@@ -16,6 +16,9 @@ let { data } = $props();
 const ctaBackground = $derived(data.settings.ctaBackground);
 const site = $derived(data.settings.site);
 
+/** This page's own words, from the CMS. */
+const copy = $derived(data.settings.packagesPage);
+
 /** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
 const siteCta = $derived(data.settings.siteCta);
 const packages = $derived(data.packages);
@@ -62,8 +65,8 @@ const structuredData = $derived([
 </script>
 
 <Seo
-	title="Tour Packages — {site.name}"
-	description="Choose from our all-inclusive, fully customizable tour packages designed by local experts to showcase the very best of Central Sulawesi's hidden gems."
+	title="{site.name} — {copy.seoTitle}"
+	description={copy.seoDescription}
 	canonical={canonicalUrl}
 	siteName={site.name}
 	locale={site.locale}
@@ -75,8 +78,8 @@ const structuredData = $derived([
 	stretched full-bleed. Use the full-quality island shot from the same asset set instead.
 -->
 <PageHero
-	title={'Find Your Perfect\nBanggai Escape'}
-	subtitle="Choose from our all-inclusive, fully customizable tour packages designed by local experts to showcase the very best of Central Sulawesi's hidden gems."
+	title={copy.heroTitle}
+	subtitle={copy.heroSubtitle}
 	image={heroImage}
 	imageSrcset={heroSrcset}
 />

@@ -17,6 +17,9 @@ const ctaBackground = $derived(data.settings.ctaBackground);
 /** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
 const siteCta = $derived(data.settings.siteCta);
 const site = $derived(data.settings.site);
+
+/** This page's own words, from the CMS. */
+const copy = $derived(data.settings.blogPage);
 const posts = $derived(data.posts);
 
 /** The pill labels are plural where the post categories are singular. */
@@ -51,8 +54,8 @@ const structuredData = $derived([
 </script>
 
 <Seo
-	title="Blog — {site.name}"
-	description="Discover curated articles, destination guides, and travel insight to inspire your next adventure."
+	title="{site.name} — {copy.seoTitle}"
+	description={copy.seoDescription}
 	canonical={canonicalUrl}
 	siteName={site.name}
 	locale={site.locale}
@@ -60,8 +63,8 @@ const structuredData = $derived([
 	structuredData={structuredData}
 />
 <PageHero
-	title={'Insights to Help You\nTravel Smarter'}
-	subtitle="Discover curated articles, destination guides, and travel insight to inspire your next adventure"
+	title={copy.heroTitle}
+	subtitle={copy.heroSubtitle}
 	image={img(backgrounds.blog['hero-bg'], 2000)}
 	height="py-28 md:py-36"
 />

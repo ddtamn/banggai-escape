@@ -16,6 +16,9 @@ const contactChannels = $derived(data.settings.contactChannels);
 const ctaBackground = $derived(data.settings.ctaBackground);
 const site = $derived(data.settings.site);
 
+/** This page's own words, from the CMS. */
+const copy = $derived(data.settings.contactPage);
+
 /** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
 const siteCta = $derived(data.settings.siteCta);
 
@@ -68,8 +71,8 @@ const structuredData = $derived([
 </script>
 
 <Seo
-	title="Contact Us — {site.name}"
-	description="Plan your bespoke island journey with Banggai Escape — our local island specialists are on hand to tailor custom itineraries, boat transfers, and guided expeditions."
+	title="{site.name} — {copy.seoTitle}"
+	description={copy.seoDescription}
 	canonical={canonicalUrl}
 	siteName={site.name}
 	locale={site.locale}
@@ -98,7 +101,7 @@ const structuredData = $derived([
 
 			<div class="flex flex-col justify-start lg:col-span-6">
 				<h1 id="contact-section" class="mb-3 scroll-mt-28 text-3xl font-extrabold tracking-tight text-forest-deep sm:text-4xl md:text-5xl">
-					Let's Get In Touch.
+					{copy.heroTitle}
 				</h1>
 
 				<p class="mb-8 text-sm leading-relaxed text-stone-600 sm:text-base">

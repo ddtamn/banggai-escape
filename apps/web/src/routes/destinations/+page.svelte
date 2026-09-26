@@ -14,6 +14,9 @@ let { data } = $props();
 const ctaBackground = $derived(data.settings.ctaBackground);
 const site = $derived(data.settings.site);
 
+/** This page's own words, from the CMS. */
+const copy = $derived(data.settings.destinationsPage);
+
 /** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
 const siteCta = $derived(data.settings.siteCta);
 const destinations = $derived(data.destinations);
@@ -42,8 +45,8 @@ const structuredData = $derived([
 </script>
 
 <Seo
-	title="Destinations — {site.name}"
-	description="Handpicked natural sanctuaries across the Banggai Archipelago, curated by local experts for travelers seeking authentic beauty."
+	title="{site.name} — {copy.seoTitle}"
+	description={copy.seoDescription}
 	canonical={canonicalUrl}
 	siteName={site.name}
 	locale={site.locale}
@@ -51,8 +54,8 @@ const structuredData = $derived([
 	structuredData={structuredData}
 />
 <PageHero
-	title="Extraordinary Destinations"
-	subtitle="Handpicked natural sanctuaries across the Banggai Archipelago, curated by local experts for travelers seeking authentic beauty."
+	title={copy.heroTitle}
+	subtitle={copy.heroSubtitle}
 	image={img(backgrounds.destinations['hero-bg'], 2000)}
 />
 

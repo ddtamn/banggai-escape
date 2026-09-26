@@ -17,7 +17,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { cspDirectives } from './csp';
+import { cspDirectives, navigationOnlyOrigins } from './csp';
 
 /** Every file whose contents can end up naming an external origin in the document. */
 function sourceFiles(dir: string): string[] {
@@ -104,6 +104,15 @@ describe('the content security policy', () => {
 	});
 
 	it.each([...origins.keys()].sort())('allows the origin %s', (origin) => {
+		// A navigation target is not a subresource, so no fetch directive governs it.
+		if (navigationOnlyOrigins.includes(origin)) {
+			expect(
+				cspDirectives['form-action'],
+				`${origin} is navigated to, not submitted to, so form-action must not need it`,
+			).toBeDefined();
+			return;
+		}
+
 		for (const directive of directivesFor(origin)) {
 			const sources = sourcesFor(directive);
 

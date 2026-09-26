@@ -35,6 +35,20 @@ export const siteProfileSchema = z.strictObject({
 	phone: z.string().min(1),
 	/** `tel:` link built from `phone`. */
 	phoneHref: z.string().min(1),
+	/**
+	 * The WhatsApp number enquiries are handed to, as digits and a country code with no
+	 * `+` or spacing — the only shape `wa.me` accepts.
+	 *
+	 * It is stored rather than derived from `contactChannels` on purpose. Deriving it
+	 * would mean searching authored prose for whichever entry happens to mention WhatsApp
+	 * today, and the day someone reworded that entry the booking bar would quietly stop
+	 * working. A field an editor can see and change is worth more than a clever lookup.
+	 *
+	 * Kept permissive here — the shape is a hint, not a promise — because `$lib/enquiry`
+	 * re-normalises it and returns `null` for anything it cannot use, which is handled as
+	 * a described state rather than a crash.
+	 */
+	whatsapp: z.string().min(1),
 	email: z.string().min(1),
 	address: z.array(z.string().min(1)).min(1),
 	reviewCount: z.number().int().nonnegative(),

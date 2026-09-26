@@ -1,4 +1,5 @@
 <script lang="ts">
+import BookingBar from '$lib/components/BookingBar.svelte';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import DestinationCard from '$lib/components/DestinationCard.svelte';
 import Faq from '$lib/components/Faq.svelte';
@@ -21,14 +22,6 @@ const packages = $derived(data.packages);
 const posts = $derived(data.posts);
 
 const stars = [1, 2, 3, 4, 5];
-const heroFacts = [
-	{
-		icon: 'fa-solid fa-location-dot',
-		label: 'WHERE TO?',
-		value: 'Select Destinations',
-	},
-	{ icon: 'fa-regular fa-calendar', label: 'DATES', value: 'Select Dates' },
-];
 
 const heroImage = img(
 	media['package-details-untouched-banggai-discovery']['turquoise-lagoon-paisu-pok'],
@@ -73,52 +66,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 			begins with Banggai Escape.
 		</p>
 
-		<form
-			class="grid w-full max-w-4xl grid-cols-1 items-center gap-1.5 rounded-2xl bg-white p-1.5 text-left text-stone-800 shadow-2xl sm:grid-cols-2 sm:gap-1.5 sm:p-1.5 lg:grid-cols-12 lg:gap-0 lg:divide-x lg:divide-stone-200 lg:rounded-full lg:py-0.5 lg:pl-1.5 lg:pr-0.5"
-			action="/packages"
-		>
-			{#each heroFacts as fact (fact.label)}
-				<div
-					class="flex items-center gap-3 border-b border-stone-100 px-3 py-1.5 sm:border-b-0 {fact.label ===
-					'WHERE TO?'
-						? 'lg:col-span-4'
-						: 'lg:col-span-3'}"
-				>
-					<i class="{fact.icon} text-base text-forest-deep"></i>
-					<div>
-						<div
-							class="text-[11px] font-bold tracking-wider text-stone-400 uppercase"
-						>
-							{fact.label}
-						</div>
-						<div class="text-sm font-semibold text-stone-800">{fact.value}</div>
-					</div>
-				</div>
-			{/each}
-
-			<div
-				class="flex flex-col items-stretch justify-between gap-3 px-3 py-1.5 sm:col-span-2 sm:flex-row sm:items-center lg:col-span-5"
-			>
-				<div class="flex items-center gap-3">
-					<i class="fa-solid fa-user-group text-base text-forest-deep"></i>
-					<div>
-						<div
-							class="text-[11px] font-bold tracking-wider text-stone-400 uppercase"
-						>
-							GUESTS
-						</div>
-						<div class="text-sm font-semibold text-stone-800">Add Guests</div>
-					</div>
-				</div>
-				<button
-					type="submit"
-					class="flex w-full shrink-0 items-center justify-center gap-2 rounded-full bg-forest-deep px-6 py-3 text-sm font-bold text-white transition duration-200 hover:bg-forest-abyss sm:w-auto"
-				>
-					<span>Book Schedule</span>
-					<i class="fa-solid fa-arrow-right text-xs"></i>
-				</button>
-			</div>
-		</form>
+		<BookingBar packages={data.bookingOptions} whatsapp={site.whatsapp} />
 	</div>
 </section>
 

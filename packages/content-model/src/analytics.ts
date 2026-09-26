@@ -40,7 +40,17 @@ import { type ContentKind, slugSchema } from './content';
  * Every event the public site may record. Anything not in this list is refused by the
  * event endpoint, which is the only way a data point can enter the dataset.
  */
-export const analyticsEvents = ['page_view', 'booking_cta_click', 'contact_click'] as const;
+export const analyticsEvents = [
+	'page_view',
+	'booking_cta_click',
+	'contact_click',
+	/**
+	 * A visitor opened WhatsApp with an enquiry from the booking bar or the contact form.
+	 * Worth its own event: it is the only signal on the site that an enquiry actually left
+	 * it, as opposed to a CTA being tapped on the way somewhere else.
+	 */
+	'whatsapp_enquiry',
+] as const;
 
 export type AnalyticsEvent = (typeof analyticsEvents)[number];
 

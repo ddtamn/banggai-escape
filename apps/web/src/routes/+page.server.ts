@@ -11,6 +11,7 @@
  * and that pairing is the reason the list is written out.
  */
 
+import { type BookingPackage, maxGuestsFrom } from '$lib/enquiry';
 import { loadPublishedEntries } from '$lib/server/content';
 import type { PageServerLoad } from './$types';
 
@@ -25,8 +26,25 @@ export const load: PageServerLoad = async () => {
 
 	const bySlug = new Map(destinations.map((entry) => [entry.slug, entry.payload]));
 
+	/**
+	 * The booking bar's package list, kept deliberately thin.
+	 *
+	 * The card grid needs full payloads; a `<select>` needs a title and a duration. Handing
+	 * the bar every published package with its complete itinerary and inclusions would put
+	 * the whole catalogue into the HTML for the sake of three visible strings — and this is
+	 * the page every visitor lands on first.
+	 */
+	const bookingOptions: BookingPackage[] = packages.map((entry) => ({
+		slug: entry.payload.slug,
+		title: entry.payload.title,
+		days: entry.payload.days,
+		nights: entry.payload.nights,
+		maxGuests: maxGuestsFrom(entry.payload.groupSize),
+	}));
+
 	return {
 		packages: packages.slice(0, 4).map((entry) => entry.payload),
+		bookingOptions,
 		destinations: curatedSlugs.flatMap((slug) => bySlug.get(slug) ?? []),
 		posts: posts.slice(0, 3).map((entry) => entry.payload),
 	};

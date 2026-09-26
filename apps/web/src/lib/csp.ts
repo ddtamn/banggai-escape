@@ -80,3 +80,21 @@ export const cspDirectives: CspDirectives = {
 	'manifest-src': ['self'],
 	'upgrade-insecure-requests': true,
 };
+
+/**
+ * Origins this site **navigates to** but never loads a subresource from.
+ *
+ * A fetch directive — `img-src`, `script-src`, `style-src` — governs resources the page
+ * pulls in. Navigating away to another origin is a different thing entirely, and no
+ * directive listed above restricts it: `form-action` covers form submissions, and
+ * `navigate-to` is not implemented in Safari or Firefox. So `wa.me` needs no entry in
+ * `directives`, and adding one would imply a protection that does not exist.
+ *
+ * `csp.spec.ts` uses this list so that a navigation target is not mistaken for a missing
+ * `img-src` entry. It is deliberately a list rather than a heuristic: a heuristic would
+ * quietly stop catching real omissions the first time a URL was shaped differently.
+ */
+export const navigationOnlyOrigins: readonly string[] = [
+	// Where the booking bar and the contact form hand an enquiry to a person.
+	'wa.me',
+];

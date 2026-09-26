@@ -311,6 +311,12 @@ export const settingSpecs: Record<SiteSettingKey, FieldSpec> = {
 			{ type: 'text', name: 'locale', label: 'Locale', hint: 'e.g. en' },
 			{ type: 'text', name: 'phone', label: 'Phone as displayed' },
 			{ type: 'text', name: 'phoneHref', label: 'Phone link', hint: 'tel:+62…' },
+			{
+				type: 'text',
+				name: 'whatsapp',
+				label: 'WhatsApp number',
+				hint: 'Enquiries are sent here. Digits and country code only, e.g. 6281354911647',
+			},
 			{ type: 'text', name: 'email', label: 'Email' },
 			{
 				type: 'list',

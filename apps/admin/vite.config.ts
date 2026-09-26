@@ -16,6 +16,11 @@ export default defineConfig({
 			typescript: {
 				config: (config) => {
 					config.include.push('../drizzle.config.ts');
+					// One-shot migration scripts are not part of the Worker bundle, but they
+					// still have to typecheck — SvelteKit's generated tsconfig only includes
+					// `src`. `scripts/` is the same pattern as `apps/web`, and it is where a
+					// migration lives or it cannot resolve this package's database driver.
+					config.include.push('./scripts/**/*.ts');
 				}
 			}
 		})

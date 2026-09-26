@@ -31,6 +31,24 @@ permissions:
   contents: read
 
 jobs:
+  # `actionlint` runs first, and it is not ceremony. GitHub reports a malformed workflow as
+  # a run that fails in about a second saying only "This run likely failed because of a
+  # workflow file issue" — no file, no line, no reason. `deploy.yml` carried a `? :` in an
+  # `if:`, which is not in GitHub's expression language and which every YAML parser accepts
+  # without complaint. This job turns that class of mistake into an ordinary red with a
+  # line number.
+  workflows:
+    name: workflow files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # GitHub reports a malformed workflow as a run that fails in a second with
+      # "This run likely failed because of a workflow file issue", naming nothing. The
+      # `deploy.yml` ternary was found that way: `? :` is not in GitHub's expression
+      # language, and a YAML parser is perfectly happy with it. This turns that into a
+      # normal red job with a line number.
+      - uses: docker://rhysd/actionlint:latest
+
   check:
     name: types and a11y
     runs-on: ubuntu-latest

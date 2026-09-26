@@ -52,12 +52,17 @@ concurrency:
 jobs:
   admin:
     name: admin (admin.banggaiescape.com)
+    # No ternary: GitHub's expression language has no `? :`. It has `&&`, `||` and
+    # comparison, so "dispatched for this app, OR CI succeeded on main" is the two
+    # halves joined with `||` — each parenthesised so the precedence is stated rather
+    # than assumed.
     if: >-
-      github.event_name == 'workflow_dispatch'
-        ? (github.event.inputs.app == 'both' || github.event.inputs.app == 'admin')
-        : github.event.workflow_run.conclusion == 'success'
-          && github.event.workflow_run.event == 'push'
-          && github.event.workflow_run.head_branch == 'main'
+      (github.event_name == 'workflow_dispatch' &&
+       (github.event.inputs.app == 'both' || github.event.inputs.app == 'admin')) ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     # Named so GitHub environment rules can require a manual approval before a deploy.
     environment: production
@@ -99,12 +104,17 @@ jobs:
 
   web:
     name: web (banggaiescape.com)
+    # No ternary: GitHub's expression language has no `? :`. It has `&&`, `||` and
+    # comparison, so "dispatched for this app, OR CI succeeded on main" is the two
+    # halves joined with `||` — each parenthesised so the precedence is stated rather
+    # than assumed.
     if: >-
-      github.event_name == 'workflow_dispatch'
-        ? (github.event.inputs.app == 'both' || github.event.inputs.app == 'web')
-        : github.event.workflow_run.conclusion == 'success'
-          && github.event.workflow_run.event == 'push'
-          && github.event.workflow_run.head_branch == 'main'
+      (github.event_name == 'workflow_dispatch' &&
+       (github.event.inputs.app == 'both' || github.event.inputs.app == 'web')) ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     environment: production
     steps:

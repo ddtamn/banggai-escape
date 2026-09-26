@@ -302,8 +302,36 @@ Two workflows, in `.github/workflows/`.
 
 | Workflow | Trigger | Does |
 | --- | --- | --- |
-| `ci.yml` | push to `main`, and every pull request | Four jobs: `check` (types and a11y in both apps plus the shared package), `lint` (Biome), `test` (both Vitest suites, with Chromium installed *before* the admin suite that needs it), `build` (both Workers' bundles) |
+| `ci.yml` | push to `main`, and every pull request | Five jobs: `workflows` (actionlint, see below), `check` (types and a11y in both apps plus the shared package), `lint` (Biome), `test` (both Vitest suites, with Chromium installed *before* the admin suite that needs it), `build` (both Workers' bundles) |
 | `deploy.yml` | **after `ci.yml` succeeds on `main`**, or by hand | Builds and `wrangler deploy`s each Worker, then curls the hostname to prove it answered |
+
+### `actionlint` is not ceremony
+
+GitHub reports a malformed workflow as a run that fails in about a second, saying only *"This
+run likely failed because of a workflow file issue"* — no file, no line, no reason. That is
+exactly how the first version of `deploy.yml` died: a `? :` in an `if:` condition, which is
+**not** in GitHub's expression language (it has `&&`, `||`, `!` and comparisons, and no
+ternary) and which every YAML parser accepts without complaint.
+
+So `ci.yml` runs `actionlint` as its first job, and a mistake like that is an ordinary red
+with a line number rather than a one-second failure that names nothing. The same two halves of
+the condition are now written as what the language actually offers:
+
+```yaml
+if: >-
+  (github.event_name == 'workflow_dispatch' &&
+   (github.event.inputs.app == 'both' || github.event.inputs.app == 'admin')) ||
+  (github.event_name == 'workflow_run' &&
+   github.event.workflow_run.conclusion == 'success' &&
+   github.event.workflow_run.event == 'push' &&
+   github.event.workflow_run.head_branch == 'main')
+```
+
+To check a workflow the same way before pushing:
+
+```sh
+docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest
+```
 
 ### Why the deploy waits for CI
 

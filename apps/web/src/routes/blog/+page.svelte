@@ -13,6 +13,9 @@ let { data } = $props();
 
 const blogCategories = $derived(data.settings.blogCategories);
 const ctaBackground = $derived(data.settings.ctaBackground);
+
+/** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
+const siteCta = $derived(data.settings.siteCta);
 const site = $derived(data.settings.site);
 const posts = $derived(data.posts);
 
@@ -141,9 +144,9 @@ const structuredData = $derived([
 </div>
 
 <CtaBanner
-	title={'Ready To Begin Your\nNext Adventure?'}
-	text="Let Banggai Escape design your perfect journey today."
-	ctaLabel="Book your trip"
-	image={ctaBackground}
-	ctaHref="/contact"
+		title={siteCta.title}
+		text={siteCta.text}
+		ctaLabel={siteCta.ctaLabel}
+		image={ctaBackground}
+		ctaHref="/contact"
 />

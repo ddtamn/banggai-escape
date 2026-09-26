@@ -16,6 +16,9 @@ const contactChannels = $derived(data.settings.contactChannels);
 const ctaBackground = $derived(data.settings.ctaBackground);
 const site = $derived(data.settings.site);
 
+/** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
+const siteCta = $derived(data.settings.siteCta);
+
 /**
  * The lake photograph beside the form, and the resized variants the edge can produce.
  *
@@ -242,10 +245,10 @@ const structuredData = $derived([
 
 	<!-- Pre-footer banner -->
 	<CtaBanner
-		title="Ready To Begin Your Next Adventure?"
-		text="Let Banggai Escape design your perfect journey today."
-		ctaLabel="Book your trip"
-		ctaHref="#contact-section"
+		title={siteCta.title}
+		text={siteCta.text}
+		ctaLabel={siteCta.ctaLabel}
 		image={ctaBackground}
+		ctaHref="#contact-section"
 	/>
 </div>

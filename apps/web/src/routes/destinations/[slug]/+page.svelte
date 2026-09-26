@@ -13,6 +13,9 @@ let { data } = $props();
 
 const ctaBackground = $derived(data.settings.ctaBackground);
 const site = $derived(data.settings.site);
+
+/** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
+const siteCta = $derived(data.settings.siteCta);
 const destination = $derived(data.destination);
 /** A representative mosaic drawn from the destination photography set. */
 const mosaic = $derived(data.mosaic);
@@ -184,8 +187,9 @@ const structuredData = $derived([
 </div>
 
 <CtaBanner
-	title={'Ready To Begin Your\nNext Adventure?'}
-	text="Let Banggai Escape design your perfect journey today."
+	title={siteCta.title}
+	text={siteCta.text}
+	ctaLabel={siteCta.ctaLabel}
 	image={ctaBackground}
 	ctaHref="/contact"
 />

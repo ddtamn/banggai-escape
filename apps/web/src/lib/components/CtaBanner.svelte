@@ -1,10 +1,19 @@
 <script lang="ts">
 import type { AnalyticsEvent } from '@banggai/content-model';
 
+/**
+ * The banner's words, from the CMS.
+ *
+ * These were props with defaults until Phase 6, which is how the same three strings ended up in
+ * this file *and* passed explicitly at five of the nine call sites: editing the default would
+ * have left half the site on the old text, and nothing said so. One `siteCta` row, read by the
+ * layout and passed down, is the only copy of an invitation that appears on every page.
+ */
 type Props = {
 	title: string;
-	text?: string;
-	ctaLabel?: string;
+	text?: string | null;
+	ctaLabel: string;
+	/** Where the button goes. Navigation, so it stays a prop: the contact page points at its own form. */
 	ctaHref?: string;
 	image: string;
 	/**
@@ -17,8 +26,8 @@ type Props = {
 
 let {
 	title,
-	text = 'Let Banggai Escape design your perfect journey today.',
-	ctaLabel = 'Book your trip',
+	text = null,
+	ctaLabel,
 	ctaHref = '/contact',
 	image,
 	track = 'booking_cta_click',

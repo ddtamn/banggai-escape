@@ -13,6 +13,9 @@ let { data } = $props();
 
 // The site's shared editorial blocks, read once in the layout loader and inherited here.
 const ctaBackground = $derived(data.settings.ctaBackground);
+
+/** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
+const siteCta = $derived(data.settings.siteCta);
 const features = $derived(data.settings.features);
 const site = $derived(data.settings.site);
 const stats = $derived(data.settings.stats);
@@ -190,9 +193,9 @@ const structuredData = $derived([
 </section>
 
 <CtaBanner
-	title="Ready To Begin Your Next Adventure?"
-	text="Let Banggai Escape design your perfect journey today."
-	ctaLabel="Book your trip"
-	image={ctaBackground}
-	ctaHref="/contact"
+		title={siteCta.title}
+		text={siteCta.text}
+		ctaLabel={siteCta.ctaLabel}
+		image={ctaBackground}
+		ctaHref="/contact"
 />

@@ -17,6 +17,9 @@ import { siteAgency } from '$lib/site-seo';
 let { data } = $props();
 
 const ctaBackground = $derived(data.settings.ctaBackground);
+
+/** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
+const siteCta = $derived(data.settings.siteCta);
 const faqs = $derived(data.settings.faqs);
 const features = $derived(data.settings.features);
 const site = $derived(data.settings.site);
@@ -386,7 +389,9 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 </section>
 
 <CtaBanner
-	title={"Ready To Begin Your\nNext Adventure?"}
-	image={ctaBackground}
-	ctaHref="/contact"
+		title={siteCta.title}
+		text={siteCta.text}
+		ctaLabel={siteCta.ctaLabel}
+		image={ctaBackground}
+		ctaHref="/contact"
 />

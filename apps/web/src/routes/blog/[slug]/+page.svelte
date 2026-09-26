@@ -16,6 +16,9 @@ import { siteCrumbs } from '$lib/site-seo';
 let { data } = $props();
 
 const site = $derived(data.settings.site);
+
+/** The closing invitation, from the CMS. See `$lib/components/CtaBanner`. */
+const siteCta = $derived(data.settings.siteCta);
 const post = $derived(data.post);
 const toc = $derived(tableOfContents(post));
 const related = $derived(data.related);
@@ -470,9 +473,9 @@ const structuredData = $derived([
 {/if}
 
 <CtaBanner
-	title={'Ready To Begin Your\nNext Adventure?'}
-	text="Let Banggai Escape design your perfect journey today."
-	ctaLabel="Book your trip"
+	title={siteCta.title}
+	text={siteCta.text}
+	ctaLabel={siteCta.ctaLabel}
 	image={img(media['blog-details-how-to-get-to-banggai-islands']['lush-cascades-and-untouched-karst-valleys-across-banggai-kepulauan-central-sulawesi'], 2000)}
 	ctaHref="/contact"
 />

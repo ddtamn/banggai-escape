@@ -428,10 +428,44 @@ within five minutes. Nothing is rebuilt and nothing is deployed.
    schemas are `strictObject`, every stored payload must then carry it — which is what
    makes the admin refuse to publish without it.
 2. Add it to the admin's form spec, or `svelte-check` will not let `settingSpecs` /
-   the content forms compile.
+   the content forms compile. The form and the contract are also checked against each other
+   by a test, so a required field with no control fails the suite rather than the save.
 3. Use it on the page. The loader's type follows the schema, so nothing else changes.
 4. If it is a media field, add its name to `mediaFieldsByKind` — that is what makes the
    walker, the delete guard and the site all agree it is media.
+
+### Add a **required** field to a setting — and read this part
+
+**A required setting field is a deploy-ordering problem, not just a schema change.** The read
+layer refuses a stored value that does not satisfy its contract, and it refuses it loudly
+rather than rendering a page with a hole in it. So a schema that requires a field the database
+does not have yet is not a degraded site — it is **HTTP 500 on every page that reads the
+setting**, and pages that do not read it keep working, which makes the blast look arbitrary.
+
+This happened. `siteProfileSchema` gained a required `whatsapp`; the one-shot migration
+`apps/admin/scripts/add-whatsapp-to-site-setting.ts` was run against `dev` and left unrun
+against `production`. The change then sat unpushed for a session. The first deploy of it took
+the site down: every page 500'd, while `sitemap.xml` — which reads no settings — answered 200
+throughout. The migration script's own docblock had predicted exactly this, and the fix was one
+command.
+
+The order that avoids it:
+
+1. Write and review the migration script first. It must be **idempotent** and it must validate
+   against the shared contract before writing, so a bad migration fails there rather than at the
+   next page render.
+2. **Run it against every branch**, production included:
+   ```sh
+   DATABASE_URL=<production branch> pnpm --filter @banggai/admin exec tsx scripts/<name>.ts
+   ```
+3. Only then merge and deploy the schema change.
+
+Step 2 is the one that gets skipped, because `dev` is where you are and it works there. The
+check that catches it afterwards is not subtle — `sitemap.xml` answering 200 while every page
+answers 500 is the signature of a settings-contract failure rather than a broken deploy.
+
+An **optional** field has none of this: `parseSiteSetting` accepts its absence, so a database
+that has never heard of it serves normally.
 
 ### Change brand chrome
 

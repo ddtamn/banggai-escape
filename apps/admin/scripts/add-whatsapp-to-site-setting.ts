@@ -24,6 +24,21 @@
  * pnpm --filter @banggai/admin exec tsx scripts/add-whatsapp-to-site-setting.ts
  * ```
  *
+ * **Run it against every branch, production included, before the schema change is deployed.**
+ * This script exists *because* a required field in `siteProfileSchema` takes the whole site
+ * down until the data catches up, so the ordering is the whole risk:
+ *
+ * ```sh
+ * DATABASE_URL=<dev branch>       pnpm exec tsx scripts/add-whatsapp-to-site-setting.ts
+ * DATABASE_URL=<production branch> pnpm exec tsx scripts/add-whatsapp-to-site-setting.ts
+ * ```
+ *
+ * That second command is the one that gets skipped, because `dev` is where you are and it
+ * works there. It was skipped here, the change then sat unpushed for a session, and the first
+ * deploy of it took `banggaiescape.com` down: every page 500'd while `sitemap.xml` — which
+ * reads no settings — answered 200 throughout. That asymmetry is the signature of this
+ * failure and not of a broken deploy.
+ *
  * Idempotent: a row that already has a `whatsapp` is left alone. Delete this file once it
  * has run against both branches — see `docs/08-content-data-layer.md`.
  */

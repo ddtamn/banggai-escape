@@ -200,14 +200,31 @@ imports the schemas as values and validates with them at runtime.
 The root `pnpm check:code` therefore also checks `packages/content-model/src/**` with
 Biome, like any other workspace source.
 
+### Test runners
+
+| Tool | Driven by | Purpose |
+| --- | --- | --- |
+| **Vitest** (admin) | `pnpm --filter @banggai/admin test` | Two projects: browser (Playwright Chromium) for component specs, and Node for everything else |
+| **Vitest** (web) | `pnpm test` | One Node project, for the parts of the read path with no database behind them |
+| **Playwright** | `pnpm --filter @banggai/admin test:e2e` | Browser checks against a dev server. Needs an administrator; see below |
+| **@vitest/browser-playwright** | — | Browser provider for the admin's `client` project. Chromium must be installed separately |
+
+The two Vitest setups are deliberately not the same. The admin renders forms out of a dozen
+field types and owns the logic behind a guard, so it gets a browser project and three
+sub-projects' worth of fixtures. `apps/web` has no component with logic in it — its logic is
+in loaders — so a browser project there would be testing the browser, and it does not have
+one. Its `include` is Node-only and its specs cover pure functions plus the read modules with
+the database stubbed.
+
+`pnpm test` at the root points at **apps/web only**, like `pnpm check` and `pnpm build`;
+`pnpm admin:test` is the admin's.
+
 ### Admin-only tooling
 
 `apps/admin` adds a server-side toolchain that `apps/web` does not have:
 
 | Tool | Driven by | Purpose |
 | --- | --- | --- |
-| **Vitest** | `pnpm --filter @banggai/admin test` | Two projects: browser (Playwright Chromium) and Node. The only test runner in the repo |
-| **Playwright** | `@vitest/browser-playwright` | Browser provider for component tests. Chromium must be installed separately |
 | **drizzle-kit** | `pnpm --filter @banggai/admin db:*` | Schema push/generate/migrate and Studio |
 | **better-auth CLI** | `pnpm --filter @banggai/admin auth:schema` | Generates the auth tables into `src/lib/server/db/auth.schema.ts` |
 | **shadcn-svelte CLI** | `pnpm dlx shadcn-svelte@latest add <name>` | Adds UI components into `$lib/components/ui` per `components.json` |

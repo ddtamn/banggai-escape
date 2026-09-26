@@ -34,8 +34,8 @@ biome.json  # workspace lint + format config
 
 | App | Purpose | Status |
 | --- | --- | --- |
-| `apps/web` | The public site: packages, destinations, blog, about, contact | Working; reads published content from Neon, records analytics events; no tests |
-| `apps/admin` | Content management + analytics back-office | Sign-in, the route guard, the content screens (draft → publish), the **media library**, settings, and the **analytics dashboard** work; neither Worker is deployed yet |
+| `apps/web` | The public site: packages, destinations, blog, about, contact | Working; reads published content from Neon, records analytics events; Vitest covers the presenters and the slug-redirect walk |
+| `apps/admin` | Content management + analytics back-office | Sign-in, the route guard, the content screens (draft → publish), the **media library**, settings, the **analytics dashboard** and the **overview** work; neither Worker is deployed yet |
 
 ## Commands
 
@@ -44,6 +44,7 @@ Root scripts delegate to **`@banggai/web` only**:
 ```sh
 pnpm dev          # Vite dev server for apps/web (add `-- --open`)
 pnpm check        # svelte-kit sync + svelte-check (types + a11y) — apps/web
+pnpm test         # Vitest — apps/web (presenters, slug redirects)
 pnpm build        # production Cloudflare bundle — apps/web
 pnpm preview      # serve the built Worker on :4173 (needs build first)
 pnpm check:code   # Biome lint + format across the workspace (the CI gate)
@@ -94,6 +95,7 @@ Before you claim a change is complete:
 
 ```sh
 pnpm check        # expect: "svelte-check found 0 errors and 0 warnings"
+pnpm test         # expect: all Vitest specs pass — apps/web
 npx biome check apps/web   # expect: clean (see the admin caveat below)
 pnpm build        # expect: exit 0 — required for routing/config/CSS changes
 ```
@@ -102,7 +104,7 @@ pnpm build        # expect: exit 0 — required for routing/config/CSS changes
   and the project holds at zero.
 - **Never report success without running the checks.** "It should work" is not a
   result.
-- **The three commands above are not enough for a change to how a page is rendered.**
+- **The four commands above are not enough for a change to how a page is rendered.**
   They typecheck and build without ever running a loader. The site reads Neon at request
   time, so a data or routing change also wants a real request against `pnpm dev` (which
   needs `DATABASE_URL` and `MEDIA_PUBLIC_URL` in `apps/web/.env` — copy
@@ -180,8 +182,10 @@ These are non-negotiable; they exist because each one has already caused a real 
     `posts.ts`) **were deleted in Phase 6** — do not add them back, and do not add a
     second copy of any content. `lib/data/media.ts` *is* live, but only for the images the
     design owns.
-  - A media field holds a `media_assets` id, and the read layer turns it into a URL. Do not
-    paste a URL into a payload.
+  - A media field holds a `media_assets` id, and the read layer turns it into a
+    `RenderedMedia` — the URL plus the library's alt text. Do not paste a URL into a
+    payload, and do not point a component at the stored payload type: the rendered types
+    (`RenderedPackage`, …) are what the pages take.
 - **Shared UI lives in `apps/web/src/lib/components/`** — typed props, no content
   imports, and `$derived` for anything read from `data` (a plain destructure captures the
   first value and warns). See [docs/05-components.md](./docs/05-components.md).

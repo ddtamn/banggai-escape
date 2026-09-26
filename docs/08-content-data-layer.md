@@ -86,13 +86,18 @@ chains so a page renamed twice lands on its current URL in a single 301. It retu
 already in use, or when the chain loops. Something that 404s for a *slug reason* is a
 404 only after this has been asked.
 
-### `media.ts` — ids to URLs
+Every one of those cases is pinned in `redirects.spec.ts`, which stubs `$lib/server/db`
+rather than reaching Neon — the same pattern `authz.spec.ts` uses in the admin. Run them
+with `pnpm test`.
 
-A payload stores a `media_assets` id; a page renders a URL.
+### `media.ts` — ids to images
+
+A payload stores a `media_assets` id; a page renders a `RenderedMedia` — the URL **and**
+the description the media library holds.
 
 | Export | Purpose |
 | --- | --- |
-| `loadMedia(ids)` | One query for every image on the page; returns a lookup whose `url(id)` throws if it was not asked for |
+| `loadMedia(ids)` | One query for every image on the page; returns a lookup whose `url(id)` and `image(id)` both throw if the id was not asked for |
 
 Ids are de-duplicated and fetched at once, because a page's payloads share images
 heavily. A reference with **no row is an error, not a missing image**: the admin refuses
@@ -104,12 +109,30 @@ copied from the legacy host) its URL is `${MEDIA_PUBLIC_URL}/${object_key}` — 
 custom domain. An asset with an `external_url` is still served from wherever it always
 was, and wins over the object key.
 
+#### Alt text, and who supplies the fallback
+
+`image(id)` returns `{ src, alt }`, where `alt` is the `media_assets.alt_text` — **or
+`null`**, which is every one of the 29 assets the import brought in. A component renders
+`alt={pkg.image.alt ?? pkg.title}`: the library's description when there is one, and the
+content text that was there before when there is not.
+
+The fallback is at the call site on purpose. `''` and `null` mean different things to a
+screen reader — the first marks an image decorative — and the honest description of a
+photograph depends on where it appears, which only the page knows. Every one of the 10
+render sites had a sensible fallback already, so adding the description could not
+regress a page.
+
+`RenderedSiteSettingValue` is the one place a setting does **not** gain an image:
+`ctaBackground` is a CSS background, so it stays a bare URL from `url(id)` and keeps no
+description. Everything else in `site_settings` that holds media is an `<img>`
+(`testimonials[].avatar`).
+
 #### Validation runs before media does
 
-The stored payload is validated **first**, then its media ids are swapped for URLs. The
+The stored payload is validated **first**, then its media ids are swapped for images. The
 order is not cosmetic: a stored media field is a `media_assets` id and is validated as a
-UUID, while a rendered one is a URL. Resolving first would hand `z.uuid()` a URL and fail
-every page on the site.
+UUID, while a rendered one is an image. Resolving first would hand `z.uuid()` a URL and
+fail every page on the site.
 
 A payload that fails validation throws, naming the item and the offending fields, and
 the request 500s. That is intentional. `publish` is the gate — the admin refuses to write
@@ -275,6 +298,12 @@ string or a list, so a card can format whatever it is handed.
 Nothing in it touches media. A component renders the URL it was given; the width
 arguments the CDN used to take are gone, because an object in R2 has one size.
 
+All four are pinned in `src/lib/content.spec.ts` (`pnpm test`). `formatPrice` is asserted
+as a literal string rather than recomputed, because it is `toLocaleString('id-ID')` and
+nothing else: a runtime without that locale's ICU data renders `IDR 2850000` where the
+design wants `IDR 2.850.000`, and that is a wrong number on a price rather than an
+exception for anything to catch.
+
 ---
 
 ## `apps/web/src/lib/data/media.ts` — page decoration only
@@ -428,10 +457,11 @@ root. `.stitch/` is git-ignored, so this needs the local folder.
 
 ## Known gaps
 
-- **Nothing renders the media library's alt text.** Images use content text as their
-  `alt` (`alt={pkg.title}`, `alt={destination.name}`), and every legacy row has a null
-  `alt_text`. The detail pages' images are therefore described by the item's title, not
-  by a description of the photograph.
+- **No image has a description yet.** The plumbing renders
+  `media_assets.alt_text` everywhere an image appears (see
+  [media.ts](#mediats--ids-to-images)), and all 29 assets still have a null `alt_text`, so
+  the site renders exactly what it did before: content text as the `alt`. Describing them is
+  an editor's job in the media library, one asset at a time.
 - **`post.date` is unused in the UI**; the byline shows `updated`. It stays populated for
   future sort/display work.
 - **The stage and production Workers share one database.** There is no separate staging

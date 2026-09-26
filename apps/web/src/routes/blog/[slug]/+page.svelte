@@ -6,9 +6,12 @@ import CtaBanner from '$lib/components/CtaBanner.svelte';
 import Icon from '$lib/components/Icon.svelte';
 import PostCard from '$lib/components/PostCard.svelte';
 import SectionHeader from '$lib/components/SectionHeader.svelte';
+import Seo from '$lib/components/Seo.svelte';
 import ShareRow from '$lib/components/ShareRow.svelte';
 import { authorBio, tableOfContents } from '$lib/content';
 import { img, media } from '$lib/data/media';
+import { blogPosting, breadcrumbList } from '$lib/seo';
+import { siteCrumbs } from '$lib/site-seo';
 
 let { data } = $props();
 
@@ -100,11 +103,35 @@ $effect(() => {
  * points, and a canonical URL that varies per campaign is not canonical.
  */
 const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
+
+/**
+ * This article as a `BlogPosting`, plus the trail that leads to it.
+ *
+ * The dates come from the revision, not from `post.date` and `post.updated`. Those are display
+ * strings an editor typed for a human reader — "March 12, 2026" — and a consumer that cannot
+ * parse them treats the article as undated, which loses the date treatment in a feed and the
+ * freshness signal in a result.
+ */
+const structuredData = $derived([
+	blogPosting({
+		headline: post.title,
+		description: post.excerpt,
+		url: canonicalUrl,
+		image: post.hero.src,
+		publishedTime: data.publishedAt,
+		modifiedTime: data.updatedAt,
+		author: post.author,
+		siteName: site.name,
+		publisherLogo: '/logomark.png',
+	}),
+	breadcrumbList(
+		page.url.origin,
+		siteCrumbs({ name: 'Blog', path: '/blog' }, { name: post.title, path: page.url.pathname }),
+	),
+]);
 </script>
 
 <svelte:head>
-	<title>{post.title} — {site.name}</title>
-	<meta name="description" content={post.excerpt} />
 	<!--
 		The article's own photograph, preloaded.
 
@@ -118,6 +145,19 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 		<link rel="preload" as="image" href={post.hero.src} fetchpriority="high" />
 	{/if}
 </svelte:head>
+
+<Seo
+	title="{post.title} — {site.name}"
+	description={post.excerpt}
+	canonical={canonicalUrl}
+	siteName={site.name}
+	locale={site.locale}
+	image={{ url: post.hero.src, alt: post.hero.alt ?? post.title }}
+	publishedTime={data.publishedAt}
+	modifiedTime={data.updatedAt}
+	author={post.author}
+	structuredData={structuredData}
+/>
 
 <svelte:window
 	onkeydown={(event) => {

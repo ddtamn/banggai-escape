@@ -1,4 +1,5 @@
 <script lang="ts">
+import { page } from '$app/state';
 import { CARD_SIZES } from '$lib/card-sizes';
 import BookingBar from '$lib/components/BookingBar.svelte';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
@@ -8,8 +9,10 @@ import Icon from '$lib/components/Icon.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
 import PostCard from '$lib/components/PostCard.svelte';
 import SectionHeader from '$lib/components/SectionHeader.svelte';
+import Seo from '$lib/components/Seo.svelte';
 import { img, media } from '$lib/data/media';
 import { imageSrcset } from '$lib/images';
+import { siteAgency } from '$lib/site-seo';
 
 let { data } = $props();
 
@@ -51,14 +54,18 @@ const teamSrcset = $derived(imageSrcset(teamImage, data.imageTransforms));
 
 const waterfallImage = img(media.home['scenic-waterfall-in-banggai']);
 const waterfallSrcset = $derived(imageSrcset(waterfallImage, data.imageTransforms));
+
+/**
+ * This page's identity for crawlers and share cards.
+ *
+ * The hero photograph is the share image, not the site card: a link preview showing the lagoon
+ * the page is about is worth more than one showing a logo, and the photograph is already
+ * resolved and already has dimensions from the media library.
+ */
+const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 </script>
 
 <svelte:head>
-	<title>{site.name} — Discover Banggai, Escape The Ordinary</title>
-	<meta
-		name="description"
-		content="Banggai Escape designs seamless island journeys across the Banggai Archipelago in Central Sulawesi — mirror lakes, reef sanctuaries, and authentic local hospitality."
-	/>
 	<!--
 		The hero photograph, preloaded.
 
@@ -72,6 +79,16 @@ const waterfallSrcset = $derived(imageSrcset(waterfallImage, data.imageTransform
 		<link rel="preload" as="image" href={heroImage} fetchpriority="high" />
 	{/if}
 </svelte:head>
+
+<Seo
+	title="{site.name} — Discover Banggai, Escape The Ordinary"
+	description="Banggai Escape designs seamless island journeys across the Banggai Archipelago in Central Sulawesi — mirror lakes, reef sanctuaries, and authentic local hospitality."
+	canonical={canonicalUrl}
+	siteName={site.name}
+	locale={site.locale}
+	image={{ url: heroImage, alt: 'Turquoise lagoon at Paisu Pok', width: 1408, height: 768 }}
+	structuredData={[siteAgency(site, page.url.origin)]}
+/>
 
 <!-- Hero -->
 <!--

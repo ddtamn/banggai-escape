@@ -25,6 +25,11 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	return {
 		pkg: entry.payload,
+		// Real machine dates for the page's structured data and its share card. The payload's
+		// own duration and price are content; these are when the page changed, which only the
+		// database knows.
+		updatedAt: entry.updatedAt,
+		publishedAt: entry.publishedAt,
 		related: packages
 			.filter((candidate) => candidate.slug !== params.slug)
 			.slice(0, 2)

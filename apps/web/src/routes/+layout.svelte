@@ -26,11 +26,16 @@ afterNavigate(() => {
 
 <svelte:head>
 	<link rel="icon" href="/favicon.png" type="image/png" />
-	<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-	<meta
-		name="description"
-		content="Banggai Escape designs seamless island journeys across the Banggai Archipelago in Central Sulawesi — mirror lakes, reef sanctuaries, and authentic local hospitality."
-	/>
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png" type="image/png" />
+	<!--
+		No description and no `og:image` here, deliberately.
+
+		Both belong to whichever page is being viewed, and the `Seo` component owns them. A
+		site-wide default in the layout would emit a *second* `og:image` on every page that
+		supplies its own, and a consumer picking between two candidates picks
+		non-deterministically — so the page's photograph would sometimes be ignored in favour of
+		the logo, with nothing on the page to show why.
+	-->
 </svelte:head>
 
 <svelte:window onclick={trackClick} />

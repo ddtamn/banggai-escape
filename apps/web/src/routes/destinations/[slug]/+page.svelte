@@ -1,9 +1,13 @@
 <script lang="ts">
+import { page } from '$app/state';
 import { CARD_SIZES } from '$lib/card-sizes';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import Icon from '$lib/components/Icon.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
 import SectionHeader from '$lib/components/SectionHeader.svelte';
+import Seo from '$lib/components/Seo.svelte';
+import { breadcrumbList, touristAttraction } from '$lib/seo';
+import { COUNTRY, siteCrumbs } from '$lib/site-seo';
 
 let { data } = $props();
 
@@ -21,12 +25,48 @@ const quickInfo = $derived([
 ]);
 
 const related = $derived(data.related);
+
+/**
+ * This page's own address, built from the request.
+ *
+ * Correct during SSR, identical to what a crawler resolves, and carrying no hardcoded domain —
+ * behind Cloudflare the request already knows the public host. Query and fragment are dropped,
+ * because `?utm_source=…` is how a link arrives rather than where it points.
+ */
+const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
+
+const structuredData = $derived([
+	touristAttraction({
+		name: destination.name,
+		description: destination.tagline,
+		url: canonicalUrl,
+		image: destination.image.src,
+		region: destination.region,
+		// The same code the organisation document uses, imported rather than restated: two
+		// copies of a country code is one more copy to forget when the business moves.
+		country: COUNTRY,
+		modifiedTime: data.updatedAt,
+	}),
+	breadcrumbList(
+		page.url.origin,
+		siteCrumbs(
+			{ name: 'Destinations', path: '/destinations' },
+			{ name: destination.name, path: page.url.pathname },
+		),
+	),
+]);
 </script>
 
-<svelte:head>
-	<title>{destination.name} — {site.name}</title>
-	<meta name="description" content={destination.tagline} />
-</svelte:head>
+<Seo
+	title="{destination.name} — {site.name}"
+	description={destination.tagline}
+	canonical={canonicalUrl}
+	siteName={site.name}
+	locale={site.locale}
+	image={{ url: destination.image.src, alt: destination.image.alt ?? destination.name }}
+	modifiedTime={data.updatedAt}
+	structuredData={structuredData}
+/>
 
 <!-- Hero -->
 <section class="relative flex h-[480px] items-center justify-center overflow-hidden sm:h-[560px] lg:h-[640px]">

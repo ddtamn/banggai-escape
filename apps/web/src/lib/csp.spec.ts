@@ -26,6 +26,12 @@ function sourceFiles(dir: string): string[] {
 	for (const entry of readdirSync(dir)) {
 		const path = join(dir, entry);
 
+		// A test file is never rendered, so a URL in one cannot cause a fetch the browser would
+		// then refuse. Without this, a fixture like `https://media.example.com/a.jpg` fails a
+		// test about production, and the tempting fix — widening the policy — is a real
+		// regression made to satisfy a string in a test.
+		if (/\.spec\.ts$/.test(entry)) continue;
+
 		if (statSync(path).isDirectory()) {
 			found.push(...sourceFiles(path));
 		} else if (/\.(svelte|ts|js|html|css)$/.test(entry)) {
@@ -35,6 +41,21 @@ function sourceFiles(dir: string): string[] {
 
 	return found;
 }
+
+/**
+ * Origins this codebase names but never loads.
+ *
+ * `schema.org` appears as the `@context` of every JSON-LD block. That is a *vocabulary
+ * identifier* — a string inside a `<script type="application/ld+json">` data block — and
+ * nothing ever requests it. A browser applying `img-src` has no opinion about a string inside a
+ * data block, and listing schema.org as an allowed image source would widen the policy to
+ * accommodate a vocabulary name.
+ *
+ * Listed here rather than special-cased in the regex so that it is reviewable: this is the one
+ * place a named-but-unfetched origin can be excused, and a reader deciding whether the policy
+ * is too loose starts by reading this.
+ */
+const NEVER_FETCHED = new Set(['schema.org']);
 
 /**
  * Comments name documentation URLs (`see https://svelte.dev`) that the document never
@@ -64,6 +85,7 @@ function externalOriginsIn(dir: string): Map<string, Set<string>> {
 				.split('/')[0]
 				.toLowerCase();
 			if (origin === 'banggaiescape.com') continue;
+			if (NEVER_FETCHED.has(origin)) continue;
 
 			const files = origins.get(origin) ?? new Set<string>();
 			files.add(file);
@@ -98,6 +120,18 @@ describe('the content security policy', () => {
 		// If this ever returns an empty set the assertions below would pass for the wrong
 		// reason, which is the failure mode a test like this is most vulnerable to.
 		expect(origins.size).toBeGreaterThan(0);
+	});
+
+	it('excludes only what cannot cause a fetch, so the exclusions cannot become a loophole', () => {
+		// Every excuse above is a way for a real, un-allowed origin to stop being reported, so
+		// each is asserted to be narrow. The first two are the scanner's own blind spots; the
+		// third is the list of named-but-never-loaded origins.
+		expect(sourceFiles(join(process.cwd(), 'src')).some((f) => f.includes('.spec.'))).toBe(false);
+		expect(origins.has('schema.org')).toBe(false);
+		// And the origins that genuinely are loaded must still be found, or the file has been
+		// neutered rather than corrected.
+		expect(origins.has('media.banggaiescape.com')).toBe(true);
+		expect(origins.has('static.cloudflareinsights.com')).toBe(true);
 	});
 
 	it.each([...origins.keys()].sort())('allows the origin %s', (origin) => {

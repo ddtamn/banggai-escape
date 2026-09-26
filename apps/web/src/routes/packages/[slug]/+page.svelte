@@ -1,10 +1,14 @@
 <script lang="ts">
 import { fly } from 'svelte/transition';
+import { page } from '$app/state';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import Icon from '$lib/components/Icon.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
+import Seo from '$lib/components/Seo.svelte';
 import { durationLabel, formatPrice } from '$lib/content';
 import { img, media } from '$lib/data/media';
+import { breadcrumbList, touristTrip } from '$lib/seo';
+import { siteCrumbs } from '$lib/site-seo';
 
 let { data } = $props();
 
@@ -67,13 +71,48 @@ $effect(() => {
 		if (frame) cancelAnimationFrame(frame);
 	};
 });
+const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
+
+/**
+ * What this page is, in the two vocabularies that apply.
+ *
+ * A `TouristTrip` *and* a `Product`, because that is genuinely what a bookable package is, and
+ * a consumer reading either half then finds the fields it needs. Alongside it, the trail that
+ * leads here — a page with a breadcrumb and no structured data for one is the commonest way to
+ * leave both on the table.
+ */
+const structuredData = $derived([
+	touristTrip({
+		name: pkg.title,
+		description: pkg.overview,
+		url: canonicalUrl,
+		image: pkg.image.src,
+		price: pkg.price,
+		tripType: pkg.tripType,
+		region: pkg.region,
+		durationDays: pkg.days,
+		modifiedTime: data.updatedAt,
+	}),
+	breadcrumbList(
+		page.url.origin,
+		siteCrumbs(
+			{ name: 'Packages', path: '/packages' },
+			{ name: pkg.title, path: page.url.pathname },
+		),
+	),
+]);
 </script>
 
-<svelte:head>
-	<title>{pkg.title} — {site.name}</title>
-	<meta name="description" content={pkg.overview.slice(0, 155)} />
-</svelte:head>
-
+<Seo
+	title="{pkg.title} — {site.name}"
+	description={pkg.overview.slice(0, 155)}
+	canonical={canonicalUrl}
+	siteName={site.name}
+	locale={site.locale}
+	image={{ url: pkg.image.src, alt: pkg.image.alt ?? pkg.title }}
+	modifiedTime={data.updatedAt}
+	structuredData={structuredData}
+/>
 <div>
 	<!--
 		Photo gallery. On phones it is one snap-scrolling strip (CSS scroll snap, so

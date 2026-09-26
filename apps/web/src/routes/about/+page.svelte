@@ -1,9 +1,13 @@
 <script lang="ts">
+import { page } from '$app/state';
 import { CARD_SIZES } from '$lib/card-sizes';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import Icon from '$lib/components/Icon.svelte';
+import Seo from '$lib/components/Seo.svelte';
 import { img, media } from '$lib/data/media';
 import { imageSrcset } from '$lib/images';
+import { breadcrumbList } from '$lib/seo';
+import { siteAgency, siteCrumbs } from '$lib/site-seo';
 
 let { data } = $props();
 
@@ -17,16 +21,30 @@ const visionMission = $derived(data.settings.visionMission);
 /** The hero photograph, and the resized variants the edge can produce from it. */
 const heroImage = img(media['about-us']['travelers-joyfully-cheering-outdoors-in-nature'], 2000);
 const heroSrcset = $derived(imageSrcset(heroImage, data.imageTransforms));
+/**
+ * This page's identity for crawlers and share cards.
+ *
+ * The canonical URL is built from `page.url`, so it is correct during SSR, identical to what a
+ * crawler resolves, and carries no hardcoded domain — behind Cloudflare the request already
+ * knows the public host. Query and fragment are dropped, because `?utm_source=…` is how a link
+ * arrives rather than where it points.
+ */
+const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
+const structuredData = $derived([
+	siteAgency(site, page.url.origin),
+	breadcrumbList(page.url.origin, siteCrumbs({ name: 'About us', path: '/about' })),
+]);
 </script>
 
-<svelte:head>
-	<title>About Us — {site.name}</title>
-	<meta
-		name="description"
-		content="Born from a deep passion for sharing the untouched magic and legendary warmth of Banggai."
-	/>
-</svelte:head>
-
+<Seo
+	title="About Us — {site.name}"
+	description="Born from a deep passion for sharing the untouched magic and legendary warmth of Banggai."
+	canonical={canonicalUrl}
+	siteName={site.name}
+	locale={site.locale}
+	image={{ url: heroImage, alt: 'A group of travellers cheering outdoors in nature' }}
+	structuredData={structuredData}
+/>
 <!-- Hero -->
 <section class="relative flex min-h-[460px] items-center justify-center overflow-hidden bg-forest-deep sm:min-h-[520px]">
 	<img

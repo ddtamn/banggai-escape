@@ -1,9 +1,13 @@
 <script lang="ts">
+import { page } from '$app/state';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import DestinationCard from '$lib/components/DestinationCard.svelte';
 import Icon from '$lib/components/Icon.svelte';
 import PageHero from '$lib/components/PageHero.svelte';
+import Seo from '$lib/components/Seo.svelte';
 import { backgrounds, img } from '$lib/data/media';
+import { breadcrumbList } from '$lib/seo';
+import { siteAgency, siteCrumbs } from '$lib/site-seo';
 
 let { data } = $props();
 
@@ -20,16 +24,29 @@ const visible = $derived(
 			.includes(query.trim().toLowerCase()),
 	),
 );
+/**
+ * This page's identity for crawlers and share cards.
+ *
+ * The canonical URL is built from `page.url`, so it is correct during SSR, identical to what a
+ * crawler resolves, and carries no hardcoded domain — behind Cloudflare the request already
+ * knows the public host. Query and fragment are dropped, because `?utm_source=…` is how a link
+ * arrives rather than where it points.
+ */
+const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
+const structuredData = $derived([
+	breadcrumbList(page.url.origin, siteCrumbs({ name: 'Destinations', path: '/destinations' })),
+]);
 </script>
 
-<svelte:head>
-	<title>Destinations — {site.name}</title>
-	<meta
-		name="description"
-		content="Handpicked natural sanctuaries across the Banggai Archipelago, curated by local experts for travelers seeking authentic beauty."
-	/>
-</svelte:head>
-
+<Seo
+	title="Destinations — {site.name}"
+	description="Handpicked natural sanctuaries across the Banggai Archipelago, curated by local experts for travelers seeking authentic beauty."
+	canonical={canonicalUrl}
+	siteName={site.name}
+	locale={site.locale}
+	image={{ url: img(backgrounds.destinations['hero-bg'], 2000), alt: 'Clear water over a shallow reef' }}
+	structuredData={structuredData}
+/>
 <PageHero
 	title="Extraordinary Destinations"
 	subtitle="Handpicked natural sanctuaries across the Banggai Archipelago, curated by local experts for travelers seeking authentic beauty."

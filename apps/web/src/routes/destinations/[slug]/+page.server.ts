@@ -48,6 +48,9 @@ export const load: PageServerLoad = async ({ params }) => {
 	return {
 		destination: entry.payload,
 		mosaic,
+		// When the page last changed, for its structured data. Null when nothing has ever
+		// touched it, which is a real state and not one to paper over with today's date.
+		updatedAt: entry.updatedAt,
 		related: packages.slice(0, 3).map((item) => item.payload),
 	};
 };

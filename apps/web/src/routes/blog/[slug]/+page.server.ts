@@ -27,6 +27,11 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	return {
 		post: entry.payload,
+		// Real machine dates for `BlogPosting`. The payload's `date` and `updated` are display
+		// strings an editor typed for a human reader — "March 12, 2026" — and structured data
+		// cannot parse those, so the revision's own timestamps are what get published.
+		updatedAt: entry.updatedAt,
+		publishedAt: entry.publishedAt,
 		related: posts
 			.filter((candidate) => candidate.slug !== params.slug)
 			.slice(0, 3)

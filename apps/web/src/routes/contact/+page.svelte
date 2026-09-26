@@ -1,10 +1,14 @@
 <script lang="ts">
+import { page } from '$app/state';
 import { CARD_SIZES } from '$lib/card-sizes';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import EnquiryPanel from '$lib/components/EnquiryPanel.svelte';
 import Icon from '$lib/components/Icon.svelte';
+import Seo from '$lib/components/Seo.svelte';
 import { img, media } from '$lib/data/media';
 import { imageSrcset } from '$lib/images';
+import { breadcrumbList } from '$lib/seo';
+import { siteAgency, siteCrumbs } from '$lib/site-seo';
 
 let { data } = $props();
 
@@ -45,16 +49,30 @@ const enquiry = $derived({
 function keepOnPage(event: SubmitEvent) {
 	event.preventDefault();
 }
+/**
+ * This page's identity for crawlers and share cards.
+ *
+ * The canonical URL is built from `page.url`, so it is correct during SSR, identical to what a
+ * crawler resolves, and carries no hardcoded domain — behind Cloudflare the request already
+ * knows the public host. Query and fragment are dropped, because `?utm_source=…` is how a link
+ * arrives rather than where it points.
+ */
+const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
+const structuredData = $derived([
+	siteAgency(site, page.url.origin),
+	breadcrumbList(page.url.origin, siteCrumbs({ name: 'Contact', path: '/contact' })),
+]);
 </script>
 
-<svelte:head>
-	<title>Contact Us — {site.name}</title>
-	<meta
-		name="description"
-		content="Plan your bespoke island journey with Banggai Escape — our local island specialists are on hand to tailor custom itineraries, boat transfers, and guided expeditions."
-	/>
-</svelte:head>
-
+<Seo
+	title="Contact Us — {site.name}"
+	description="Plan your bespoke island journey with Banggai Escape — our local island specialists are on hand to tailor custom itineraries, boat transfers, and guided expeditions."
+	canonical={canonicalUrl}
+	siteName={site.name}
+	locale={site.locale}
+	image={{ url: lakeImage, alt: 'A canoe floating on the still water of Paisu Pok lake' }}
+	structuredData={structuredData}
+/>
 <div>
 	<!-- Top: image + form -->
 	<section class="mx-auto max-w-7xl px-6 pt-12 pb-20">

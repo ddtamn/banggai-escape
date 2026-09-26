@@ -1,3 +1,11 @@
-# allow crawling everything by default
+# Public marketing site. Everything here is meant to be indexed.
+#
+# `Disallow:` with an empty value is the explicit form of "nothing is off-limits", which is
+# clearer than an absent line when the file is the only place a crawler looks for permission.
 User-agent: *
 Disallow:
+
+# The sitemap, not a hand-written list of routes. Every page it names comes from published
+# content in the database, so an editor publishing something new makes it discoverable without
+# anyone editing a file. A static list here would drift the moment it was written.
+Sitemap: https://banggaiescape.com/sitemap.xml

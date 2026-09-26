@@ -1,9 +1,13 @@
 <script lang="ts">
+import { page } from '$app/state';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import Icon from '$lib/components/Icon.svelte';
 import PageHero from '$lib/components/PageHero.svelte';
 import PostCard from '$lib/components/PostCard.svelte';
+import Seo from '$lib/components/Seo.svelte';
 import { backgrounds, img } from '$lib/data/media';
+import { breadcrumbList } from '$lib/seo';
+import { siteAgency, siteCrumbs } from '$lib/site-seo';
 
 let { data } = $props();
 
@@ -29,16 +33,29 @@ const visible = $derived(
 
 const featured = $derived(visible.slice(0, 2));
 const rest = $derived(visible.slice(2));
+/**
+ * This page's identity for crawlers and share cards.
+ *
+ * The canonical URL is built from `page.url`, so it is correct during SSR, identical to what a
+ * crawler resolves, and carries no hardcoded domain — behind Cloudflare the request already
+ * knows the public host. Query and fragment are dropped, because `?utm_source=…` is how a link
+ * arrives rather than where it points.
+ */
+const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
+const structuredData = $derived([
+	breadcrumbList(page.url.origin, siteCrumbs({ name: 'Blog', path: '/blog' })),
+]);
 </script>
 
-<svelte:head>
-	<title>Blog — {site.name}</title>
-	<meta
-		name="description"
-		content="Discover curated articles, destination guides, and travel insight to inspire your next adventure."
-	/>
-</svelte:head>
-
+<Seo
+	title="Blog — {site.name}"
+	description="Discover curated articles, destination guides, and travel insight to inspire your next adventure."
+	canonical={canonicalUrl}
+	siteName={site.name}
+	locale={site.locale}
+	image={{ url: img(backgrounds.blog['hero-bg'], 2000), alt: 'Travelling by boat through calm open water' }}
+	structuredData={structuredData}
+/>
 <PageHero
 	title={'Insights to Help You\nTravel Smarter'}
 	subtitle="Discover curated articles, destination guides, and travel insight to inspire your next adventure"

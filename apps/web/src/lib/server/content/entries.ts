@@ -39,6 +39,25 @@ export type PublishedEntry<Kind extends ContentKind> = {
 	/** Position within its kind, as the admin ordered it. Lower comes first. */
 	sortOrder: number;
 	featured: boolean;
+	/**
+	 * When this entry last changed, as an ISO 8601 string, or null if it never has.
+	 *
+	 * `content_entries.updated_at`, which an editor's save moves. It is what a sitemap's
+	 * `lastmod` reports and what `BlogPosting.dateModified` states.
+	 *
+	 * Null is a real value, not a gap to paper over: the column is nullable, a row seeded
+	 * outside the admin can have never been touched, and inventing a date would tell a crawler
+	 * the page changed when nobody knows that it did.
+	 */
+	updatedAt: string | null;
+	/**
+	 * When this revision was published, as an ISO 8601 string.
+	 *
+	 * Taken from the revision rather than the payload, because the payload's `date` and
+	 * `updated` are display strings an editor typed — "March 12, 2026" — for a human reader.
+	 * Structured data wants a machine date, and this is the real one.
+	 */
+	publishedAt: string;
 	payload: RenderedPayloadFor<Kind>;
 };
 
@@ -47,7 +66,7 @@ export async function loadPublishedEntries<Kind extends ContentKind>(
 	kind: Kind,
 ): Promise<PublishedEntry<Kind>[]> {
 	const rows = await database()`
-		select e.slug, e.sort_order, e.featured, r.payload
+		select e.slug, e.sort_order, e.featured, e.updated_at, r.payload, r.published_at
 		from content_entries e
 		join content_revisions r on r.id = e.published_revision_id
 		where e.kind = ${kind} and e.archived_at is null
@@ -68,7 +87,7 @@ export async function loadPublishedEntry<Kind extends ContentKind>(
 	slug: string,
 ): Promise<PublishedEntry<Kind> | null> {
 	const rows = await database()`
-		select e.slug, e.sort_order, e.featured, r.payload
+		select e.slug, e.sort_order, e.featured, e.updated_at, r.payload, r.published_at
 		from content_entries e
 		join content_revisions r on r.id = e.published_revision_id
 		where e.kind = ${kind} and e.slug = ${slug} and e.archived_at is null
@@ -85,6 +104,8 @@ type Row = {
 	slug: string;
 	sortOrder: number;
 	featured: boolean;
+	updatedAt: string | null;
+	publishedAt: string;
 	payload: unknown;
 };
 
@@ -100,8 +121,24 @@ function toRow(row: Record<string, unknown>): Row {
 		slug: String(row.slug),
 		sortOrder: Number(row.sort_order),
 		featured: Boolean(row.featured),
+		updatedAt: toIsoString(row.updated_at),
+		publishedAt: toIsoString(row.published_at) ?? '',
 		payload: row.payload,
 	};
+}
+
+/**
+ * An ISO 8601 string from whatever the driver produced, or null for a null timestamp.
+ *
+ * The neon-http driver hands back a JS `Date` for a `timestamptz`, and `String(date)` would
+ * produce "Fri Sep 25 2026 13:41:52 GMT+0000 (Coordinated Universal Time)" — which is not a date
+ * a sitemap parser or a structured-data consumer can read. Everything downstream here wants the
+ * one format all of them agree on.
+ */
+function toIsoString(value: unknown): string | null {
+	if (value === null || value === undefined) return null;
+
+	return value instanceof Date ? value.toISOString() : new Date(String(value)).toISOString();
 }
 
 /**
@@ -126,6 +163,8 @@ async function hydrate<Kind extends ContentKind>(
 			slug: row.slug,
 			sortOrder: row.sortOrder,
 			featured: row.featured,
+			updatedAt: row.updatedAt,
+			publishedAt: row.publishedAt,
 			payload: parsed.payload,
 		};
 	});

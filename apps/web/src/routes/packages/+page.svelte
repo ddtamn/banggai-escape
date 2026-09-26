@@ -1,11 +1,15 @@
 <script lang="ts">
 import type { TripType } from '@banggai/content-model';
+import { page } from '$app/state';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import Icon from '$lib/components/Icon.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
 import PageHero from '$lib/components/PageHero.svelte';
+import Seo from '$lib/components/Seo.svelte';
 import { img, media } from '$lib/data/media';
 import { imageSrcset } from '$lib/images';
+import { breadcrumbList } from '$lib/seo';
+import { siteAgency, siteCrumbs } from '$lib/site-seo';
 
 let { data } = $props();
 
@@ -40,16 +44,29 @@ const heroImage = img(
 	2000,
 );
 const heroSrcset = $derived(imageSrcset(heroImage, data.imageTransforms));
+/**
+ * This page's identity for crawlers and share cards.
+ *
+ * The canonical URL is built from `page.url`, so it is correct during SSR, identical to what a
+ * crawler resolves, and carries no hardcoded domain — behind Cloudflare the request already
+ * knows the public host. Query and fragment are dropped, because `?utm_source=…` is how a link
+ * arrives rather than where it points.
+ */
+const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
+const structuredData = $derived([
+	breadcrumbList(page.url.origin, siteCrumbs({ name: 'Packages', path: '/packages' })),
+]);
 </script>
 
-<svelte:head>
-	<title>Tour Packages — {site.name}</title>
-	<meta
-		name="description"
-		content="Choose from our all-inclusive, fully customizable tour packages designed by local experts to showcase the very best of Central Sulawesi's hidden gems."
-	/>
-</svelte:head>
-
+<Seo
+	title="Tour Packages — {site.name}"
+	description="Choose from our all-inclusive, fully customizable tour packages designed by local experts to showcase the very best of Central Sulawesi's hidden gems."
+	canonical={canonicalUrl}
+	siteName={site.name}
+	locale={site.locale}
+	image={{ url: heroImage, alt: 'A tropical island coastline in the Banggai Archipelago' }}
+	structuredData={structuredData}
+/>
 <!--
 	The design's `packages/hero-bg` export is a 512×279 thumbnail, so it turns to mush once
 	stretched full-bleed. Use the full-quality island shot from the same asset set instead.

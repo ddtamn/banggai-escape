@@ -223,26 +223,85 @@ export type HomePageCopy = z.infer<typeof homePageCopySchema>;
 /**
  * The editorial copy of one inner page: how it describes itself, and its hero.
  *
- * Every field is required-with-a-default, because a partial page would render a hole where its
- * heading should be. A page that genuinely has no hero subtitle omits the key rather than
- * storing an empty string — see `heroSubtitle`.
+ * A builder rather than one shared schema, and the distinction matters. A single schema would
+ * have one set of defaults, so five pages would be seeded with the *same* placeholder words and
+ * the blog would render "Banggai Escape" where its heading belongs. Per-page defaults are the
+ * whole point; what the builder buys is that the five cannot drift in *shape* while differing in
+ * content.
+ *
+ * `seoTitle` is the page's own name, **not** the browser title. The brand is appended by the
+ * page (`${site.name} — ${seoTitle}`) for the same reason it is stored once in `site.name`:
+ * transcribing "Banggai Escape" into seven stored strings is seven places to forget when the
+ * business is renamed, and the stale ones fail silently — the page renders, the tab says the
+ * old name.
  */
-export const innerPageCopySchema = z
-	.strictObject({
-		seoTitle: copy('Page — Banggai Escape'),
-		seoDescription: copy('Banggai Escape — island journeys across the Banggai Archipelago.'),
-		heroTitle: copy('Banggai Escape'),
-		/**
-		 * Absent means "no standfirst", which is different from an empty one and is why this is
-		 * `.optional()` rather than `copy('')`. An empty string would render an empty paragraph with
-		 * its bottom margin, which is a visible gap; an absent key renders nothing at all.
-		 */
-		heroSubtitle: z.string().min(1).optional(),
-		// See `siteCtaSchema`.
-	})
-	.prefault({});
+function innerPageCopy(defaults: {
+	seoTitle: string;
+	seoDescription: string;
+	heroTitle: string;
+	heroSubtitle?: string;
+}) {
+	return (
+		z
+			.strictObject({
+				seoTitle: copy(defaults.seoTitle),
+				seoDescription: copy(defaults.seoDescription),
+				heroTitle: copy(defaults.heroTitle),
+				/**
+				 * Absent means "no standfirst", which is different from an empty one and is why this is
+				 * `.optional()` rather than a defaulted string. An empty string would render an empty
+				 * paragraph with its bottom margin, which is a visible gap; an absent key renders
+				 * nothing at all.
+				 */
+				heroSubtitle: z.string().min(1).optional(),
+			})
+			// See `siteCtaSchema`.
+			.prefault({})
+	);
+}
 
-export type InnerPageCopy = z.infer<typeof innerPageCopySchema>;
+export const packagesPageCopy = innerPageCopy({
+	seoTitle: 'Tour Packages',
+	seoDescription:
+		'Choose from our all-inclusive, fully customizable tour packages designed by local experts to showcase the very best of Central Sulawesi’s hidden gems.',
+	heroTitle: 'Find Your Perfect\nBanggai Escape',
+	heroSubtitle:
+		'Choose from our all-inclusive, fully customizable tour packages designed by local experts to showcase the very best of Central Sulawesi’s hidden gems.',
+});
+
+export const destinationsPageCopy = innerPageCopy({
+	seoTitle: 'Destinations',
+	seoDescription:
+		'Handpicked natural sanctuaries across the Banggai Archipelago, curated by local experts for travelers seeking authentic beauty.',
+	heroTitle: 'Extraordinary Destinations',
+	heroSubtitle:
+		'Handpicked natural sanctuaries across the Banggai Archipelago, curated by local experts for travelers seeking authentic beauty.',
+});
+
+export const blogPageCopy = innerPageCopy({
+	seoTitle: 'Blog',
+	seoDescription:
+		'Discover curated articles, destination guides, and travel insight to inspire your next adventure.',
+	heroTitle: 'Insights to Help You\nTravel Smarter',
+	heroSubtitle:
+		'Discover curated articles, destination guides, and travel insight to inspire your next adventure.',
+});
+
+export const aboutPageCopy = innerPageCopy({
+	seoTitle: 'About Us',
+	seoDescription:
+		'Born from a deep passion for sharing the untouched magic and legendary warmth of Banggai.',
+	heroTitle: 'About Us',
+});
+
+export const contactPageCopy = innerPageCopy({
+	seoTitle: 'Contact Us',
+	seoDescription:
+		'Plan your bespoke island journey with Banggai Escape — our local island specialists are on hand to tailor custom itineraries, boat transfers, and guided expeditions.',
+	heroTitle: 'Let’s Get In Touch.',
+});
+
+export type InnerPageCopy = z.infer<typeof packagesPageCopy>;
 
 export const navItemSchema = z.strictObject({
 	label: z.string().min(1),
@@ -353,11 +412,11 @@ export const siteSettingSchemas = {
 	/** The home page's own words. See `homePageCopySchema` for why every field is defaulted. */
 	homePage: homePageCopySchema,
 	/** The four inner pages that share a hero shape: packages, destinations, blog, contact. */
-	packagesPage: innerPageCopySchema,
-	destinationsPage: innerPageCopySchema,
-	blogPage: innerPageCopySchema,
-	aboutPage: innerPageCopySchema,
-	contactPage: innerPageCopySchema,
+	packagesPage: packagesPageCopy,
+	destinationsPage: destinationsPageCopy,
+	blogPage: blogPageCopy,
+	aboutPage: aboutPageCopy,
+	contactPage: contactPageCopy,
 } as const;
 
 /**

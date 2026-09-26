@@ -14,7 +14,12 @@
  * assert, against the real schemas rather than against a description of them.
  */
 
-import { homePageCopySchema, innerPageCopySchema, siteCtaSchema } from '@banggai/content-model';
+import {
+	blogPageCopy,
+	homePageCopySchema,
+	packagesPageCopy,
+	siteCtaSchema,
+} from '@banggai/content-model';
 import { describe, expect, it } from 'vitest';
 
 /** Every leaf path in a parsed value, so "all populated" can be asserted rather than eyeballed. */
@@ -32,7 +37,7 @@ describe('page copy is safe to deploy before the data exists', () => {
 		// from being down again.
 		expect(siteCtaSchema.safeParse(undefined).success).toBe(true);
 		expect(homePageCopySchema.safeParse(undefined).success).toBe(true);
-		expect(innerPageCopySchema.safeParse(undefined).success).toBe(true);
+		expect(packagesPageCopy.safeParse(undefined).success).toBe(true);
 	});
 
 	it('parses an empty object, so a half-written row is not a broken site either', () => {
@@ -40,7 +45,7 @@ describe('page copy is safe to deploy before the data exists', () => {
 		// placeholder, are both states the site has to survive.
 		expect(siteCtaSchema.safeParse({}).success).toBe(true);
 		expect(homePageCopySchema.safeParse({}).success).toBe(true);
-		expect(innerPageCopySchema.safeParse({}).success).toBe(true);
+		expect(packagesPageCopy.safeParse({}).success).toBe(true);
 	});
 
 	it('populates every leaf from an empty object, with no empty string left behind', () => {
@@ -50,7 +55,7 @@ describe('page copy is safe to deploy before the data exists', () => {
 		for (const [name, schema] of [
 			['siteCta', siteCtaSchema],
 			['homePage', homePageCopySchema],
-			['innerPage', innerPageCopySchema],
+			['innerPage', packagesPageCopy],
 		] as const) {
 			const parsed = schema.parse({}) as Record<string, unknown>;
 
@@ -73,6 +78,32 @@ describe('page copy is safe to deploy before the data exists', () => {
 
 		expect(about.body).toHaveLength(2);
 		expect(about.actionLabel).toBeTruthy();
+	});
+
+	it('gives each page its own hero, not one shared placeholder', () => {
+		// A single shared schema was the first attempt and it was wrong: one set of defaults
+		// means five pages seeded with the same words, and the blog renders "Banggai Escape"
+		// where its heading belongs. The pages must differ.
+		const blog = blogPageCopy.parse({});
+		const packages = packagesPageCopy.parse({});
+
+		expect(blog.heroTitle).not.toBe(packages.heroTitle);
+		expect(blog.seoTitle).not.toBe(packages.seoTitle);
+		// And none of them may be the bare brand name, which is what a placeholder default
+		// tends to be.
+		for (const title of [blog.heroTitle, packages.heroTitle]) {
+			expect(title).not.toBe('Banggai Escape');
+			expect(title.length).toBeGreaterThan(8);
+		}
+	});
+
+	it('keeps the brand name out of the stored title, so a rename needs one edit', () => {
+		// The page composes `${site.name} — ${seoTitle}`. A stored title that already contains
+		// the brand would be a second copy of it, and renaming the business would leave these
+		// stale — silently, because the page still renders.
+		for (const seoTitle of [blogPageCopy.parse({}).seoTitle, packagesPageCopy.parse({}).seoTitle]) {
+			expect(seoTitle).not.toContain('Banggai Escape');
+		}
 	});
 
 	it('lets a stored value override every default', () => {
@@ -109,7 +140,7 @@ describe('page copy rejects what it should', () => {
 	it('treats an absent hero subtitle as "no standfirst" rather than an empty one', () => {
 		// Different on purpose: absent renders nothing, empty renders an empty paragraph with
 		// its bottom margin. Storing `''` would put a visible gap under the heading.
-		const parsed = innerPageCopySchema.parse({});
+		const parsed = packagesPageCopy.parse({});
 
 		expect(parsed.heroSubtitle).toBeUndefined();
 	});

@@ -186,16 +186,17 @@ export function jsonLdScript(document: unknown): string {
  * A complete JSON-LD script element, ready to inject.
  *
  * Assembling the element here rather than in the component is not a matter of taste. A Svelte
- * script block ends at the first closing script tag in its *source*, whatever comment
- * surrounds it — so a component cannot spell out the very element it is trying to produce.
- * Keeping the literal in a plain TypeScript module puts it where the only parser reading it is
- * TypeScript's, which is also why the string is split here rather than written whole.
+ * script block ends at the first closing script tag in its *source*, whatever comment surrounds
+ * it — so `Seo.svelte` cannot spell out the very element it is trying to produce, and an
+ * earlier version of it emitted the literal text `{jsonLdScript(document)}` instead of a
+ * script. Keeping the literal in a plain TypeScript module puts it where the only parser reading
+ * it is TypeScript's.
  *
  * Safe for the same reason `jsonLdScript` is: every `<` has already been escaped, so the
  * payload cannot terminate the element early.
  */
 export function jsonLdBlock(document: unknown): string {
-	return `<script type="application/ld+json">${jsonLdScript(document)}</` + `script>`;
+	return `<script type="application/ld+json">${jsonLdScript(document)}</script>`;
 }
 
 /** One step in a breadcrumb trail, in order from the site root. */

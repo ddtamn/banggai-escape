@@ -172,6 +172,7 @@ describe('assertValidSiteSetting', () => {
 				locale: 'en',
 				phone: '(62) 813 5491 1647',
 				phoneHref: 'tel:+6281354911647',
+				whatsapp: '6281354911647',
 				email: 'hello@banggaiescape.com',
 				address: ['Jl. Setia Budi, Luwuk Banggai'],
 				reviewCount: 200,

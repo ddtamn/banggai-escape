@@ -1,7 +1,8 @@
-import { parseSiteSetting, siteSettingKeys } from '@banggai/content-model';
+import { parseSiteSetting, siteProfileSchema, siteSettingKeys } from '@banggai/content-model';
 import { describe, expect, it } from 'vitest';
 import {
 	countsFor,
+	type FieldSpec,
 	initialSettingCounts,
 	isSiteSettingKey,
 	parseSettingForm,
@@ -83,6 +84,7 @@ describe('parsing a setting', () => {
 				'site.locale': 'en',
 				'site.phone': '+62 812 0000',
 				'site.phoneHref': 'tel:+628120000',
+				'site.whatsapp': '628120000',
 				'site.email': 'hello@banggaiescape.com',
 				'site.address.__count': '2',
 				'site.address[0]': 'Luwuk',
@@ -171,5 +173,66 @@ describe('seeding a form', () => {
 		expect(readPath(settingFormValues('faqs', [{ question: 'One?' }]), 'faqs[0].question')).toBe(
 			'One?',
 		);
+	});
+});
+
+describe('the site form and the site contract cannot drift apart', () => {
+	/**
+	 * Every field name a spec *contains*, at any depth.
+	 *
+	 * A `FieldSpec` is a recursive union — `object` and `rows` own nested `fields` — so the
+	 * site profile is one spec with a tree inside it. Two things follow: the root's own name is
+	 * the setting key (`site`), not a field of the profile, and comparing the contract to the
+	 * root would compare a list of leaves to a list of branches and find everything missing.
+	 */
+	function containedNames(spec: FieldSpec): string[] {
+		if (!('fields' in spec)) return [];
+
+		return spec.fields.flatMap((child) => [child.name, ...containedNames(child)]);
+	}
+
+	/**
+	 * Contract keys an editor cannot leave out.
+	 *
+	 * Asked of the schema rather than read from a list, so adding a required field to
+	 * `siteProfileSchema` makes this test demand a form field without anyone editing a second
+	 * thing. `safeParse(undefined)` is how a Zod field is asked whether absence is allowed,
+	 * which works whether the field is `.optional()`, has a default, or is simply required.
+	 */
+	const requiredKeys = Object.entries(siteProfileSchema.shape)
+		.filter(([, schema]) => !schema.safeParse(undefined).success)
+		.map(([key]) => key)
+		.sort();
+
+	const formFields = new Set(containedNames(settingSpecs.site));
+	const contractFields = new Set(Object.keys(siteProfileSchema.shape));
+
+	it('finds the required keys, so the rest of this file is not vacuous', () => {
+		// A schema change that made everything optional would otherwise turn the test below
+		// into a loop over nothing, which passes.
+		expect(requiredKeys.length).toBeGreaterThan(3);
+	});
+
+	it('finds the form fields, so a spec that stopped nesting would not pass by finding none', () => {
+		expect(formFields.has('whatsapp')).toBe(true);
+	});
+
+	it('gives every required contract key a field in the form', () => {
+		// The failure this prevents is silent and total. A required key with no field is not
+		// something the type checker or the build notices: the form compiles, the page renders,
+		// and an editor filling in every field they can see still cannot save — because
+		// `parseSiteSetting` rejects the result. The only symptom is a save that fails with a
+		// message naming a field that does not exist on the screen.
+		//
+		// That is not hypothetical. `whatsapp` was added to the contract and to the form, and
+		// nothing checked that the two agreed, so the site-profile fixtures in this file and in
+		// `validate.spec.ts` drifted and CI caught it a session later.
+		expect(requiredKeys.filter((key) => !formFields.has(key))).toEqual([]);
+	});
+
+	it('has no form field the contract does not define', () => {
+		// The other direction. A stray field is an input the editor can fill in and the
+		// contract will then reject the whole record for, which is the same silent trap.
+		expect([...formFields].filter((name) => !contractFields.has(name))).toEqual([]);
 	});
 });

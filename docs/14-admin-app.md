@@ -1120,6 +1120,20 @@ The package is **`@banggai/admin`**, and the four common ones have root shortcut
   a blank optional field becomes absent rather than empty, and that removing every row
   yields an empty array. It also pins the wrap the settings read path depends on — handing
   the walker an unwrapped value opens a form with one row however many are stored.
+
+  Its last block is the one that stops the form and the contract drifting apart, and it
+  exists because they did. **Every required key in `siteProfileSchema` must have a field in
+  `settingSpecs.site`, and no field may exist that the contract does not define.** The
+  required keys are derived from the schema with `safeParse(undefined)` rather than listed,
+  so adding a required field makes the test demand a form field with nothing else edited.
+
+  The failure this prevents is silent and total. A required key with no field is not
+  something the type checker or the build notices: the form compiles, the page renders, and
+  an editor filling in everything they can see still cannot save — because
+  `parseSiteSetting` rejects the result, with a message naming a field that is not on the
+  screen. `whatsapp` was added to the contract and to the form, nothing checked that the two
+  agreed, and the site-profile fixtures in two spec files drifted; CI caught it a session
+  later, by which point the work had been pushed.
 - `src/lib/server/content/validate.spec.ts` covers the content contracts: that each kind
   is accepted as the migrated content is stored, and that a renamed field, a missing
   required field, an empty required collection, a value outside a union, and an unknown

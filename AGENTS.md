@@ -105,6 +105,15 @@ pnpm build        # expect: exit 0 — required for routing/config/CSS changes
   and the project holds at zero.
 - **Never report success without running the checks.** "It should work" is not a
   result.
+- **If you touched `packages/content-model`, run *both* apps' gates.** That package is
+  the one place a change is simultaneously a web change and an admin change, and neither
+  app's `check`/`test` covers the other — so running the gates for the app you were in
+  silently skips half the blast radius. The failure is quiet: adding a required field
+  breaks every hand-written fixture in both apps, the package still typechecks, the site
+  still builds, and only a test run notices. Add
+  `pnpm --filter @banggai/content-model check` (tsc) to the four above. `whatsapp` was
+  added to `siteProfileSchema` and the drift reached `main` because only the web gates
+  were run.
 - **The four commands above are not enough for a change to how a page is rendered.**
   They typecheck and build without ever running a loader. The site reads Neon at request
   time, so a data or routing change also wants a real request against `pnpm dev` (which

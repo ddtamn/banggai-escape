@@ -33,6 +33,7 @@ A change is done when all of these are true:
 
 ```sh
 pnpm check        # web: svelte-check "0 errors and 0 warnings" (a11y included)
+pnpm test         # web: Vitest — presenters, slug redirects, the CSP/SEO/image invariants
 pnpm check:code   # Biome lint + format + import order: no output
 pnpm build        # exits 0 — required for routing, config, or CSS changes
 ```
@@ -45,6 +46,27 @@ pnpm --filter @banggai/admin check        # types (needs generated worker types 
 pnpm --filter @banggai/admin test         # Vitest — browser + server projects
 pnpm --filter @banggai/admin build
 npx biome check apps/admin       # the pre-existing scaffold offences remain; see below
+```
+
+### A shared-contract change gates both apps
+
+**If you touched `packages/content-model`, run both sets above.** That package is the one
+place where a change is simultaneously a web change and an admin change, and neither app's
+gates cover the other — so "run the gates for the app I was working in" silently skips half
+the blast radius.
+
+The failure is quiet. Adding a required field to a schema breaks every hand-written fixture
+that builds a value of that shape, in **both** apps, and nothing else notices: the package
+typechecks, the form spec still compiles, the site still builds, and the tests fail only when
+someone runs them. `whatsapp` was added to `siteProfileSchema` in one session and the two
+admin fixtures drifted; the work was pushed, and CI was the first thing to notice, a session
+later.
+
+`packages/content-model` has its own gate too, which is the one that would have caught the
+type-level half immediately:
+
+```sh
+pnpm --filter @banggai/content-model check   # tsc --noEmit
 ```
 
 Plus:

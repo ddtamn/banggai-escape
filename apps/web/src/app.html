@@ -5,12 +5,19 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
 		<meta name="theme-color" content="#18342a" />
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-		<link
-			href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
-			rel="stylesheet"
-		/>
+		<!--
+			Plus Jakarta Sans is self-hosted as a variable font; the `@font-face` rules are
+			imported in `+layout.svelte`. It used to come from Google Fonts as seven separate
+			weight files across two origins, which meant a DNS lookup, a TLS handshake and a
+			third-party connection before the first glyph could paint. One variable file covers
+			all six weights the site uses, same origin as the CSS that declares it, and Vite
+			bundles it rather than fetching it at runtime.
+
+			No manual preload: the `@font-face` lives in this app's own stylesheet, so the font
+			is discovered at the same moment as the render-blocking CSS, and
+			`font-display: swap` covers the gap. A preload would buy nothing now that there is
+			no third-party handshake to hide.
+		-->
 		<link
 			rel="stylesheet"
 			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"

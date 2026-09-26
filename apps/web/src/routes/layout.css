@@ -7,7 +7,13 @@
  * Colour names are semantic: forest / gold families, light surfaces, structure.
  */
 @theme {
-	--font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+	/*
+	 * The variable font's own family name, not the static one. Six weights are in use
+	 * (400 through 900) and a variable file covers all of them in one request, where the
+	 * Google Fonts version needed seven.
+	 */
+	--font-sans:
+		'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
 	/*
 	 * Warm sand (#F7F3ED) is the single light surface: page ground, section bands,

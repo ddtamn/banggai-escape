@@ -1,4 +1,6 @@
 <script lang="ts">
+import '@fontsource-variable/plus-jakarta-sans/wght.css';
+import '@fontsource-variable/plus-jakarta-sans/wght-italic.css';
 import './layout.css';
 import { afterNavigate } from '$app/navigation';
 import { page } from '$app/state';

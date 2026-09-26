@@ -53,16 +53,21 @@ export const cspDirectives: CspDirectives = {
 	 * `<style>` element at runtime, which a nonce cannot cover. `style-src-attr` is
 	 * separated out so that permission is scoped to the one hero `style={...}` attribute
 	 * that needs it rather than to every stylesheet on the page.
+	 *
+	 * The one external stylesheet here is cdnjs, for Font Awesome. Omitting it is not
+	 * theoretical: it blocks the icon stylesheet, and every icon on the site silently
+	 * disappears rather than erroring. Phase 4 of `docs/16-web-polish-plan.md` subsets
+	 * Font Awesome and drops this too.
+	 *
+	 * Google Fonts is *not* listed, because the typeface is self-hosted: it used to be, and
+	 * `csp.spec.ts` is what proved the two entries were both necessary and easy to forget.
 	 */
-	'style-src': [
-		'self',
-		'unsafe-inline',
-		'https://fonts.googleapis.com',
-		'https://cdnjs.cloudflare.com',
-	],
+	'style-src': ['self', 'unsafe-inline', 'https://cdnjs.cloudflare.com'],
 	'style-src-attr': ['unsafe-inline'],
 
-	'font-src': ['self', 'https://fonts.gstatic.com', 'data:'],
+	// The typeface is bundled by Vite and served from this origin, so no font-src host
+	// beyond self is needed. `data:` covers the inline SVG data URIs in the icon layer.
+	'font-src': ['self', 'data:'],
 
 	'img-src': [
 		'self',

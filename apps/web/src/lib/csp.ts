@@ -97,4 +97,7 @@ export const cspDirectives: CspDirectives = {
 export const navigationOnlyOrigins: readonly string[] = [
 	// Where the booking bar and the contact form hand an enquiry to a person.
 	'wa.me',
+	// Share targets, opened in a new tab from `ShareRow`.
+	'x.com',
+	'www.facebook.com',
 ];

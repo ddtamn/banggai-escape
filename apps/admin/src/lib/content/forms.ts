@@ -1184,5 +1184,20 @@ function countOf(path: string, form: FormData): number {
 }
 
 function text(value: FormDataEntryValue | null): string {
-	return value === null ? '' : value.toString().trim();
+	if (value === null) return '';
+
+	// Newlines are normalised before the trim, not after, and the reason is the page-copy
+	// convention: a stored `\n` is a line break, rendered by `SectionHeader`, `CtaBanner` and
+	// the home hero. A `<textarea>` is the control that carries those fields, and the HTML form
+	// submission algorithm normalises newlines to CRLF on the way out — so the browser posts
+	// "Ready To Begin Your\r\nNext Adventure?" for a value that should be "Ready To Begin
+	// Your\nNext Adventure?".
+	//
+	// Trimming first would hide the problem on the first and last lines only, leaving the
+	// interior ones with a carriage return that renders as a space before every `<br />` and
+	// reaches `og:title` and the JSON-LD. The row validates either way, so nothing reports it.
+	//
+	// `\r\n` is replaced before a bare `\r` so the common case is one pass, and `String` is
+	// used because `FormDataEntryValue` is a `File` as well as a string.
+	return value.toString().replace(/\r\n?/g, '\n').trim();
 }

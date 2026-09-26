@@ -165,6 +165,33 @@ describe('seeding a form', () => {
 		expect(countsFor([settingSpecs.faqs], stored)).toEqual({ faqs: 1 });
 	});
 
+	it('normalises the CRLF a browser sends from a textarea into the LF the copy stores', () => {
+		// The page-copy convention is that `\n` in a stored string is a line break, and
+		// `SectionHeader`, `CtaBanner` and the home hero all render it that way. A `<textarea>`
+		// is the control that carries those fields — and the HTML form submission algorithm
+		// normalises newlines to CRLF on the way out, so the browser posts `Ready To Begin
+		// Your\r\nNext Adventure?` for a field whose stored value should be `Ready To Begin
+		// Your\nNext Adventure?`.
+		//
+		// Left alone that is not cosmetic: splitting on `\n` leaves a carriage return on the end
+		// of every line, which renders as a space before each `<br />` and puts `\r\n` into
+		// `og:title` and the JSON-LD. The row still validates, so nothing would report it.
+		const form = submission({ 'siteCta.title': 'Ready To Begin Your\r\nNext Adventure?' });
+
+		const parsed = parseSettingForm('siteCta', form) as { title: string };
+
+		expect(parsed.title).toBe('Ready To Begin Your\nNext Adventure?');
+		expect(parsed.title).not.toContain('\r');
+	});
+
+	it('still trims, so surrounding whitespace is not stored either', () => {
+		// The behaviour normalisation must not break. It is also what makes an optional
+		// standfirst left blank become an *absent* key rather than an empty paragraph.
+		const form = submission({ 'siteCta.title': '  Ready To Begin  ' });
+
+		expect((parseSettingForm('siteCta', form) as { title: string }).title).toBe('Ready To Begin');
+	});
+
 	it('counts a list nested inside an object', () => {
 		const site = { address: ['Luwuk', 'Banggai'] };
 

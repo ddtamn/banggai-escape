@@ -242,7 +242,8 @@ filtering; analytics queries remain in Workers Analytics Engine, not Neon.
    The HTTP driver has no interactive transactions — `db.transaction()` throws
    `No transactions support in neon-http driver` — while `batch()` is one transaction.
    Cover this path with a test that fails the second statement and asserts that neither
-   write landed.
+   write landed. **Done** — `apps/admin/src/lib/server/content/service.spec.ts`; see
+   [Phase 3](#phase-3--cms-crud-and-publish-workflow).
 4. On unpublish, remove the public pointer but retain the draft/history.
 5. On a published slug change, create a redirect from the former slug.
 6. The public app queries only published revisions/settings. Do not fall back
@@ -430,8 +431,12 @@ The whole flow — guard redirect, rejected password, successful sign-in, sign-o
 the guard again — was verified in Chromium against the dev server, which is also the
 only way to test it: better-auth's `api` helpers cannot run outside a request context.
 
-Still open in this phase: applying the preset, and replacing the minimal shell with
-`dashboard-01`.
+Still open in this phase: applying the requested preset. The **`dashboard-01` and
+`login-01` blocks are already in** — `app-sidebar.svelte`, `nav-main.svelte`,
+`nav-user.svelte`, `site-header.svelte` and `src/lib/components/login-01/` came from them,
+with the blocks' demo data replaced by this app's sections — so what remains is the
+*preset* (`b3XpoFP7kQ`), which would restyle the shell's CSS tokens. `components.json` still
+declares `"style": "rhea"`.
 
 > **The `dev` branch is in place.** The project's default branch is `Production`, and the
 > auth migration is applied there. Schema and content work happens on `dev`
@@ -583,6 +588,56 @@ settings the index, all thirteen forms, a FAQ add → save → reload → remove
 and an invalid save refused without writing. That check was a throwaway script, not a
 committed test.
 
+**The content journey is now a committed browser check.** `e2e/content.spec.ts` covers the
+list for each kind and its filters, a search, a published item's controls and draft preview,
+both 404s, the empty new screen, a refused slug, and the write round trip behind
+`E2E_WRITE=1` — create with a slug and nothing else, save the draft, be **refused** a
+publish with the offending field named, then delete it. Writing it found one real gap: the
+status filters marked the active one with **colour alone**, so which filter was applied was
+invisible to a screen reader. They now carry `aria-current`, as the analytics range filter
+already did.
+
+Two things in it are worth recording as traps rather than as assertions. `resolve()` emits a
+**relative** href before hydration and an absolute one after, so a row located by its `href`
+matches the list on one render and nothing on the next; rows are located by the text they
+carry instead. And a navigation belongs in `waitForURL`, not in `clickUntil` — the retry
+helper is for effects on the same page, and using it for a link click spent a whole test
+budget re-clicking a link that had already worked.
+
+**The publish path is now unit-tested**, which is the one part of this phase that could not
+be left to a manual pass. `src/lib/server/content/service.spec.ts` covers the contract
+above with a fake driver that models the one property `db.batch()` exists to provide: a
+batch commits all of its statements or none, while a write awaited on its own commits at
+once. Eight tests — the three-statement publish commits as one batch, the pointer names
+the revision that batch inserted, a failure at statement two *or* three leaves nothing
+behind, a same-slug publish batches two, an invalid draft and an archived entry are refused
+before the database is touched at all, and the revision number follows the highest that
+exists.
+
+**It was verified by breaking the service, not by reading the test.** Replacing the batch
+with three ordinary awaits — the obvious simplification — fails four of the eight, and the
+diagnostic is the point: the revision row is shown *committed* while the publish reports no
+error at all. That is the half-written publish this contract exists to prevent, and a
+happy-path test would have passed it.
+
+**The overview is built.** `(dashboard)/dashboard/` is no longer the stub that listed the
+media library and said the rest would arrive later: it reports content totals with their
+publish state per kind, the most recent edits across all three kinds, and a 30-day summary
+that links to the full dashboard. Its numbers come from the loader and from the service's
+own rules — `countStatuses` for the tally and `statusLabels` for the wording, both shared
+with the list screen — so the overview cannot disagree with the screens it summarises. The
+counts are derived from the entries already read rather than requested again, and an
+unconfigured or failing analytics backend renders as a line of text with a link, because an
+unconfigured dashboard should not be the first thing that greets a sign-in.
+
+**The form renderer has component tests.** `FieldControl` turns ten field specs into markup
+and recurses into itself for the repeatable ones — more branching than anything else in the
+app, and `svelte-check` can only confirm each branch typechecks.
+`field-control.svelte.spec.ts` renders it in real Chromium and covers what a type cannot:
+that each type produces the control the contract expects, that a media id the library no
+longer has **says so** rather than rendering a broken image, and that a repeatable field
+posts a `__count` its own rows agree with.
+
 ### Phase 4 — switch the public site to Neon
 
 - Add `apps/web` read-only database access and server-side loaders for published
@@ -634,10 +689,54 @@ database and the same URL kept serving the old page while a previously unseen UR
 new one. `pnpm check`, `npx biome check apps/web` and `pnpm build` are clean.
 
 **Still open.** The deployed Worker does not exist yet, so `banggai_web`, the secret and
-the var are documented but unset. There is no test suite for the public site, nothing
-renders the media library's alt text, and the five-minute window is a ceiling rather than a
+the var are documented but unset. The five-minute window is a ceiling rather than a
 purge-on-publish. The local `.env` reads as `neondb_owner`, which is fine on a laptop and
 must not be what the deployed Worker uses.
+
+**`apps/web` now has a test runner.** `pnpm test` runs Vitest against the parts of the read
+path with the most interesting rules and no database: the presenters that put a price and a
+duration on the page, and the slug-redirect walk that decides a 301. The redirect cases —
+one hop, a two-row chain collapsing to a single hop, a loop, a self-referencing row, and two
+kinds holding the same slug — were verified by hand in Phase 4 and are now pinned. Two of
+them earned their keep immediately: a chain longer than the hop limit and a self-referencing
+row are both reachable only from a corrupted table, and the walker's answers to those are
+now stated rather than assumed.
+
+`formatPrice` is pinned as a literal string rather than computed, because it is
+`toLocaleString('id-ID')` and nothing else: a runtime without that locale's ICU data returns
+`IDR 2850000` where the design wants `IDR 2.850.000`, and that is a wrong number on a price
+rather than an exception.
+
+**Alt text, done.** A resolved media field is now a `RenderedMedia` — the URL *and* the
+`media_assets.alt_text` — instead of a bare string, so what an editor writes in the media
+library is what a visitor's screen reader hears. Ten render sites across five components
+and four pages were retyped, and the type is what found them: `RenderedPayloadFor` is
+derived from `mediaFieldsByKind`, so a media field cannot be added to a payload without
+also changing what a page renders. Two decisions are worth recording:
+
+- **The fallback stays at the call site** (`alt={pkg.image.alt ?? pkg.title}`). `alt` is
+  `null` rather than `''` for an undescribed asset, because empty marks an image
+  decorative and null means "nobody has written one" — and only the page knows the honest
+  fallback for its own images. All 29 assets have a null `alt_text` today, so the rendered
+  site is byte-identical to before; describing them is editorial work.
+- **`ctaBackground` deliberately stays a URL.** It is a CSS background with no accessible
+  name, so resolving it to an image would invent a field nothing reads. That asymmetry is
+  declared once, in `RenderedSiteSettingValue`.
+
+Two bugs were found by making the type move rather than by reading it. `mediaFieldsByKind`
+was annotated `Record<ContentKind, readonly string[]>`, which widened every field name to
+`string` and made `Field extends MediaFieldName<Kind>` true for *every* field — a package's
+`region` typed as an image; `as const satisfies` keeps the exhaustiveness check without
+losing the literals. And the destination mosaic de-duplicates by `src` now rather than by
+identity, because one asset legitimately appears in more than one list and two references
+to it are two objects.
+
+**Verified** against `pnpm dev`: all thirteen routes keep their status, no page contains
+`[object Object]`, every fallback alt is unchanged, the mosaic still yields six tiles, and
+`ctaBackground` still renders as `url('…')`. One asset was given a real description and
+the change was visible in the served HTML, then reverted — the database is back to 29 rows
+and zero alt texts. `pnpm check`, `npx biome check apps/web packages` and `pnpm build` are
+clean.
 
 **Phase 6 cleanup, done.** The five retired modules — `src/lib/data/{site,content,
 packages,destinations,posts}.ts` — and the one-shot migration pair
@@ -755,10 +854,14 @@ bucket/custom domain and least-privilege API token in Cloudflare before staging.
   resolve all new Svelte warnings. Be mindful of the documented Wrangler generation
   trap.
 - **Admin tests:** `pnpm --filter @banggai/admin test` for validators, publish state changes,
-  authorization, media validation/reference rules, and analytics query parsing. The browser
-  tests exist as `pnpm --filter @banggai/admin test:e2e` (sign-in, guarded routes, the shell,
-  the settings screen, the media library); analytics query parsing and the SQL API client are
-  covered by unit tests instead, because a browser test would need a deployed dataset.
+  authorization, media validation/reference rules, analytics query parsing, **publish
+  atomicity**, and the form field renderer. The browser tests exist as
+  `pnpm --filter @banggai/admin test:e2e` (sign-in, guarded routes, the shell, the content
+  screens including the draft→publish journey, the settings screen, the media library);
+  analytics query parsing and the SQL API client are covered by unit tests instead, because
+  a browser test would need a deployed dataset.
+- **Web tests:** `pnpm test` for the presenters and the slug-redirect walk. Root `pnpm test`
+  targets `apps/web` only, like `pnpm check` and `pnpm build`.
 - **Web checks:** `pnpm check`, `npx biome check apps/web`, and `pnpm build` for
   public-site data/routing/CSS changes. Root checks target `apps/web` only.
 - **Admin style:** run Biome on changed admin files without reformatting the

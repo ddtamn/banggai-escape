@@ -625,14 +625,21 @@ export function parsePayload(kind: ContentKind, value: unknown);
 
 `apps/web` uses the package as **values**, not just types. Its read layer validates every
 payload on the way out of the database with the same `parsePayload`, so the contract the
-admin enforced on the way in is checked again on the way out, and the components take
-the payload types directly as props (`PackagePayload`, `DestinationPayload`,
-`ArticlePayload`) with nothing in between to drift.
+admin enforced on the way in is checked again on the way out. The components take the
+payload types directly as props with nothing in between to drift — but the *rendered*
+variants, not the stored ones: `RenderedPackage`, `RenderedDestination` and
+`RenderedArticle`, which are the same shapes with each media field resolved to a
+`RenderedMedia` (a URL plus the library's alt text) rather than a `media_assets` id. They
+are derived from `mediaFieldsByKind` rather than written out, so adding a media field to a
+payload cannot be forgotten here, and pointing a component at the stored type instead is a
+type error rather than an `<img src="[object Object]">`.
 
 The package also owns `references.ts` — the walker that answers "which fields are
 media". Three callers have to agree on it exactly (the one-shot import, the admin's
-delete guard, and the public site's swap back to URLs), and it lives here because that
-last caller cannot import from `apps/admin`.
+delete guard, and the public site's swap back to images), and it lives here because that
+last caller cannot import from `apps/admin`. Its resolver is generic in what it puts back,
+so the import substitutes an id and the site substitutes a whole image through one
+traversal.
 
 `apps/admin` imports the schemas as values and validates before every write, through
 `src/lib/server/content/validate.ts`:
@@ -731,6 +738,36 @@ the repo root on the machine that ran the export; nothing reads it.
   featured flags, nested-field totals (itinerary days, gallery images, body blocks), the
   media breakdown, and any rows in the database that are *not* in the snapshot — which is
   how a renamed slug shows up instead of hiding.
+
+## The overview
+
+`src/routes/(dashboard)/dashboard/` is the first page an administrator sees, and it answers
+three questions without a click: what is published, what changed recently, and is anyone
+reading the site.
+
+| Piece | Where |
+| --- | --- |
+| The screen | `src/routes/(dashboard)/dashboard/+page.svelte` |
+| Its loader | `src/routes/(dashboard)/dashboard/+page.server.ts` |
+| The counts it renders | `countStatuses` in `src/lib/server/content/service.ts` |
+
+**One read per kind, used twice.** The totals and the recent-edits list come from the same
+`listEntries` call, because the counts are derived from the rows rather than requested
+separately — `countStatuses` is the same rule the list screen's filter tabs use, and
+`statusLabels` is the same label map, so "Published — unpublished changes" cannot mean one
+thing on the overview and another in the list. Asking `countByStatus` as well would read
+every entry a second time to produce a number already in memory.
+
+**Analytics is read here too, and quietly.** Thirty days is the window this screen is for,
+and `loadAnalyticsView` is the one place that knows how to read Workers Analytics Engine, so
+the overview borrows it rather than growing a second, smaller query path needing its own
+tests. It costs five read queries per visit against a documented allowance of 10,000 a day,
+and an unconfigured or failing analytics backend is rendered as a line of text with a link —
+not as an alarm. An unconfigured dashboard should not be the first thing that greets a
+sign-in.
+
+Archived entries stay in the recent list: an administrator who archived something yesterday
+wants to see that they did.
 
 ## Site settings
 
@@ -1087,6 +1124,27 @@ The package is **`@banggai/admin`**, and the four common ones have root shortcut
   is accepted as the migrated content is stored, and that a renamed field, a missing
   required field, an empty required collection, a value outside a union, and an unknown
   article block kind are all refused by name.
+- `src/lib/components/content/field-control.svelte.spec.ts` covers the one component with
+  real branching in it, in the **`client`** project (real Chromium, real DOM): that each of
+  the ten field types renders the control the contract expects, that an absent value becomes
+  empty rather than `"undefined"`, that a `slug` field carries the pattern that matches
+  `slugSchema`, that a media field holding an id the library no longer has **says so**
+  instead of rendering a broken image, and that a repeatable field posts a `__count` its own
+  rows agree with. `svelte-check` can confirm every branch typechecks and nothing more.
+- `src/lib/server/content/service.spec.ts` covers **publish atomicity**, which is the one
+  property in this app that a browser check cannot see and a happy-path test cannot catch.
+  Its fake models the driver: `batch()` commits all of its statements or none, and a write
+  awaited on its own commits at once. So the tests assert that a failure at statement two
+  *or* three leaves nothing committed, that the entry's pointer names the revision the same
+  batch inserted, that a same-slug publish batches two statements, and that an invalid draft
+  or an archived entry is refused before the database is touched at all. Verified by
+  replacing the batch with three ordinary awaits: four of the eight fail, and the diagnostic
+  shows the revision row **committed** while the publish reports no error — the half-written
+  publish the contract exists to prevent.
+- `apps/web` is the app with no browser runner, so the shared media walker's spec lives here:
+  the same file also asserts that resolving a reference to a rendered **image** (a URL plus
+  the library's description) touches exactly the fields `mediaFieldsByKind` declares. That
+  guards the derivation behind `RenderedPayloadFor`, which is a type nothing executes.
 - The scaffold's `src/lib/vitest-examples/` demos (a unit test and a component test)
   were removed — they tested the generator, not this app.
 - `src/lib/server/media/promote.spec.ts` covers the legacy-artwork copy: that a row whose
@@ -1111,10 +1169,11 @@ The package is **`@banggai/admin`**, and the four common ones have root shortcut
   failure is reported (a refused credential named as a permission, no token echoed into a
   message a page will render), and both configured outcomes. The unconfigured state is
   asserted to make **no** request at all.
-- Every test above runs in the **`server`** project. The `client` project is configured
-  but currently has no files, so component tests are still unwritten. Chromium **is**
-  installed here (`pnpm --filter @banggai/admin exec playwright install --with-deps chromium`),
-  so the project launches rather than failing on a missing browser.
+- Tests run in **both** projects. The `server` project holds everything above; the
+  `client` project holds the one component spec, which renders in real Chromium. Chromium
+  **is** installed here
+  (`pnpm --filter @banggai/admin exec playwright install --with-deps chromium`), so the
+  project launches rather than failing on a missing browser.
 
 ### Browser checks (`test:e2e`)
 
@@ -1132,8 +1191,15 @@ E2E_WRITE=1 …                                     # also run the one check tha
 | --- | --- |
 | `auth.spec.ts` | The guard redirects an anonymous visitor and preserves where they were going; signing in reaches the shell |
 | `shell.spec.ts` | Every sidebar destination answers 200; the theme toggle flips light↔dark with **no reload** and the choice survives one |
+| `content.spec.ts` | Each kind's list opens with all five status filters; a search narrows it; a published item shows its publish controls, revision history and draft preview; an unknown slug and an unknown kind 404; the new screen has no publish control; a non-URL-safe slug is refused and creates nothing; and the write round trip — create, save a draft with a slug and nothing else, be **refused** a publish with the field named, then delete it again |
 | `settings.spec.ts` | The index links all thirteen keys once and groups them, every form opens, an unknown key 404s, the header and sidebar agree, the form opens with every stored row, and an invalid value is refused without writing |
 | `media.spec.ts` | The filters answer, an unknown key 404s, the cards offer both actions, and a non-image upload is refused before anything is stored |
+
+The content list's status filters carry `aria-current` on the active one. They did not at
+first: the active filter was marked by colour alone, which is invisible to a screen reader
+and to anyone who cannot tell the two shades apart. `svelte-check` does not report it —
+there is no rule for a missing attribute — so it turned up when a browser check asserted
+the state, which is the argument for having those checks.
 
 Three behaviours shape how these are written, and each one cost real debugging time:
 `resolve()` emits a **relative** href during SSR and an absolute one after hydration, so
@@ -1204,19 +1270,27 @@ Ordered roughly by dependency:
 Phases 0–5 are complete in code. The three Phase 3 loose ends are done: the package is
 `@banggai/admin` with root shortcuts, the browser checks are committed (`test:e2e`), and all
 29 legacy images were copied into the bucket (verified served from the custom domain with
-byte-identical content). Phase 4 has landed as well — the public site renders from Neon, its
+byte-identical content). The publish contract is covered by a unit test as well — see
+[Testing](#testing) for what the fake driver models and why it was verified by breaking the
+service. Phase 4 has landed as well — the public site renders from Neon, its
 read layer resolves stored `media_assets` ids through the web-side equivalent of
 `publicMediaUrl`, slug renames 301 to the new URL, and pages are served from a five-minute
-edge cache. Phase 5 has landed too: the public Worker records validated page views and
+edge cache. Its one visitor-facing gap — the media library's alt text never reaching an
+`alt` attribute — is closed: a resolved media field is now a `RenderedMedia` carrying the
+description as well as the URL, documented in
+[08-content-data-layer](./08-content-data-layer.md#mediats--ids-to-images). Phase 5 has
+landed too: the public Worker records validated page views and
 clicks, and the admin reads them back from Cloudflare's SQL API. The database no longer
 references the design-tool host; only the site's page-decoration images still come from the
 AIDA CDN. **Neither Worker is deployed yet**, which is also why the dashboard has never been
 seen against real aggregates.
 
-1. **Write component tests.** The `client` Vitest project is configured and Chromium is
-   installed, but no `.svelte.spec.ts` files exist yet. `forms.spec.ts` covers the form
-   model's invariants, and the browser checks cover the screens end to end — so this is
-   about rendering edge cases, not wiring.
+1. **Component tests: started, not finished.** The `client` Vitest project now holds one
+   spec — `FieldControl`, the form renderer, which is where the branching is. The screens
+   themselves (the overview's three states, the list's empty and filtered states, the
+   publish panel) are covered only by the browser checks, which is a reasonable place to
+   stop, but a second component spec would confirm the project is usable for whoever comes
+   next.
 2. **Deploy both Workers, with a least-privilege connection for the public one.** The
    site's Worker still has no `banggai_web` role behind it — the role, the secret and
    `MEDIA_PUBLIC_URL` are documented but unset — so Phase 6's staging/production split
@@ -1224,6 +1298,10 @@ seen against real aggregates.
    [11-deployment](./11-deployment.md#environment-and-secrets).
    [02-architecture](./02-architecture.md) records what the site trades away by having no
    static fallback.
+3. **The shadcn-svelte preset.** `components.json` still declares `"style": "rhea"`. The
+   `dashboard-01` and `login-01` blocks are in and adapted, so what is left is the preset
+   `b3XpoFP7kQ`, which would restyle the shell's tokens — a cross-cutting change to a
+   finished app, and a decision rather than a task.
 3. **Analytics — Cloudflare Workers Analytics Engine. Built.** The write path is live in
    the public Worker and the dashboard reads it in the admin; see
    [Analytics](#analytics-cloudflare-workers-analytics-engine) for what is wired and what

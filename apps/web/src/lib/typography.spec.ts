@@ -50,7 +50,14 @@ function sourceFiles(dir: string): string[] {
 
 type Offence = { file: string; line: number; snippet: string; px: number };
 
-/** Arbitrary font sizes below the label floor that are not on an icon. */
+/**
+ * Arbitrary font sizes below the label floor.
+ *
+ * There is no exemption clause any more, and that is the improvement: icons used to be a
+ * font glyph, so their size came from a `text-[10px]` class and had to be excepted by name.
+ * They are inline SVG now, sized by a `size` prop, so they are not text at all and the rule
+ * can be absolute.
+ */
 function subFloorText(): Offence[] {
 	const offences: Offence[] = [];
 
@@ -58,9 +65,6 @@ function subFloorText(): Offence[] {
 		readFileSync(file, 'utf8')
 			.split('\n')
 			.forEach((line, index) => {
-				// An icon is sized, not read. `fa-` covers the class form, `<i` the element.
-				if (/\bfa-(solid|regular|brands)\b/.test(line) || /<i[\s>]/.test(line)) return;
-
 				for (const match of line.matchAll(/text-\[(\d{1,2})px\]/g)) {
 					const px = Number(match[1]);
 					if (px >= LABEL_FLOOR_PX) continue;
@@ -79,18 +83,16 @@ function subFloorText(): Offence[] {
 }
 
 describe('the type floor', () => {
-	it('finds the icon sizes that are legitimately below the floor', () => {
-		// The site still carries sub-floor sizes on icons. If this were zero, the assertion
-		// below would be passing for the wrong reason.
-		const icons = sourceFiles(join(process.cwd(), 'src')).flatMap((file) =>
+	it('still sets icons below the floor, because an icon is sized rather than read', () => {
+		// Proves the rule below is not covering icons by accident, and that `size` is
+		// genuinely in use at icon scale.
+		const small = sourceFiles(join(process.cwd(), 'src')).flatMap((file) =>
 			readFileSync(file, 'utf8')
 				.split('\n')
-				.filter(
-					(line) => /\bfa-(solid|regular|brands)\b/.test(line) && /text-\[1[01]px\]/.test(line),
-				),
+				.filter((line) => /<Icon/.test(line) && /size=\{(?:[0-9]|1[01])\}/.test(line)),
 		);
 
-		expect(icons.length).toBeGreaterThan(0);
+		expect(small.length).toBeGreaterThan(0);
 	});
 
 	it('sets no text below the label floor', () => {

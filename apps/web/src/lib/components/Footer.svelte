@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { NavItem, SiteProfile, Social } from '@banggai/content-model';
+import Icon from '$lib/components/Icon.svelte';
 
 type Props = {
 	site: SiteProfile;
@@ -62,7 +63,7 @@ const year = 2026;
 								target="_blank"
 								class="flex size-8 items-center justify-center rounded-full border border-stone-600 text-stone-300 transition hover:border-white hover:text-white"
 							>
-								<i class="{social.icon} text-xs" aria-hidden="true"></i>
+								<Icon icon={social.icon} size={14} />
 							</a>
 						{/each}
 					</div>
@@ -96,13 +97,13 @@ const year = 2026;
 					Contact us
 				</h4>
 				<p class="flex items-center gap-2 text-stone-300">
-					<i class="fa-solid fa-phone text-xs text-gold"></i>
+					<Icon icon="fa-solid fa-phone" size={14} class="text-gold" />
 					<a class="transition hover:text-gold" href={site.phoneHref} data-track="contact_click"
 						>{site.phone}</a
 					>
 				</p>
 				<p class="flex items-center gap-2 text-stone-300">
-					<i class="fa-regular fa-envelope text-xs text-gold"></i>
+					<Icon icon="fa-regular fa-envelope" size={14} class="text-gold" />
 					<a class="transition hover:text-gold" href="mailto:{site.email}" data-track="contact_click"
 						>{site.email}</a
 					>

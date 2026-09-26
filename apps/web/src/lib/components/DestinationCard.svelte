@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { RenderedDestination } from '@banggai/content-model';
+import Icon from '$lib/components/Icon.svelte';
 
 type Props = { destination: RenderedDestination; href?: string };
 
@@ -24,14 +25,14 @@ let { destination, href = `/destinations/${destination.slug}` }: Props = $props(
 	<div class="absolute inset-x-6 bottom-6 flex items-end justify-between">
 		<div class="text-white">
 			<div class="mb-1 flex items-center gap-1.5 text-xs text-gold">
-				<i class="fa-solid fa-location-dot text-xs"></i>
+				<Icon icon="fa-solid fa-location-dot" size={14} />
 				<span class="text-base font-bold text-white">{destination.name}</span>
 			</div>
 			<p class="ml-4 text-xs text-stone-300">{destination.region.split(',')[0]}</p>
 		</div>
 
 		<span class="btn-on-image" aria-hidden="true">
-			<i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+			<Icon icon="fa-solid fa-arrow-up-right-from-square" size={14} />
 		</span>
 	</div>
 </a>

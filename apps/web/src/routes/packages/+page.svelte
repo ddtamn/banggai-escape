@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { TripType } from '@banggai/content-model';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
+import Icon from '$lib/components/Icon.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
 import PageHero from '$lib/components/PageHero.svelte';
 import { img, media } from '$lib/data/media';
@@ -73,7 +74,7 @@ const visible = $derived(
 
 			<div class="relative w-full md:w-80">
 				<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-stone-400">
-					<i class="fa-solid fa-magnifying-glass text-xs"></i>
+					<Icon icon="fa-solid fa-magnifying-glass" size={14} />
 				</div>
 				<label class="sr-only" for="package-search">Search packages</label>
 				<input

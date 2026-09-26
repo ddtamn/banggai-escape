@@ -2,6 +2,7 @@
 import { fly } from 'svelte/transition';
 import { page } from '$app/state';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
+import Icon from '$lib/components/Icon.svelte';
 import PostCard from '$lib/components/PostCard.svelte';
 import SectionHeader from '$lib/components/SectionHeader.svelte';
 import ShareRow from '$lib/components/ShareRow.svelte';
@@ -254,7 +255,7 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 					class="hidden rounded-xl border border-stone-200 bg-white p-6 shadow-sm lg:block"
 				>
 					<div class="mb-3 flex items-center gap-2 border-b border-stone-100 pb-3 text-stone-900">
-						<i class="fa-solid fa-list-ul text-xs text-gold"></i>
+						<Icon icon="fa-solid fa-list-ul" size={14} class="text-gold" />
 						<h2 class="text-xs font-extrabold tracking-wider text-stone-800 uppercase">
 							Table of Contents
 						</h2>
@@ -358,18 +359,14 @@ const canonicalUrl = $derived(new URL(page.url.pathname, page.url.origin).href);
 				aria-expanded={tocOpen}
 				onclick={() => (tocOpen = !tocOpen)}
 			>
-				<i class="fa-solid fa-list-ul text-xs text-gold"></i>
+				<Icon icon="fa-solid fa-list-ul" size={14} class="text-gold" />
 				<span class="shrink-0 text-label font-bold tracking-widest text-stone-400 uppercase">
 					Contents
 				</span>
 				<span class="min-w-0 flex-1 truncate text-sm font-semibold text-stone-800">
 					{activeHeading?.text ?? 'On this page'}
 				</span>
-				<i
-					class="fa-solid fa-chevron-down text-xs text-stone-400 transition-transform {tocOpen
-						? 'rotate-180'
-						: ''}"
-				></i>
+				<Icon icon="fa-solid fa-chevron-down" size={14} class="text-stone-400 transition-transform {tocOpen ? 'rotate-180' : ''}" />
 			</button>
 
 			{#if tocOpen}

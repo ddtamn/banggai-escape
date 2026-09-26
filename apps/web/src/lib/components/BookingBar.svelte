@@ -1,5 +1,6 @@
 <script lang="ts">
 import EnquiryPanel from '$lib/components/EnquiryPanel.svelte';
+import Icon from '$lib/components/Icon.svelte';
 import { type BookingPackage, durationLabel } from '$lib/enquiry';
 
 type Props = {
@@ -61,10 +62,7 @@ function step(delta: number) {
 			<div class="lg:col-span-4">
 				<label class="field-label" for="booking-package">Package</label>
 				<div class="relative">
-					<i
-						class="fa-solid fa-magnifying-glass pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-stone-400"
-						aria-hidden="true"
-					></i>
+					<Icon icon="fa-solid fa-magnifying-glass" size={14} class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-stone-400" />
 					<!--
 						`bg-none` is load-bearing. `@tailwindcss/forms` puts its own chevron in a
 						`background-image` on every `select`, independently of `appearance`, so
@@ -80,10 +78,7 @@ function step(delta: number) {
 							<option value={pkg.slug}>{pkg.title} — {durationLabel(pkg)}</option>
 						{/each}
 					</select>
-					<i
-						class="fa-solid fa-chevron-down pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-stone-400"
-						aria-hidden="true"
-					></i>
+					<Icon icon="fa-solid fa-chevron-down" size={14} class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-stone-400" />
 				</div>
 			</div>
 
@@ -134,7 +129,7 @@ function step(delta: number) {
 						disabled={guests <= 1}
 						aria-label="One fewer guest"
 					>
-						<i class="fa-solid fa-minus text-xs" aria-hidden="true"></i>
+						<Icon icon="fa-solid fa-minus" size={14} />
 					</button>
 					<label class="sr-only" for="booking-guest-count">Number of guests</label>
 					<input
@@ -152,7 +147,7 @@ function step(delta: number) {
 						disabled={guests >= maxGuests}
 						aria-label="One more guest"
 					>
-						<i class="fa-solid fa-plus text-xs" aria-hidden="true"></i>
+						<Icon icon="fa-solid fa-plus" size={14} />
 					</button>
 				</div>
 			</div>

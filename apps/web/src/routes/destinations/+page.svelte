@@ -1,6 +1,7 @@
 <script lang="ts">
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import DestinationCard from '$lib/components/DestinationCard.svelte';
+import Icon from '$lib/components/Icon.svelte';
 import PageHero from '$lib/components/PageHero.svelte';
 import { backgrounds, img } from '$lib/data/media';
 
@@ -40,7 +41,7 @@ const visible = $derived(
 		<div class="mb-8 flex justify-end md:mb-10">
 			<div class="relative w-full max-w-xs sm:max-w-sm">
 				<span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-stone-400">
-					<i class="fa-solid fa-magnifying-glass text-xs"></i>
+					<Icon icon="fa-solid fa-magnifying-glass" size={14} />
 				</span>
 				<label class="sr-only" for="destination-search">Search destinations</label>
 				<input

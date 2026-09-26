@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { Language, NavItem, SiteProfile } from '@banggai/content-model';
 import { page } from '$app/state';
+import Icon from '$lib/components/Icon.svelte';
 import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 
 type Props = {
@@ -77,7 +78,7 @@ $effect(() => {
 				aria-expanded={open}
 				onclick={() => (open = !open)}
 			>
-				<i class="fa-solid fa-bars text-lg"></i>
+				<Icon icon="fa-solid fa-bars" size={18} />
 			</button>
 		</div>
 	</div>
@@ -114,7 +115,7 @@ $effect(() => {
 						aria-label="Close menu"
 						onclick={() => (open = false)}
 					>
-						<i class="fa-solid fa-xmark text-lg"></i>
+						<Icon icon="fa-solid fa-xmark" size={18} />
 					</button>
 				</div>
 

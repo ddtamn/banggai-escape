@@ -3,6 +3,7 @@ import BookingBar from '$lib/components/BookingBar.svelte';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import DestinationCard from '$lib/components/DestinationCard.svelte';
 import Faq from '$lib/components/Faq.svelte';
+import Icon from '$lib/components/Icon.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
 import PostCard from '$lib/components/PostCard.svelte';
 import SectionHeader from '$lib/components/SectionHeader.svelte';
@@ -126,7 +127,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 					<div
 						class="mb-4 flex size-12 items-center justify-center rounded-xl bg-hairline text-xl text-forest-deep"
 					>
-						<i class={feature.icon} aria-hidden="true"></i>
+						<Icon icon={feature.icon} size={20} />
 					</div>
 					<h3 class="mb-2.5 text-lg font-bold text-stone-900">
 						{feature.title}
@@ -184,7 +185,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 				<div class="pt-2 sm:pt-4">
 					<a class="btn-forest gap-2 px-5 py-3" href="/about">
 						<span>Learn More About Us</span>
-						<i class="fa-solid fa-arrow-right text-[10px]"></i>
+						<Icon icon="fa-solid fa-arrow-right" size={10} />
 					</a>
 				</div>
 			</div>
@@ -219,7 +220,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 							aria-label="Rated 5 out of 5"
 						>
 							{#each stars as star (star)}
-								<i class="fa-solid fa-star" aria-hidden="true"></i>
+								<Icon icon="fa-solid fa-star" size={14} />
 							{/each}
 						</div>
 						<p class="mb-6 text-base leading-relaxed text-stone-600 italic">
@@ -251,7 +252,7 @@ const heroStyle = `background-image: linear-gradient(rgba(10, 33, 25, 0.72), rgb
 		<div class="text-center">
 			<a class="btn-forest gap-2 px-5 py-3" href="/contact">
 				<span>See {site.reviewCount}+ Reviews</span>
-				<i class="fa-solid fa-arrow-right text-[10px]"></i>
+				<Icon icon="fa-solid fa-arrow-right" size={10} />
 			</a>
 		</div>
 	</div>

@@ -1,5 +1,6 @@
 <script lang="ts">
 import { page } from '$app/state';
+import Icon from '$lib/components/Icon.svelte';
 
 /**
  * The brand name is written out here rather than read from the settings, and this is the
@@ -75,7 +76,7 @@ const shortcuts = [
 				<a class="btn-gold" href="/">Back to home</a>
 				<a class="btn-forest" href="/packages">
 					<span>Browse packages</span>
-					<i class="fa-solid fa-arrow-right text-[10px]"></i>
+					<Icon icon="fa-solid fa-arrow-right" size={10} />
 				</a>
 			</div>
 		</div>

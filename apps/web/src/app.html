@@ -18,10 +18,13 @@
 			`font-display: swap` covers the gap. A preload would buy nothing now that there is
 			no third-party handshake to hide.
 		-->
-		<link
-			rel="stylesheet"
-			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
-		/>
+		<!--
+			Icons are inline SVG, rendered by `$lib/components/Icon.svelte` from the generated
+			`$lib/icons`. Font Awesome used to be a cdnjs stylesheet, and it was the last
+			render-blocking third-party origin on the site: 17 KB of CSS plus three icon fonts
+			weighing 293 KB, to draw 35 glyphs. The database still stores the same `fa-*` class
+			strings an editor picks in the admin, so no stored data changed.
+		-->
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

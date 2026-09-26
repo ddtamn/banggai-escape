@@ -1,6 +1,7 @@
 <script lang="ts">
 import CtaBanner from '$lib/components/CtaBanner.svelte';
 import EnquiryPanel from '$lib/components/EnquiryPanel.svelte';
+import Icon from '$lib/components/Icon.svelte';
 import { img, media } from '$lib/data/media';
 
 let { data } = $props();
@@ -187,7 +188,7 @@ function keepOnPage(event: SubmitEvent) {
 						<div
 							class="mb-5 flex size-11 items-center justify-center rounded-xl border border-stone-100 bg-white text-forest-deep"
 						>
-							<i class="{channel.icon} text-sm"></i>
+							<Icon icon={channel.icon} size={16} class="text-forest-deep" />
 						</div>
 						<h3 class="mb-2 text-base font-bold text-forest-deep">{channel.title}</h3>
 						<p class="mb-5 text-xs leading-relaxed text-stone-500">{channel.text}</p>
@@ -199,7 +200,7 @@ function keepOnPage(event: SubmitEvent) {
 								<span class="block text-xs font-normal text-stone-500">{channel.extra}</span>
 							{/if}
 						</div>
-						<i class="fa-solid fa-arrow-right text-xs text-stone-400"></i>
+						<Icon icon="fa-solid fa-arrow-right" size={14} class="text-stone-400" />
 					</div>
 				</a>
 			{/each}

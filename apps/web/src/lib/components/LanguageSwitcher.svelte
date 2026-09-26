@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { Language } from '@banggai/content-model';
+import Icon from '$lib/components/Icon.svelte';
 
 let { languages }: { languages: Language[] } = $props();
 
@@ -45,11 +46,7 @@ function handleKeydown(event: KeyboardEvent) {
 			/>
 			<span>{current.code}</span>
 		</span>
-		<i
-			class="fa-solid fa-chevron-down text-[10px] text-stone-400 transition-transform {open
-				? 'rotate-180'
-				: ''}"
-		></i>
+		<Icon icon="fa-solid fa-chevron-down" size={10} class="text-stone-400 transition-transform {open ? 'rotate-180' : ''}" />
 	</button>
 
 	{#if open}
@@ -80,7 +77,7 @@ function handleKeydown(event: KeyboardEvent) {
 							<span>{language.label}</span>
 						</span>
 						{#if language.code === current.code}
-							<i class="fa-solid fa-check ml-auto text-[10px] text-gold"></i>
+							<Icon icon="fa-solid fa-check" size={10} class="ml-auto text-gold" />
 						{/if}
 					</button>
 				</li>

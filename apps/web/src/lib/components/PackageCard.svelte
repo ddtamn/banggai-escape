@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { RenderedPackage } from '@banggai/content-model';
+import Icon from '$lib/components/Icon.svelte';
 import { badgeDays, durationLabel, formatPrice } from '$lib/content';
 
 type Props = { pkg: RenderedPackage };
@@ -31,11 +32,11 @@ let { pkg }: Props = $props();
 
 			<div class="mt-3 flex items-center gap-4 text-label text-stone-500">
 				<span class="flex items-center gap-1.5">
-					<i class="fa-solid fa-leaf text-[10px] text-accent"></i>
+					<Icon icon="fa-solid fa-leaf" size={10} class="text-accent" />
 					{pkg.tripType}
 				</span>
 				<span class="flex items-center gap-1.5">
-					<i class="fa-regular fa-clock text-[10px] text-stone-400"></i>
+					<Icon icon="fa-regular fa-clock" size={10} class="text-stone-400" />
 					{durationLabel(pkg)}
 				</span>
 			</div>
@@ -46,7 +47,7 @@ let { pkg }: Props = $props();
 			href="/packages/{pkg.slug}"
 		>
 			<span>View Details</span>
-			<i class="fa-solid fa-arrow-right text-[10px]"></i>
+			<Icon icon="fa-solid fa-arrow-right" size={10} />
 		</a>
 	</div>
 </article>

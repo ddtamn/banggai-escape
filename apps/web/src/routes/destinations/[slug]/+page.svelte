@@ -1,5 +1,6 @@
 <script lang="ts">
 import CtaBanner from '$lib/components/CtaBanner.svelte';
+import Icon from '$lib/components/Icon.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
 import SectionHeader from '$lib/components/SectionHeader.svelte';
 
@@ -54,7 +55,7 @@ const related = $derived(data.related);
 		<div
 			class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-medium text-white/95 shadow-sm backdrop-blur-sm"
 		>
-			<span class="text-gold"><i class="fa-solid fa-location-dot"></i></span>
+			<span class="text-gold"><Icon icon="fa-solid fa-location-dot" size={14} /></span>
 			<span>{destination.region}</span>
 		</div>
 	</div>

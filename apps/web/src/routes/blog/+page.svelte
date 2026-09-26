@@ -1,5 +1,6 @@
 <script lang="ts">
 import CtaBanner from '$lib/components/CtaBanner.svelte';
+import Icon from '$lib/components/Icon.svelte';
 import PageHero from '$lib/components/PageHero.svelte';
 import PostCard from '$lib/components/PostCard.svelte';
 import { backgrounds, img } from '$lib/data/media';
@@ -70,7 +71,7 @@ const rest = $derived(visible.slice(2));
 
 			<div class="relative w-full md:w-80">
 				<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-stone-400">
-					<i class="fa-solid fa-magnifying-glass text-xs"></i>
+					<Icon icon="fa-solid fa-magnifying-glass" size={14} />
 				</div>
 				<label class="sr-only" for="article-search">Search articles</label>
 				<input

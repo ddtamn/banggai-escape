@@ -1,4 +1,5 @@
 <script lang="ts">
+import Icon from '$lib/components/Icon.svelte';
 import { composeEnquiry, type Enquiry, whatsappLink, whatsappNumber } from '$lib/enquiry';
 
 type Props = {
@@ -76,13 +77,13 @@ async function copyMessage() {
 				rel="noopener"
 				data-track="whatsapp_enquiry"
 			>
-				<i class="fa-brands fa-whatsapp text-sm" aria-hidden="true"></i>
+				<Icon icon="fa-brands fa-whatsapp" size={14} />
 				<span>Open WhatsApp</span>
 			</a>
 		{/if}
 
 		<button type="button" class="btn-ghost" onclick={copyMessage}>
-			<i class="fa-solid fa-link text-xs" aria-hidden="true"></i>
+			<Icon icon="fa-solid fa-link" size={14} />
 			<span>Copy message</span>
 		</button>
 	</div>

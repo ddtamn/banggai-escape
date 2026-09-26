@@ -50,23 +50,22 @@ export const cspDirectives: CspDirectives = {
 
 	/**
 	 * `unsafe-inline` is required, not sloppily granted: the three `fly` transitions inject a
-	 * `<style>` element at runtime, which a nonce cannot cover. `style-src-attr` is
-	 * separated out so that permission is scoped to the one hero `style={...}` attribute
-	 * that needs it rather than to every stylesheet on the page.
+	 * `<style>` element at runtime, which a nonce cannot cover. `style-src-attr` is separated
+	 * out so that permission is scoped to the one hero `style={...}` attribute that needs it
+	 * rather than to every stylesheet on the page.
 	 *
-	 * The one external stylesheet here is cdnjs, for Font Awesome. Omitting it is not
-	 * theoretical: it blocks the icon stylesheet, and every icon on the site silently
-	 * disappears rather than erroring. Phase 4 of `docs/16-web-polish-plan.md` subsets
-	 * Font Awesome and drops this too.
-	 *
-	 * Google Fonts is *not* listed, because the typeface is self-hosted: it used to be, and
-	 * `csp.spec.ts` is what proved the two entries were both necessary and easy to forget.
+	 * **`self` is the whole list.** This policy began with four external origins and now
+	 * names none: the typeface is self-hosted and the icons are inline SVG generated into the
+	 * bundle. Every entry that was here was one that had to be remembered, and
+	 * `csp.spec.ts` exists because forgetting one is silent — a missing origin does not
+	 * error, the resource simply fails to load.
 	 */
-	'style-src': ['self', 'unsafe-inline', 'https://cdnjs.cloudflare.com'],
+	'style-src': ['self', 'unsafe-inline'],
 	'style-src-attr': ['unsafe-inline'],
 
 	// The typeface is bundled by Vite and served from this origin, so no font-src host
-	// beyond self is needed. `data:` covers the inline SVG data URIs in the icon layer.
+	// beyond self is needed. `data:` covers the inline SVG data URIs that Tailwind's forms
+	// plugin puts on form controls.
 	'font-src': ['self', 'data:'],
 
 	'img-src': [

@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { RenderedArticle } from '@banggai/content-model';
+import Icon from '$lib/components/Icon.svelte';
 
 type Props = { post: RenderedArticle };
 
@@ -37,7 +38,7 @@ let { post }: Props = $props();
 	<div class="px-5 pt-2 pb-5">
 		<a class="btn-ghost" href="/blog/{post.slug}">
 			<span>Read More</span>
-			<i class="fa-solid fa-arrow-right text-[10px]"></i>
+			<Icon icon="fa-solid fa-arrow-right" size={10} />
 		</a>
 	</div>
 </article>

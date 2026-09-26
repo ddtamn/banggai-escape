@@ -1,6 +1,7 @@
 <script lang="ts">
 import { fly } from 'svelte/transition';
 import CtaBanner from '$lib/components/CtaBanner.svelte';
+import Icon from '$lib/components/Icon.svelte';
 import PackageCard from '$lib/components/PackageCard.svelte';
 import { durationLabel, formatPrice } from '$lib/content';
 import { img, media } from '$lib/data/media';
@@ -136,7 +137,7 @@ $effect(() => {
 		<p
 			class="mt-2 flex items-center justify-center gap-2 text-label font-medium text-stone-500 md:hidden"
 		>
-			<i class="fa-solid fa-arrows-left-right text-[10px] text-gold"></i>
+			<Icon icon="fa-solid fa-arrows-left-right" size={10} class="text-gold" />
 			Swipe to see all {gallery.length} photos
 		</p>
 	</section>
@@ -191,7 +192,7 @@ $effect(() => {
 								<span
 									class="flex size-5 flex-shrink-0 items-center justify-center rounded-full bg-forest-deep text-white"
 								>
-									<i class="fa-solid fa-check text-[10px]"></i>
+									<Icon icon="fa-solid fa-check" size={10} />
 								</span>
 								<span>{item}</span>
 							</li>
@@ -215,9 +216,7 @@ $effect(() => {
 											{day.title}
 										</span>
 									</span>
-									<i
-										class="fa-solid fa-chevron-down text-xs text-stone-500 transition-transform duration-300 group-open:rotate-180"
-									></i>
+									<Icon icon="fa-solid fa-chevron-down" size={14} class="text-stone-500 transition-transform duration-300 group-open:rotate-180" />
 								</summary>
 								<p class="mt-3 text-sm leading-relaxed text-stone-600">{day.text}</p>
 							</details>
@@ -294,7 +293,7 @@ $effect(() => {
 				href="/packages"
 			>
 				<span>View All Packages</span>
-				<i class="fa-solid fa-arrow-right text-[10px]"></i>
+				<Icon icon="fa-solid fa-arrow-right" size={10} />
 			</a>
 		</div>
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 import CtaBanner from '$lib/components/CtaBanner.svelte';
+import Icon from '$lib/components/Icon.svelte';
 import { img, media } from '$lib/data/media';
 
 let { data } = $props();
@@ -100,7 +101,7 @@ const visionMission = $derived(data.settings.visionMission);
 								<span
 									class="flex size-10 items-center justify-center rounded-xl border border-stone-100 bg-white text-forest-deep"
 								>
-									<i class="{item.icon} text-xs"></i>
+									<Icon icon={item.icon} size={14} class="text-gold" />
 								</span>
 								<h3 class="text-lg font-bold text-forest-deep">{item.title}</h3>
 							</div>

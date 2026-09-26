@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { FaqItem } from '@banggai/content-model';
+import Icon from '$lib/components/Icon.svelte';
 
 type Props = {
 	items: FaqItem[];
@@ -17,9 +18,7 @@ let { items, openIndex = 0 }: Props = $props();
 				class="flex w-full cursor-pointer items-center justify-between py-1 text-left text-xs font-bold text-stone-900 sm:text-sm [&::-webkit-details-marker]:hidden"
 			>
 				<span>{item.question}</span>
-				<i
-					class="fa-solid fa-chevron-down text-xs text-stone-500 transition-transform duration-200 group-open:rotate-180"
-				></i>
+				<Icon icon="fa-solid fa-chevron-down" size={14} class="text-stone-500 transition-transform duration-200 group-open:rotate-180" />
 			</summary>
 			<div class="pt-2 text-base leading-relaxed text-stone-500">{item.answer}</div>
 		</details>

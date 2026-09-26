@@ -1,4 +1,6 @@
 <script lang="ts">
+import Icon from '$lib/components/Icon.svelte';
+
 type Props = {
 	title: string;
 	subtitle?: string;
@@ -37,7 +39,7 @@ const split = $derived(title.split('\n'));
 			href={action.href}
 		>
 			<span>{action.label}</span>
-			<i class="fa-solid fa-arrow-right text-[10px]"></i>
+			<Icon icon="fa-solid fa-arrow-right" size={10} />
 		</a>
 	{/if}
 </div>

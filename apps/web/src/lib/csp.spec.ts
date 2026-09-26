@@ -88,7 +88,6 @@ const origins = externalOriginsIn(join(process.cwd(), 'src'));
  * stylesheet pulls down are `font-src`. Image hosts fall back to `img-src`.
  */
 function directivesFor(origin: string): string[] {
-	if (origin === 'cdnjs.cloudflare.com') return ['style-src'];
 	if (origin === 'static.cloudflareinsights.com') return ['script-src'];
 	if (origin === 'cloudflareinsights.com') return ['connect-src'];
 	return ['img-src'];

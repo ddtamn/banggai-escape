@@ -152,9 +152,12 @@ The folder now holds exactly one module. Content comes from Neon; the full pictu
 | `media.ts` | Decoration manifest: `img()`, `media`, `backgrounds` — generated, see below |
 
 The five typed modules that used to hold the content (`site.ts`, `content.ts`,
-`packages.ts`, `destinations.ts`, `posts.ts`) were deleted in Phase 6, along with the
-export that read them. Do not recreate them: two sources of truth for the content is the
-thing that switch existed to end.
+`packages.ts`, `destinations.ts`, `posts.ts`) were deleted when the content moved to Neon,
+along with the export that read them. Do not recreate them: two sources of truth for the
+content is the thing that switch existed to end.
+
+This paragraph used to say "deleted in Phase 6", which was ambiguous — `docs/15`,
+`docs/16` and this change each have a Phase 6, and none of them is this one.
 
 ### `src/lib/server/`
 

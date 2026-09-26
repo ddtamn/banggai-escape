@@ -205,9 +205,9 @@ These are non-negotiable; they exist because each one has already caused a real 
     loader**, not in the component.
   - Never import `$lib/server/**` from a component. The typed static modules that used to
     hold the content (`site.ts`, `content.ts`, `packages.ts`, `destinations.ts`,
-    `posts.ts`) **were deleted in Phase 6** — do not add them back, and do not add a
-    second copy of any content. `lib/data/media.ts` *is* live, but only for the images the
-    design owns.
+    `posts.ts`) **were deleted when the content moved to Neon** — do not add them back, and
+    do not add a second copy of any content. `lib/data/media.ts` *is* live, but only for the
+    images the design owns.
   - A media field holds a `media_assets` id, and the read layer turns it into a
     `RenderedMedia` — the URL plus the library's alt text. Do not paste a URL into a
     payload, and do not point a component at the stored payload type: the rendered types

@@ -37,7 +37,7 @@ illustrative — when a snippet and the source disagree, the source wins.
 - [13 Contributing](./13-contributing.md): Workflow, definition of done, Conventional Commits, code style, task checklists, first contributions
 - [14 Admin app](./14-admin-app.md): The apps/admin scaffold — stack, better-auth, Drizzle/Neon, shadcn-svelte, scripts, testing, gaps and next steps
 - [15 Admin dashboard plan](./15-admin-dashboard-plan.md): Phased product and engineering plan for the CMS, Neon-backed publishing, R2 media, secure administration, and Cloudflare Workers Analytics Engine on the free tier
-- [16 Web polish plan](./16-web-polish-plan.md): Measured gaps in apps/web — the contact form that sends nothing, the inert hero booking bar, 5.2 MB of images, absent security headers and social metadata — with a phased plan for trust, real controls, type scale, page weight, SEO, and moving hardcoded copy into the CMS. Phases 1-5 are done and record where the plan was wrong; Phase 6 (copy into the CMS) is not. Language/i18n explicitly deferred
+- [16 Web polish plan](./16-web-polish-plan.md): Measured gaps in apps/web — the contact form that sends nothing, the inert hero booking bar, 5.2 MB of images, absent security headers and social metadata — with a phased plan for trust, real controls, type scale, page weight, SEO, and moving hardcoded copy into the CMS. Phases 1-6 are done and record where the plan was wrong; the last of them covers every page's copy moving into the CMS. Language/i18n explicitly deferred
 
 ## Key facts an agent must not get wrong
 

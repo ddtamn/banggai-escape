@@ -299,9 +299,11 @@ These are intentional at the current stage, not oversights:
 
 ## How the pieces would extend
 
-- **Admin app.** Functional (see [14-admin-app](./14-admin-app.md)); not deployed yet.
-  Its next steps are analytics (Phase 5) and a staging branch with its own bindings
-  (Phase 6), not more architecture.
+- **Admin app.** Deployed at `admin.banggaiescape.com` (see
+  [14-admin-app](./14-admin-app.md)). Its remaining steps are a staging branch with its own
+  bindings and a deploy-scoped CI token — the last two items of
+  [15-admin-dashboard-plan](./15-admin-dashboard-plan.md#phase-6--hardening-and-release) —
+  not more architecture.
 - **Purging on publish.** The five-minute window is a ceiling, not a target. The next
   refinement is for `publish` to call Cloudflare's cache-purge API for the URLs that
   changed, which would make a correction visible immediately while keeping the TTL as a

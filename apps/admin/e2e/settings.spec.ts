@@ -28,6 +28,17 @@ const KEYS = [
 	'contactChannels',
 	'blogCategories',
 	'ctaBackground',
+	'siteCta',
+	'cards',
+	'homePage',
+	'packagesPage',
+	'destinationsPage',
+	'blogPage',
+	'aboutPage',
+	'contactPage',
+	'packageDetail',
+	'destinationDetail',
+	'articleDetail',
 ];
 
 test.describe('settings', () => {
@@ -58,11 +69,14 @@ test.describe('settings', () => {
 			'Shared blocks',
 			'Contact page',
 			'Blog',
+			'Page copy — shared, home, and the closing banner',
+			'Page copy — listing pages',
+			'Page copy — detail pages',
 		]) {
 			expect(body).toContain(group);
 		}
 
-		// The imported content fills all thirteen, so none should read as unset or stale.
+		// Every key, so none should read as unset or stale.
 		expect(body).not.toContain('Not set');
 		expect(body).not.toContain('Out of date');
 	});

@@ -404,7 +404,7 @@ to change.
 ## The retired modules are gone
 
 The typed static content — `src/lib/data/{site,content,destinations,packages,posts}.ts` —
-was deleted in Phase 6, along with the one-shot migration pair that read it
+was deleted when the content moved to Neon, along with the one-shot migration pair that read it
 (`apps/web/scripts/export-content.ts` and `apps/admin/scripts/import-content.ts`, and
 their `migrate:export` / `migrate:import` scripts).
 

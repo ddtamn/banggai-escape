@@ -378,7 +378,8 @@ first two messages are configuration; the third is data.
 
 The site deliberately has **no static fallback**. Serving a bundled copy of the content
 when the database is unreachable would be two sources of truth and a page that is quietly
-months out of date — and since Phase 6 there is no copy left to serve (see
+months out of date — and since the content moved to Neon there is no bundled copy left to
+serve (see
 [08-content-data-layer](./08-content-data-layer.md#the-retired-modules-are-gone)).
 
 Two things worth knowing about the connection itself:

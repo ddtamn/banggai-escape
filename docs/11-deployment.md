@@ -140,6 +140,19 @@ told which one to build:
 neon connection-string br-<production-id> --role-name banggai_web
 ```
 
+**`dev` and `production` are separate databases, not two versions of one.** Neon branches do
+not merge — there is nothing to reconcile and no common ancestor, so a "merge" would mean
+copying rows across. As of this deploy they already hold the same content, because
+`production` was seeded from `dev` (below) and both were verified equal afterwards: 20
+entries, 40 revisions, 13 settings, 29 media assets, 0 redirects, and **zero** slugs present on
+one and not the other. The only difference is the `user` table, where `dev` also holds a
+browser-check account.
+
+The deployed Workers read `production`, and that is checkable rather than assumed: the
+`user` table is the one thing the branches disagree on, so signing in to the deployed admin
+with the `dev`-only account is **rejected** — which it can only be if the Worker is connected
+to `production`.
+
 ### How `production` got its content
 
 Worth recording, because the obvious next person will look for the script and it is not
@@ -302,13 +315,31 @@ a pull request's CI run also finishes successfully and must never deploy anythin
 `workflow_dispatch` takes an `app` input (`both` / `admin` / `web`) for redeploying one
 Worker without a code change.
 
-### The two secrets CI needs, and the ones it must never have
+### The one secret CI needs, and the ones it must never have
 
-Only `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, as repository secrets. **No
-database credential is in either workflow, and none is needed**: `DATABASE_URL` and
-`BETTER_AUTH_SECRET` are already Worker secrets in Cloudflare, and `wrangler deploy` leaves a
-Worker's secrets in place while replacing its code. So a leaked CI log cannot leak a
-connection string, and a compromised workflow cannot read one.
+**One: `CLOUDFLARE_API_TOKEN`**, a repository secret.
+`CLOUDFLARE_ACCOUNT_ID` is an identifier rather than a credential — it is already public in
+`wrangler.jsonc` — so the deploy steps write it literally instead of asking for it. That is
+one thing to configure, not two.
+
+**No database credential is in either workflow, and none is needed.** `DATABASE_URL` and
+`BETTER_AUTH_SECRET` are already Worker secrets in Cloudflare, and `wrangler deploy` replaces a
+Worker's code while leaving its secrets in place. So a leaked CI log cannot leak a connection
+string, and a compromised workflow cannot read one.
+
+To add it: **Settings → Secrets and variables → Actions → New repository secret**, name
+`CLOUDFLARE_API_TOKEN`, paste the value. Confirm it with `workflow_dispatch` on this workflow
+— CI itself needs no secrets at all.
+
+One thing to know about scopes: this workflow declares `environment: production`, and a
+secret set *on that environment* shadows a repository secret of the same name. If you add the
+token at the environment level by accident, the repository one stops being used, and the
+deploy fails with a 403 from the Cloudflare API rather than anything that names the cause.
+
+A deploy-scoped token is the right long-term value here too, for the same reason as the
+[analytics token](#the-credential-is-currently-broader-than-it-needs-to-be): one with Workers
+Scripts edit and DNS edit on the account, and nothing else. The token in use works, so this is
+a follow-up rather than a blocker.
 
 Each deploy job declares `environment: production`, so a GitHub environment protection rule
 can require a manual approval before anything reaches a live hostname.

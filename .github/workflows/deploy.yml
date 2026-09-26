@@ -2,7 +2,9 @@
 #
 # ## What CI needs, and what it deliberately does not
 #
-# Only two secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. **No database
+# Exactly one secret: `CLOUDFLARE_API_TOKEN`. `CLOUDFLARE_ACCOUNT_ID` is an identifier
+# rather than a credential — it is already public in `wrangler.jsonc` — so it is written
+# into the deploy steps instead of being asked for. **No database
 # credentials appear in this file, and none are needed.** `DATABASE_URL` and
 # `BETTER_AUTH_SECRET` are already stored as Worker secrets in Cloudflare and are uploaded
 # by `wrangler deploy` from there — a deploy replaces the Worker and leaves its secrets
@@ -75,7 +77,10 @@ jobs:
         working-directory: apps/admin
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # The account id is an identifier, not a credential: it is already public in
+          # apps/admin/wrangler.jsonc, so it is written here rather than asked for as a
+          # secret. That leaves one thing to configure instead of two.
+          CLOUDFLARE_ACCOUNT_ID: 91a7dd704831e7143ccf6525c5c04b92
         # `wrangler deploy` creates or updates the custom domain route declared in
         # wrangler.jsonc, including the DNS record, so there is no separate DNS step.
         run: pnpm exec wrangler deploy
@@ -118,7 +123,10 @@ jobs:
         working-directory: apps/web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # The account id is an identifier, not a credential: it is already public in
+          # apps/admin/wrangler.jsonc, so it is written here rather than asked for as a
+          # secret. That leaves one thing to configure instead of two.
+          CLOUDFLARE_ACCOUNT_ID: 91a7dd704831e7143ccf6525c5c04b92
         run: pnpm exec wrangler deploy
       - name: check it answers
         run: |
